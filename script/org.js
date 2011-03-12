@@ -93,19 +93,19 @@ var OrgJS = (function($, undefined){
       var name, length = arr.length, i = 0, isObj = length === undefined;
       if ( isObj ) {
         for ( name in arr ) {
-          if ( fn.call( arr[ name ], name, arr[ name ] ) === false ) {break;}
+          if ( fn.call( arr[ name ], arr[ name ], name ) === false ) {break;}
         }
       } else {
         if(!length){return;}
         for ( var value = arr[0];
-          i < length && fn.call( value, i, value ) !== false; 
+          i < length && fn.call( value, value, i ) !== false; 
           value = arr[++i] ) {}
       }
     },
     map: function(arr, fn){
       var result = [];
-      this.each(arr, function(val, key){
-        var mapped = fn.call(val, key);
+      this.each(arr, function(val, idx){
+        var mapped = fn.call(val, val, idx);
         if (mapped != null){result.push(mapped);}
       });
       return result;
@@ -135,7 +135,7 @@ var OrgJS = (function($, undefined){
     this.whole = whole;
     this.parser = new NodeParser(this.whole);
     this.heading = this.parser.getHeading();
-    this.level = (this.heading.getStars() || "").length;
+    this.level = params.level || (this.heading.getStars() || "").length;
     
     this.properties = this.parser.getProperties();
     this.meta = this.parser.getMeta();
@@ -171,7 +171,7 @@ var OrgJS = (function($, undefined){
         + "</div></section>");
 
       var title = $('div.title', html);
-      _U.each(this.heading.getTags(), function(idx, tag){
+      _U.each(this.heading.getTags(), function(tag, idx){
         if(tag.length){
           title.append(" <span class='tag'>" + tag + "</span>");
         }
@@ -179,13 +179,13 @@ var OrgJS = (function($, undefined){
       var properties = this.properties; 
       var details = $("<details/>");
       var dl = $("<dl/>").appendTo(details);
-      _U.each(properties, function(key, val){
+      _U.each(properties, function(val, key){
         dl.append("<dd>" + key + "</dd><dt>" + val + "</dt>");
       });
       
       title.after(details);
       html.append(new ContentRenderer(this.parser.getContent()).render());
-      _U.each(this.children, function(idx, child){
+      _U.each(this.children, function(child, idx){
         html.append(child.render());
       });
       return html;
@@ -206,14 +206,9 @@ var OrgJS = (function($, undefined){
    */
   var ContentRenderer = function(txt){
     this.content = txt;
-    this.lines = _U.map(_U.lines(txt), function(txt){return new Line(txt);});
-    this.blocks = this.group(this.lines);
   };
   ContentRenderer.prototype = {
     render: function(){
-      
-      
-      
       var content = this.content;
       content = content.replace(/\/([^\s][^/]*[^\s])\//g, "<em>$1</em>");
       content = content.replace(/\\\\/g, "<br/>");
@@ -223,86 +218,10 @@ var OrgJS = (function($, undefined){
       content = content.replace(/#\+BEGIN_QUOTE\s*\n([\s\S]*?)\n?\s*#\+END_QUOTE/g, "<blockquote>$1</blockquote>");
       content = content.replace(/\+([^\s][^+]*[^\s])\+/g, "<del>$1</del>");
       return content;
-    },
-    
-    group: function(lines){
-      var result = [];
-      var root = null;
-      
-      var current = current;
-      _U.each(lines, function(line){
-        if(line.type === Line.TYPE.TEXT){
-          if(current == null){
-            current = new Block({
-              type: Block.TYPE.PARA, 
-              indent: line.indent,
-              children: [line]
-            });
-          }
-          // Now we create a new PARA
-          else if (Line.indent <= current.indent){
-            
-          }
-        }
-        
-        // Sets the root in case it is not set yet
-        if(!root){root = current;}
-      });
-      
-      return result;
     }
   };
   
-  var Block = function(params){
-    params |= {};
-    this.parent = params.parent || null;
-    // this.children: Contains children blocks, or the lines for a text block
-    this.children = params.children || []; 
-    this.indent = params.indent || null;
-    this.type = params.type || null;
-  };
-  
-  
-  
-  Block.TYPE = {
-    PARA:     0,
-    ULIST:    1,
-    OLIST:    2,
-    PRE:      3,
-    SRC:      4,
-    QUOTE:    5,
-    BEGINEND: 6,  
-    EQUATION: 7
-  };
-  
-  var Line = function(txt){
-    this.txt = txt;
-    this.indent = txt.match(/^(\s*)/)[1].length;
-    this.type = Line.getType(this.txt);    
-  };
-  Line.TYPE = {
-    EMPTY:      {
-      id: 0,
-      startBlock: true
-    },
-    TEXT:       {
-      id: 1,
-      startBlock: false
-    },
-    ULIST:      {
-      id: 2,
-      startBlock: true
-    },
-    OLIST:      {
-      id: 3,
-      startBlock: true
-    },
-    PRE:        4,
-    SRC:        5,
-    QUOTE:      6,
-    BEGIN:      7,
-    END:        8
-  };
+  var Line = {};
   Line.getType = function(text){
     if(_U.trim(text).length == 0){return Line.TYPE.EMPTY;}
     if(text.match(/^(?:\s*[+-]|\s+\*)\s+/)){return Line.TYPE.ULIST;}
@@ -315,16 +234,6 @@ var OrgJS = (function($, undefined){
     return Line.TYPE.TEXT;
   };
   
-  
-  Line.SPANTYPE = {
-    NORMAL: 0,
-    EMPH:   1,
-    BOLD:   2,
-    CODE:   3,
-    STRIKE: 4
-  };
-  
-
   /////////////////////////////////////////////////////////////////////////////
   // PARSING
   
@@ -394,7 +303,7 @@ var OrgJS = (function($, undefined){
       var propMatch = RGXP.propertySection.exec(content);
       if(!propMatch){return this.props;}
       var propLines = _U.lines(propMatch[1]);
-      _U.each(propLines, function(idx, line){
+      _U.each(propLines, function(line, idx){
         var match = RGXP.propertyLine.exec(line);
         if(!match){return 1;} // continue
         // Properties may be defined on several lines ; concatenate the values if needed
@@ -439,7 +348,7 @@ var OrgJS = (function($, undefined){
     parseHeaders: function(txt){
       var result = {};
       var lines = txt.split(RGXP.newline);
-      _U.each(lines, function(idx, line){
+      _U.each(lines, function(line, idx){
         if(_U.trim(line).length == 0){return true;}
         if(!line.match(RGXP.metaDeclaration)){return false;} // we went ahead the headers : break the loop
         var match = RGXP.metaLine.exec(line);
@@ -458,7 +367,7 @@ var OrgJS = (function($, undefined){
       var result = "";
       var lines = txt.split(RGXP.newline);
       var header = true;
-      _U.each(lines, function(idx, line){
+      _U.each(lines, function(line, idx){
         if(header && _U.trim(line).length == 0){return;}
         if(header && line.match(RGXP.metaDeclaration)){return;}
         header = false;
@@ -491,22 +400,18 @@ var OrgJS = (function($, undefined){
     buildTree: function(){
       var nodes = this.nodeList(this.txt);
       var length = nodes.length;
-      var set, j, level;
+      var done, j, level;
       for(var i = 1; i < length ; i++){
-        if(nodes[i] === undefined){
-          continue;
-        }
         level = nodes[i].level;
-        set = false;
+        done = false;
         j = i;
-        while(!set){
+        while(!done){
           j = j - 1;
-          if(j<0){break;}
-          //if(nodes[j] === undefined){continue;}
+          if(j < 0){break;}
           if(nodes[j].level < level){
             nodes[i].parent = nodes[j];
             nodes[j].children.push(nodes[i]);
-            set = true;
+            done = true;
           }
         }
       }

@@ -24,16 +24,20 @@
 var _U = OrgJS.Utils;
 $(function(){
   
-  test("UTILS - map", function(){
-    var arr = [0,1,2];
-    var result = _U.map(arr, function(i){return i*i;});
-    deepEqual(result, [0,1,4], "Did not square the array!")
-  });
   test("UTILS - each", function(){
-    var arr = [0,1,2];
-    var result = [];
-    _U.each(arr, function(i){result.push(i*i);});
-    deepEqual(result, [0,1,4], "Did not square the array!")
+    var arr = [1,2,3];
+    var resultArr = [];
+    _U.each(arr, function(v, idx){resultArr.push(v*v);});
+    deepEqual(resultArr, [1,4,9], "Did not square the array!");
+    var obj = {a: 1, b: 2, c: 3};
+    var resultObj = [];
+    _U.each(obj, function(v, key){resultObj.push(v*v);});
+    deepEqual(resultObj, [1,4,9], "Did not square the object!");
+  });
+  test("UTILS - map", function(){
+    var arr = [1,2,3];
+    var resultArr = _U.map(arr, function(val, idx){return "" + idx + val;});
+    deepEqual(resultArr, ["01","12","23"], "Error mapping array to array");
   });
 
   
