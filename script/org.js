@@ -118,6 +118,7 @@ var OrgJS = (function($, undefined){
       return match ? match[0] : "";
     },
     lines: function(str){
+      if (!str && str !== ""){return [];}
       return str.split(RGXP.newline);
     }
   };

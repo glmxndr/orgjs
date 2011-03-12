@@ -39,6 +39,15 @@ $(function(){
     var resultArr = _U.map(arr, function(val, idx){return "" + idx + val;});
     deepEqual(resultArr, ["01","12","23"], "Error mapping array to array");
   });
+  test("UTILS - lines", function(){
+    deepEqual(_U.lines(null),        [],             "null case");
+    deepEqual(_U.lines("false"),     ["false"],      "false case");
+    deepEqual(_U.lines("0"),         ["0"],          "0 case");
+    deepEqual(_U.lines(""),          [""],           "empty string has 1 line");
+    deepEqual(_U.lines("\n"),        ["", ""],       "2 empty lines");
+    deepEqual(_U.lines("a\nb"),      ["a", "b"],     "2 lines");
+    deepEqual(_U.lines("a\n\nb"),    ["a", "", "b"], "3 lines");
+  });
 
   
 });
