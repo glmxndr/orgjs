@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>OrgJS : unit tests</title>
+<script type='text/javascript' src='script/jquery-1.5.1.js'></script>
+<link rel="stylesheet" href="test/lib/qunit.css" type="text/css" media="screen" />
+<script type="text/javascript" src="test/lib/qunit.js"></script>
+
+<script type='text/javascript' src='script/org.js'></script>
+</head>
+<body>
+<h1 id="qunit-header">QUnit tests for OrgJS</h1>
+<h2 id="qunit-banner"></h2>
+<div id="qunit-testrunner-toolbar"></div>
+<h2 id="qunit-userAgent"></h2>
+<ol id="qunit-tests"></ol>
+<div id="qunit-fixture">
+
+
+
+</div>
+<script type="text/javascript">
+var _U = OrgJS.Utils;
+$(function(){
+  
+  test("UTILS - map", function(){
+    var arr = [0,1,2];
+    var result = _U.map(arr, function(i){return i*i;});
+    deepEqual(result, [0,1,4], "Did not square the array!")
+  });
+  test("UTILS - each", function(){
+    var arr = [0,1,2];
+    var result = [];
+    _U.each(arr, function(i){result.push(i*i);});
+    deepEqual(result, [0,1,4], "Did not square the array!")
+  });
+
+  
+});
+</script>
+</body>
+</html>

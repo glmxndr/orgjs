@@ -1,0 +1,27 @@
+
+section{
+  margin-left:2em;
+  margin-top:0.5em;
+
+}
+
+div.title{
+  font-weight:bold;
+  color: gray;
+  border-bottom:1px solid #AAA;
+}
+
+div.title + details {
+  font-size:90;
+  color:gray;
+  margin-left:2em;
+  border:1px dotted gray;
+}
+
+span.tag{
+  border: 1px dotted #AAA;
+  background-color: #CCC;
+  padding:2px;
+  margin:2px;
+  font-size: 90%;
+}

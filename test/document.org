@@ -1,0 +1,119 @@
+#+AUTHOR:    Me Myself
+#+TITLE:     Title of the document
+#+EMAIL:     gandrieu@F647J3J
+#+DATE:      2011-03-08 mar.
+#+DESCRIPTION:
+#+KEYWORDS:
+#+LANGUAGE:  en
+#+OPTIONS:   H:3 num:t toc:t \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS:   TeX:t LaTeX:nil skip:nil d:nil todo:t pri:nil tags:not-in-toc
+#+INFOJS_OPT: view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
+#+EXPORT_SELECT_TAGS: export
+#+EXPORT_EXCLUDE_TAGS: noexport
+
+Some header content.
+
+* Head again
+
+  Here is a message:
+
+  This is a *quoted message*
+  with the caret-notation
+  and continuing
+
+  #+BEGIN_QUOTE
+  This is a quoted message with the begin,end notation.
+  --- Al Eintein & Dick Feynman, /Rambling thoughts/ @III.2.
+  #+END_QUOTE
+
+  #+BEGIN_CENTER
+  Centered text?
+  #+END_CENTER
+
+  + This is a list item starting with a plus
+    + This is another list item starting with a plus
+      and the content
+      + can be indented just anyhow
+      as long as I don't come back at
+      the same indentation level as the plus
+
+  - This is a list item starting with a minus
+
+  * This is a list item starting with a star
+
+  Here is an equation: $y = x^2 + x + 1$
+
+  Here is a long equation: $$y = x^2 + x + 1$$
+
+* Header                                                            :my:tags:
+** Sub section 1                                                   :some:tag:
+   #+AUTHOR: Someone Else
+
+   This is some text. \\
+   I just came back to the next line. Didn't I?
+
+   With @some@ content.
+   + a list
+     - a sublist
+     - yes, several items
+     - in this list
+   + with several items, one of wich being on several lines /because I
+     need/ a very long item for that
+   And *text continuing after*.
+
+** DONE [#A] Bloated heading! What if the title were quite long?  :some:tags:CaMel:CAPITAL:012:
+   SCHEDULED: <2011-02-18 Fri> DEADLINE: <2011-04-26 Tue>
+   :CLOCK:
+   CLOCK: [2011-03-09 Wed 21:25]
+   CLOCK: [2011-03-09 Wed 20:41]--[2011-03-09 Wed 20:41] =>  0:00
+   CLOCK: [2011-03-09 Wed 20:41]--[2011-03-09 Wed 20:41] =>  0:00
+   :END:
+   :PROPERTIES:
+   :DATE:     2011-03-05
+   :TOTO:     tata
+   :AUTHOR:   Myself
+   :EMAIL:    me@me.me
+   :A_LONG_VALUE_WITH_UNDERSCORES: a long value with underscores, pretty long actually, may even have to go to the next line, we'll see about that won't we ?
+   :a-a:      ,
+   :END:
+
+   Some content here.
+
+   There will be many details in this section!
+
+*** Introduction
+
+    Ok, there is some text alright.
+
+    : Look : some code here !
+    : This is a sample code.
+
+    And here also.
+
+    #+BEGIN_SRC javascript -n
+      var toto = 1;                         (ref:toto)
+      var tutu = {
+        arr: [],
+        obj: ()
+      };
+    #+END_SRC
+
+    Look at the [[(toto)]] declaration.
+
+    + [ ] This may become an unchecked checkbox...
+    + [-] This may become a checked checkbox
+      - [ ] Under1
+      - [ ] Under2
+      - [X] Under3
+
+*** DONE This is finished                                         :other:tag:
+*** TODO This is not started
+
+***** TODO [#B] Missed a step!
+      CLOCK: [2011-03-09 mer. 13:04]
+      :PROPERTIES:
+      :AUTHOR: Other One
+      :END:
+
+***** Here also!
+
