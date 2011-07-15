@@ -443,7 +443,6 @@ var OrgJS = (function($, undefined){
     Parser:          Parser,
     NodeParser:      NodeParser, 
     ContentRenderer: ContentRenderer,
-    ContentParser:   ContentParser,
     RegExps:         RGXP
   };
 
