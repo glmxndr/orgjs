@@ -1,33 +1,20 @@
-/*
-  Just a simple paragraph
-
-  + Here starts a list with an item
-    continuing here
-  + Another item
-
-    With a second paragraph
-
-    - A sublist starts here
-    - And continues
-        here
-    * Another item 
-     delimiter
-    And a third paragraph
-
-  + Third outer item
-  And closing paragraph.
-*/
-
 var LineType = {
   BLANK: 0,
   NORMAL: 1,
   ULITEM: 2,
-  OLITEM: 3
+  OLITEM: 3,
+  DLITEM: 4
 };
 
 function getLineType(line){
   if(/^(?:\s*[+-] |\s+\* )/.exec(line)){
+    if(/ :: /.exec(line)){
+      return LineType.DLITEM;
+    }
     return LineType.ULITEM;
+  }
+  if(/^\s*\d+[.)] /.exec(line)){
+    return LineType.OLITEM;
   }
   if(/^\s*$/.exec(line)){
     return LineType.BLANK;
@@ -47,6 +34,12 @@ function getNewBlock(line, parent){
   if(type === LineType.ULITEM){
     return new UlistBlock(parent, line);
   }
+  if(type === LineType.OLITEM){
+    return new OlistBlock(parent, line);
+  }
+  if(type === LineType.DLITEM){
+    return new DlistBlock(parent, line);
+  }  
   else return new ParaBlock(parent);
 }
 
@@ -127,7 +120,46 @@ UlistBlock.prototype.accept  = function(line){
 };
 
 UlistBlock.prototype.consume = function(line){
-  var item = new ListItemBlock(this, line);
+  var item = new UlistItemBlock(this, line);
+  this.children.push(item);
+  return item.consume(line);
+};
+
+////////////////////////////////////////////////////////////////////////////////
+//  OLISTBLOCK
+var OlistBlock = function(parent, line){
+  ContainerBlock.call(this, parent);
+  this.indent = getLineIndent(line);
+  var match = /^\s*\d+[.)]\s+\[@(\d+)\]/.exec(line);
+  this.start = match ? +(match[1]) : 1;
+};
+
+OlistBlock.prototype.accept  = function(line){
+  return getLineType(line) === LineType.OLITEM &&
+    getLineIndent(line) === this.indent;
+};
+
+OlistBlock.prototype.consume = function(line){
+  var item = new OlistItemBlock(this, line);
+  this.children.push(item);
+  return item.consume(line);
+};
+
+
+////////////////////////////////////////////////////////////////////////////////
+//  DLISTBLOCK
+var DlistBlock = function(parent, line){
+  ContainerBlock.call(this, parent);
+  this.indent = getLineIndent(line);
+};
+
+DlistBlock.prototype.accept  = function(line){
+  return getLineType(line) === LineType.DLITEM &&
+    getLineIndent(line) === this.indent;
+};
+
+DlistBlock.prototype.consume = function(line){
+  var item = new DlistItemBlock(this, line);
   this.children.push(item);
   return item.consume(line);
 };
@@ -145,23 +177,51 @@ ListItemBlock.prototype.accept  = function(line){
 };
 
 ListItemBlock.prototype.consume = function(line){
-  var type = getLineType(line);
   var block;
-  var indent = getLineIndent(line);
   if(this.children.length === 0){
-    line = line.replace(/[+*-] /, '  ');
-    block = new ParaBlock(this);
+    line = this.preprocess(line);
   }
-  if(type === LineType.PARA){
-    block = new ParaBlock(this);
-  }
-  else if(type === LineType.ULITEM && indent > this.indent){
-    block = new UlistBlock(this, line);
-  }
+  block = getNewBlock(line, this);
   this.children.push(block);
   return block.consume(line);
 };
 
+////////////////////////////////////////////////////////////////////////////////
+//  ULISTITEMBLOCK
+var UlistItemBlock = function(parent, line){
+  ListItemBlock.call(this, parent, line);
+};
+
+UlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
+UlistItemBlock.prototype.preprocess = function(line){
+  return line.replace(/^(\s*)[+*-] /, "$1  ");
+};
+
+
+////////////////////////////////////////////////////////////////////////////////
+//  OLISTITEMBLOCK
+var OlistItemBlock = function(parent, line){
+  ListItemBlock.call(this, parent, line);
+  var match = /^\s*(\d+)[.)] /.exec(line);
+  this.number = match ? +(match[1]) : 1;
+};
+
+OlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
+OlistItemBlock.prototype.preprocess = function(line){
+  return line.replace(/^(\s+)\d+[.)](?:\s+\[@\d+\])? /, "$1  ");
+};
+
+////////////////////////////////////////////////////////////////////////////////
+//  DLISTITEMBLOCK
+var DlistItemBlock = function(parent, line){
+  ListItemBlock.call(this, parent,line);
+  this.title = /^\s*[+*-] (.*) :: /.exec(line)[1];
+};
+
+DlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
+DlistItemBlock.prototype.preprocess = function(line){
+  return line.replace(/^(\s*)[+*-]\s+.*? :: /, "$1  ");
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 //       PARSECONTENT

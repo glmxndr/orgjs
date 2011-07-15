@@ -24,7 +24,10 @@ Some header content.
 
     With a second paragraph
 
-    - A sublist starts here
+    - A sublist starts here, with subnumbers
+      1. [@5] item 5
+      6. item 6
+      10. item 7
     - And continues
         here
     * Another item 
@@ -33,6 +36,21 @@ Some header content.
 
   + Third outer item
   And closing paragraph.
+
+
+  My favorite scenes are (in this order)
+        1. The attack of the Rohirrim
+        2. Eowyn's fight with the witch king
+           + this was already my favorite scene in the book
+           + I really like Miranda Otto.
+        3. Peter Jackson being shot by Legolas
+           - on DVD only
+           He makes a really funny face when it happens.
+        But in the end, no individual scenes matter but the film as a whole.
+        Important actors in this film are:
+        - Elijah Wood :: He plays Frodo
+        - Sean Austin :: He plays Sam, Frodo's friend.  I still remember
+          him very well from his role as Mikey Walsh in The Goonies.
 
 ** Some headline again
   Here is a message:
