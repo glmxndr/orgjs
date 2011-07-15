@@ -16,10 +16,18 @@ Some header content.
 * Head again
 ** Some headline
 
-  Just a simple paragraph
+  Just a simple paragraph with some content
+
+  #+BEGIN_VERSE
+ which changes
+   indentation
+without notice!
+  #+END_VERSE
 
   + Here starts a list with an item
     continuing here
+  but 
+broken here
   + Another item
 
     With a second paragraph
@@ -27,6 +35,10 @@ Some header content.
     - A sublist starts here, with subnumbers
       1. [@5] item 5
       6. item 6
+         #+BEGIN_VERSE
+         Oh here is some poetry
+         That does not even rhyme
+         #+END_VERSE
       10. item 7
     - And continues
         here

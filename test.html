@@ -19,10 +19,9 @@
       var txt = section.text();
       var lines = splitLines(txt);
       window.root = parseContent(lines);
-      console.log(root);
       var newContent = root.render();
-      console.log(newContent);
       section.parent().html(newContent);
+      console.log(root);
     }, 500);
   </script>
   </body>

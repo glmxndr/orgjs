@@ -3,7 +3,8 @@ var LineType = {
   NORMAL: 1,
   ULITEM: 2,
   OLITEM: 3,
-  DLITEM: 4
+  DLITEM: 4,
+  VERSE: 5
 };
 
 function getLineType(line){
@@ -19,13 +20,15 @@ function getLineType(line){
   if(/^\s*$/.exec(line)){
     return LineType.BLANK;
   }
+  if(/#+BEGIN_VERSE/.exec(line)){
+    return LineType.VERSE;
+  }
   return LineType.PARA;
 }
 
 function getLineIndent(line){
   line = line || "";
   var indent = /^\s*/.exec(line)[0].length;
-  console.log("" + indent + " = indent of '" + line + "'");
   return indent;
 }
 
@@ -39,6 +42,9 @@ function getNewBlock(line, parent){
   }
   if(type === LineType.DLITEM){
     return new DlistBlock(parent, line);
+  }
+  if(type === LineType.VERSE){
+    return new VerseBlock(parent);
   }  
   else return new ParaBlock(parent);
 }
@@ -58,11 +64,9 @@ var RootBlock = function(){
 };
 
 RootBlock.prototype.accept  = function(line){return true;};
-
 RootBlock.prototype.consume = function(line){
   var block = getNewBlock(line, this);
   this.children.push(block);
-  //console.log(block);
   return block.consume(line);
 };
 
@@ -91,10 +95,7 @@ ParaBlock.prototype.accept = function(line){
   if(type !== LineType.PARA){return false;}
   if(this.ended){return false;}
 
-  // If the parent is the root (= has no parent)
-  // then the indentation does not matter
-  if(!this.parent.parent){return true;}
-
+  if(this.indent === 0){return true;}
   indent = getLineIndent(line);
   if(indent <= this.indent){
     return false;    
@@ -104,6 +105,27 @@ ParaBlock.prototype.accept = function(line){
 
 ParaBlock.prototype.consume = function(line) {
   this.lines.push(line);
+  return this;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+//  VERSEBLOCK
+var VerseBlock = function(parent){
+  ContentBlock.call(this, parent);
+  this.ended = false;
+};
+
+VerseBlock.prototype.accept = function(line){return !this.ended;};
+VerseBlock.prototype.consume = function(line) {
+  if(/#+BEGIN_VERSE/.exec(line)){
+    // Ignore the first line... 
+  }
+  else if(/#+END_VERSE/.exec(line)){
+    this.ended = true;
+  }
+  else {
+    this.lines.push(line);
+  }
   return this;
 };
 
@@ -231,16 +253,12 @@ function splitLines(txt){
 
 function parseContent(lines){
   var root = new RootBlock();
-  //console.log(root);
   var current = root;
   var line = lines.shift();
-  //console.log(line);
   while(line !== undefined && getLineType(line) === LineType.BLANK){
     line = lines.shift();
   }
   while(line !== undefined){
-    //console.log("===> Treating line : '" + line + "'");
-    //console.log("     Current block :");console.log(current);
     if(current.accept(line)){
       current = current.consume(line);
     }

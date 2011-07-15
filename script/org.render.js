@@ -60,4 +60,11 @@ ParaBlock.prototype.render = function(){
   out += this.lines.join("\n") + "\n";
   out += "</p>\n";
   return out;
-}
+};
+
+VerseBlock.prototype.render = function(){
+  var out = "<pre class='verse'>\n";
+  out += this.lines.join("\n") + "\n";
+  out += "</pre>\n";
+  return out;
+};
