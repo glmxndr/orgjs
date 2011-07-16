@@ -122,6 +122,13 @@
     return out;
   };
 
+  OC.ExampleBlock.prototype.render = function(){
+    var content = this.lines.join("\n") + "\n";
+    var markup = escapeHtml(content);
+    var out = "<pre>\n" + markup + "</pre>\n";
+    return out;
+  };
+
   OO.Node.prototype.render = function(){
     var headline = this.level === 0 ? this.meta["TITLE"] : this.heading.getTitle();
     

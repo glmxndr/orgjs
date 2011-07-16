@@ -10,7 +10,8 @@ Org.Content = (function(Org){
     "DLITEM":       4,
     "VERSE":        5,
     "QUOTE":        6,
-    "CENTER":       7
+    "CENTER":       7,
+    "EXAMPLE":      8
   };
   Content.LineType = LineType;
 
@@ -43,6 +44,9 @@ Org.Content = (function(Org){
     if(/#\+BEGIN_CENTER/.exec(line)){
       return LineType.CENTER;
     }
+    if(/#\+BEGIN_EXAMPLE/.exec(line)){
+      return LineType.EXAMPLE;
+    }
     return LineType.PARA;
   }
 
@@ -71,6 +75,9 @@ Org.Content = (function(Org){
     }
     if(type === LineType.CENTER){
       return new CenterBlock(parent);
+    }
+    if(type === LineType.EXAMPLE){
+      return new ExampleBlock(parent);
     }
     else return new ParaBlock(parent);
   }
@@ -137,70 +144,64 @@ Org.Content = (function(Org){
   };
 
   ////////////////////////////////////////////////////////////////////////////////
-  //  VERSEBLOCK
-  var VerseBlock = function(parent){
+  //  BEGINENDBLOCK
+  var BeginEndBlock = function(parent){
     ContentBlock.call(this, parent);
     this.ended = false;
   };
-  Content.VerseBlock = VerseBlock;
 
-  VerseBlock.prototype.accept = function(line){return !this.ended;};
-  VerseBlock.prototype.consume = function(line) {
-    if(/#\+BEGIN_VERSE/.exec(line)){
-      // Ignore the first line... 
-    }
-    else if(/#\+END_VERSE/.exec(line)){
-      this.ended = true;
-    }
-    else {
-      this.lines.push(line);
-    }
+  BeginEndBlock.prototype.accept      = function(line){return !this.ended;};
+  BeginEndBlock.prototype.treatBegin  = function(line){};
+  BeginEndBlock.prototype.consume     = function(line){
+    if(this.beginre.exec(line)){ this.treatBegin(line); }
+    else if(this.endre.exec(line)){ this.ended = true; }
+    else { this.lines.push(line); }
     return this;
   };
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  VERSEBLOCK
+  var VerseBlock = function(parent){
+    BeginEndBlock.call(this, parent);
+    this.beginre = /#\+BEGIN_VERSE/;
+    this.endre = /#\+END_VERSE/;
+  };
+  Content.VerseBlock = VerseBlock;
+
+  VerseBlock.prototype = Object.create(BeginEndBlock.prototype);
 
   ////////////////////////////////////////////////////////////////////////////////
   //  QUOTEBLOCK
   var QuoteBlock = function(parent){
-    ContentBlock.call(this, parent);
-    this.ended = false;
+    BeginEndBlock.call(this, parent);
+    this.beginre = /#\+BEGIN_QUOTE/;
+    this.endre = /#\+END_QUOTE/;
   };
   Content.QuoteBlock = QuoteBlock;
 
-  QuoteBlock.prototype.accept = function(line){return !this.ended;};
-  QuoteBlock.prototype.consume = function(line) {
-    if(/#\+BEGIN_QUOTE/.exec(line)){
-      // Ignore the first line... 
-    }
-    else if(/#\+END_QUOTE/.exec(line)){
-      this.ended = true;
-    }
-    else {
-      this.lines.push(line);
-    }
-    return this;
-  };
+  QuoteBlock.prototype = Object.create(BeginEndBlock.prototype);
 
   ////////////////////////////////////////////////////////////////////////////////
   //  CENTERBLOCK
   var CenterBlock = function(parent){
-    ContentBlock.call(this, parent);
-    this.ended = false;
+    BeginEndBlock.call(this, parent);
+    this.beginre = /#\+BEGIN_CENTER/;
+    this.endre = /#\+END_CENTER/;
   };
   Content.CenterBlock = CenterBlock;
 
-  CenterBlock.prototype.accept = function(line){return !this.ended;};
-  CenterBlock.prototype.consume = function(line) {
-    if(/#\+BEGIN_CENTER/.exec(line)){
-      // Ignore the first line... 
-    }
-    else if(/#\+END_CENTER/.exec(line)){
-      this.ended = true;
-    }
-    else {
-      this.lines.push(line);
-    }
-    return this;
+  CenterBlock.prototype = Object.create(BeginEndBlock.prototype);
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  EXAMPLEBLOCK
+  var ExampleBlock = function(parent){
+    BeginEndBlock.call(this, parent);
+    this.beginre = /#\+BEGIN_EXAMPLE/;
+    this.endre = /#\+END_EXAMPLE/;
   };
+  Content.ExampleBlock = ExampleBlock;
+
+  ExampleBlock.prototype = Object.create(BeginEndBlock.prototype);
 
   ////////////////////////////////////////////////////////////////////////////////
   //  ULISTBLOCK

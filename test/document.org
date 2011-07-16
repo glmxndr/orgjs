@@ -19,11 +19,17 @@ Some header content.
   Centered text?
   #+END_CENTER
 
+  #+BEGIN_EXAMPLE
+  metaDeclaration: /\s*#\+[A-Z0-9_]+:$/
+  & < > ' "
+  deadline: /DEADLINE: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>$/
+  #+END_EXAMPLE
+
 ** Some headline
 
   Just a simple paragraph with some content
 
-  @x + 1 > y²@
+  This is an equation: @x + 1 > y²@
 
   #+BEGIN_QUOTE
  which changes
