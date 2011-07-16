@@ -6,6 +6,7 @@ Org.Utils = (function(Org){
     trim: function(str){
       return str && str.length ? str.replace(/^\s*|\s*$/g, "") : "";
     },
+
     repeat: function(str, times){
       var result = "";
       for(var i=0; i<times; i++){
@@ -13,6 +14,7 @@ Org.Utils = (function(Org){
       }
       return result;
     },
+    
     each: function(arr, fn){
       var name, length = arr.length, i = 0, isObj = length === undefined;
       if ( isObj ) {
@@ -26,6 +28,7 @@ Org.Utils = (function(Org){
           value = arr[++i] ) {}
       }
     },
+    
     map: function(arr, fn){
       var result = [];
       this.each(arr, function(val, idx){
@@ -34,17 +37,21 @@ Org.Utils = (function(Org){
       });
       return result;
     },
+    
     log: function(o){
       if(console && console.log){console.log(o);}
     },
+    
     firstLine: function(str){
       var match = RGX.firstLine.exec(str);
       return match ? match[0] : "";
     },
+    
     lines: function(str){
       if (!str && str !== ""){return [];}
       return str.split(RGX.newline);
     },
+    
     indentLevel: function(str){
       return /^\s*/.exec(str)[0].length;
     }

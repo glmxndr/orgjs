@@ -35,7 +35,7 @@ Org.Outline = (function(Org, undefined){
       if (!this.parent){
         return this.docid 
                 ? this.docid
-                : "doc#" + (Node.doc_count++) + "/";
+                : "doc#" + (Node.tocnum++) + "/";
       }
       return this.parent.id() + "" + this.siblings().indexOf(this) + "/";
     }
@@ -46,7 +46,7 @@ Org.Outline = (function(Org, undefined){
    * Helps to generate an ID for the nodes 
    * when no docid is given in the root node.
    */
-  Node.doc_count = 0;
+  Node.tocnum = 0;
   
   /////////////////////////////////////////////////////////////////////////////
   // PARSING

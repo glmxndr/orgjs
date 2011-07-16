@@ -9,11 +9,19 @@ Org.Content = (function(Org){
     "OLITEM":       3,
     "DLITEM":       4,
     "VERSE":        5,
-    "QUOTE":        6
+    "QUOTE":        6,
+    "CENTER":       7
   };
   Content.LineType = LineType;
 
   function getLineType(line){
+    // First test on a line beginning with a letter,
+    // the most common case, to avoid making all the
+    // other tests before returning the default.
+    if(/^\s*[a-z]/i.exec(line)){
+      return LineType.PARA;
+    }
+    // Then test all the other cases
     if(/^(?:\s*[+-] |\s+\* )/.exec(line)){
       if(/ :: /.exec(line)){
         return LineType.DLITEM;
@@ -31,6 +39,9 @@ Org.Content = (function(Org){
     }
     if(/#\+BEGIN_QUOTE/.exec(line)){
       return LineType.QUOTE;
+    }
+    if(/#\+BEGIN_CENTER/.exec(line)){
+      return LineType.CENTER;
     }
     return LineType.PARA;
   }
@@ -54,10 +65,13 @@ Org.Content = (function(Org){
     }
     if(type === LineType.VERSE){
       return new VerseBlock(parent);
-    }  
+    }
     if(type === LineType.QUOTE){
       return new QuoteBlock(parent);
-    }  
+    }
+    if(type === LineType.CENTER){
+      return new CenterBlock(parent);
+    }
     else return new ParaBlock(parent);
   }
 
@@ -158,6 +172,28 @@ Org.Content = (function(Org){
       // Ignore the first line... 
     }
     else if(/#\+END_QUOTE/.exec(line)){
+      this.ended = true;
+    }
+    else {
+      this.lines.push(line);
+    }
+    return this;
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  CENTERBLOCK
+  var CenterBlock = function(parent){
+    ContentBlock.call(this, parent);
+    this.ended = false;
+  };
+  Content.CenterBlock = CenterBlock;
+
+  CenterBlock.prototype.accept = function(line){return !this.ended;};
+  CenterBlock.prototype.consume = function(line) {
+    if(/#\+BEGIN_CENTER/.exec(line)){
+      // Ignore the first line... 
+    }
+    else if(/#\+END_CENTER/.exec(line)){
       this.ended = true;
     }
     else {

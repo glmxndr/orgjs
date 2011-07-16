@@ -14,6 +14,11 @@
 Some header content.
 
 * Head again
+
+  #+BEGIN_CENTER
+  Centered text?
+  #+END_CENTER
+
 ** Some headline
 
   Just a simple paragraph with some content

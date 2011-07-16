@@ -114,6 +114,14 @@
     return out;
   };
 
+  OC.CenterBlock.prototype.render = function(){
+    var content = this.lines.join("\n") + "\n";
+    var markup = renderMarkup(content);
+    var out = "<p class='org-center' style='text-align:center'>\n" + 
+              markup + "</p>\n";
+    return out;
+  };
+
   OO.Node.prototype.render = function(){
     var headline = this.level === 0 ? this.meta["TITLE"] : this.heading.getTitle();
     
