@@ -1,130 +1,12 @@
-var OrgJS = (function($, undefined){
+Org.Outline = (function($, Org, undefined){
 
   //////////////////////////////////////////////////////////////////////////////
   // REGEXP BANK
-  var RGXP = {
-    /**
-     * A new line declaration, either windows or unix-like
-     */
-    newline: /\r?\n/,
-    /**
-     * Captures the first line of the string
-     */
-    firstLine: /^(.*)/,
-    /**
-     * Selects anything in the given string until the next heading, or the end.
-     * Example : 
-     * ----
-     * some content
-     * 
-     * * next heading
-     * ----
-     * would match "some content\n\n*"
-     * 
-     * Captures everything except the star of the following heading.
-     */
-    beforeNextHeading: /^([\s\S]*?)(?:\n\*|$)/,
-    /**
-     * Parses a heading line, capturing :
-     * - the stars
-     * - the TODO status
-     * - the priority
-     * - the heading title
-     * - the tags, if any, separated by colons
-     */
-    headingLine: /(\**)\s*(?:([A-Z]{4})\s+)?(?:\[#([A-Z])\]\s+)?(.*?)\s*(?:\s+:([A-Za-z0-9:]+):\s*)?(?:\n|$)/,
-    /**
-     * How a meta information begins ( "#+META_KEY:" )
-     */
-    metaDeclaration: /\s*#\+[A-Z0-9_]+:/,
-    /**
-     * A meta information line, capturing:
-     * - the meta key,
-     * - the meta value
-     * 
-     * Example:
-     * ----
-     *    #+TITLE: The title
-     * ----
-     * captures "TITLE", "The title" 
-     */
-    metaLine: /(?:^|\s*)#\+([A-Z0-9_]+):\s*(.*)(\n|$)/m,
-    /**
-     * The property section. Captures the content of the section.
-     */
-    propertySection: /:PROPERTIES:\s*\n([\s\S]+?)\n\s*:END:/,
-    /**
-     * Property line. Captures the KEY and the value.
-     */
-    propertyLine: /^\s*:([A-Z0-9_-]+):\s*(\S[\s\S]*)\s*$/im,
-    /**
-     * Clock section when several clock lines are defined.
-     */
-    clockSection: /:CLOCK:\s*\n([\s\S]+?)\n?\s*:END:/,
-    /**
-     * Matches a clock line, either started only, or finished.
-     * Captures:
-     *  - start date (yyyy-MM-dd)
-     *  - start time (hh:mm)
-     *  - end date (yyyy-MM-dd)
-     *  - end time (hh:mm)
-     *  - duration (hh:mm)
-     */
-    clockLine: /CLOCK: \[(\d{4}-\d\d-\d\d) [A-Za-z]{3}\.? (\d\d:\d\d)\](?:--\[(\d{4}-\d\d-\d\d) [A-Za-z]{3}\.? (\d\d:\d\d)\] =>\s*(-?\d+:\d\d))?/g,
-
-    scheduled: /SCHEDULED: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>/,
-    deadline: /DEADLINE: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>/
-  };
+  var RGX = Org.Regexps;
 
   //////////////////////////////////////////////////////////////////////////////
   // UTILS
-  var Utils = {
-    trim: function(str){
-      return str && str.length ? str.replace(/^\s*|\s*$/g, "") : "";
-    },
-    repeat: function(str, times){
-      var result = "";
-      for(var i=0; i<times; i++){
-        result += str;
-      }
-      return result;
-    },
-    each: function(arr, fn){
-      var name, length = arr.length, i = 0, isObj = length === undefined;
-      if ( isObj ) {
-        for ( name in arr ) {
-          if ( fn.call( arr[ name ], arr[ name ], name ) === false ) {break;}
-        }
-      } else {
-        if(!length){return;}
-        for ( var value = arr[0];
-          i < length && fn.call( value, value, i ) !== false; 
-          value = arr[++i] ) {}
-      }
-    },
-    map: function(arr, fn){
-      var result = [];
-      this.each(arr, function(val, idx){
-        var mapped = fn.call(val, val, idx);
-        if (mapped != null){result.push(mapped);}
-      });
-      return result;
-    },
-    log: function(o){
-      if(console && console.log){console.log(o);}
-    },
-    firstLine: function(str){
-      var match = RGXP.firstLine.exec(str);
-      return match ? match[0] : "";
-    },
-    lines: function(str){
-      if (!str && str !== ""){return [];}
-      return str.split(RGXP.newline);
-    },
-    indentLevel: function(str){
-      return /^\s*/.exec(str)[0].length;
-    }
-  };
+  var Utils = Org.Utils;
   var _U = Utils;
 
   /////////////////////////////////////////////////////////////////////////////
@@ -219,8 +101,8 @@ var OrgJS = (function($, undefined){
       content = content.replace(/\@([^\s][^@]*[^\s])\@/g, "<code>$1</code>");
       content = content.replace(/\*([^\s][^*]*[^\s])\*/g, "<strong>$1</strong>");
       content = content.replace(/#\+BEGIN_SRC(?:\s+([^'"\s]+))?\s*\n([\s\S]*?)\n?\s*#\+END_SRC/g, "<code class='$1'><pre>$2</pre></code>");
-      content = content.replace(/#\+BEGIN_QUOTE\s*\n([\s\S]*?)\n?\s*#\+END_QUOTE/g, "<blockquote>$1</blockquote>");
-      content = content.replace(/\+([^\s][^+]*[^\s])\+/g, "<del>$1</del>");
+      //content = content.replace(/#\+BEGIN_QUOTE\s*\n([\s\S]*?)\n?\s*#\+END_QUOTE/g, "<blockquote>$1</blockquote>");
+      //content = content.replace(/\+([^\s][^+]*[^\s])\+/g, "<del>$1</del>");
       return "<p>" + content + "</p>";
     }
   };
@@ -246,7 +128,7 @@ var OrgJS = (function($, undefined){
    */
   var HeadingLine = function(txt){
     this.repr = _U.trim(txt);
-    this.match = RGXP.headingLine.exec(this.repr) || [];
+    this.match = RGX.headingLine.exec(this.repr) || [];
   };
   HeadingLine.prototype = {
     getStars: function(){
@@ -289,7 +171,7 @@ var OrgJS = (function($, undefined){
     getMeta: function(){
       if(this.meta){return this.meta;}
       var content = this.content;
-      content = content.replace(RGXP.headingLine, "\n");
+      content = content.replace(RGX.headingLine, "\n");
       var meta = this.parseHeaders(content);
       this.meta = meta;
       return this.meta;
@@ -300,15 +182,15 @@ var OrgJS = (function($, undefined){
     getProperties: function(){
       if(this.props){return this.props;}
       var content = this.content;
-      content = content.replace(RGXP.headingLine, "\n");
+      content = content.replace(RGX.headingLine, "\n");
       var subHeadingStars = "\n" + this.getHeading().getStars() + "*";
       content = content.split(subHeadingStars)[0];
       var props = this.props = {};
-      var propMatch = RGXP.propertySection.exec(content);
+      var propMatch = RGX.propertySection.exec(content);
       if(!propMatch){return this.props;}
       var propLines = _U.lines(propMatch[1]);
       _U.each(propLines, function(line, idx){
-        var match = RGXP.propertyLine.exec(line);
+        var match = RGX.propertyLine.exec(line);
         if(!match){return 1;} // continue
         // Properties may be defined on several lines ; concatenate the values if needed
         props[match[1]] = props[match[1]] ? props[match[1]] + " " + match[2] : match[2];
@@ -322,7 +204,7 @@ var OrgJS = (function($, undefined){
     getItem: function(){
       if(this.item){return this.item;}
       var content = this.content;
-      content = content.replace(RGXP.headingLine, "\n");
+      content = content.replace(RGX.headingLine, "\n");
       var subHeadingStars = "\n" + this.getHeading().getStars() + "*";
       //_U.log(subHeadingStars);
       content = content.split(subHeadingStars)[0];
@@ -336,11 +218,11 @@ var OrgJS = (function($, undefined){
       if(this.text){return this.text;}
       var content = this.getItem();
       content = this.removeHeaders(content);
-      content = content.replace(RGXP.propertySection, "");
-      content = content.replace(RGXP.scheduled, "");
-      content = content.replace(RGXP.deadline, "");
-      content = content.replace(RGXP.clockSection, "");
-      content = content.replace(RGXP.clockLine, "");
+      content = content.replace(RGX.propertySection, "");
+      content = content.replace(RGX.scheduled, "");
+      content = content.replace(RGX.deadline, "");
+      content = content.replace(RGX.clockSection, "");
+      content = content.replace(RGX.clockLine, "");
       this.text = content;
       return content;
     },
@@ -351,11 +233,11 @@ var OrgJS = (function($, undefined){
      */
     parseHeaders: function(txt){
       var result = {};
-      var lines = txt.split(RGXP.newline);
+      var lines = txt.split(RGX.newline);
       _U.each(lines, function(line, idx){
         if(_U.trim(line).length == 0){return true;}
-        if(!line.match(RGXP.metaDeclaration)){return false;} // we went ahead the headers : break the loop
-        var match = RGXP.metaLine.exec(line);
+        if(!line.match(RGX.metaDeclaration)){return false;} // we went ahead the headers : break the loop
+        var match = RGX.metaLine.exec(line);
         if (match){
           result[match[1]] = match[2];
         }
@@ -369,11 +251,11 @@ var OrgJS = (function($, undefined){
      */
     removeHeaders: function(txt){
       var result = "";
-      var lines = txt.split(RGXP.newline);
+      var lines = txt.split(RGX.newline);
       var header = true;
       _U.each(lines, function(line, idx){
         if(header && _U.trim(line).length == 0){return;}
-        if(header && line.match(RGXP.metaDeclaration)){return;}
+        if(header && line.match(RGX.metaDeclaration)){return;}
         header = false;
         result += "\n" + line;
       });
@@ -437,14 +319,12 @@ var OrgJS = (function($, undefined){
 
   return {
     parse:           parse_org,
-    Utils:           _U,
     Node:            OrgNode,
     Heading:         HeadingLine,
     Parser:          Parser,
     NodeParser:      NodeParser, 
-    ContentRenderer: ContentRenderer,
-    RegExps:         RGXP
+    ContentRenderer: ContentRenderer
   };
 
-}(jQuery));
+}(jQuery, Org));
 

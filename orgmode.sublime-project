@@ -3,10 +3,174 @@
 	{
 		"selected_items":
 		[
+			[
+				"pro",
+				"prototype"
+			],
+			[
+				"DLi",
+				"DListItemBlock"
+			],
+			[
+				"ListI",
+				"ListItemBlock"
+			],
+			[
+				"List",
+				"ListItemBlock"
+			],
+			[
+				"ren",
+				"renderChildren"
+			],
+			[
+				"getLi",
+				"getLineIndent"
+			],
+			[
+				"LineT",
+				"LineType"
+			],
+			[
+				"Ulis",
+				"UlistBlock"
+			],
+			[
+				"UlI",
+				"ULISTBLOCK"
+			],
+			[
+				"ULI",
+				"ULITEM"
+			],
+			[
+				"P",
+				"PARA"
+			],
+			[
+				"B",
+				"BLANK"
+			],
+			[
+				"Li",
+				"LineType"
+			],
+			[
+				"Pa",
+				"ParaBlock"
+			],
+			[
+				"Uli",
+				"UlistBlock"
+			],
+			[
+				"Roo",
+				"RootBlock"
+			],
+			[
+				"Par",
+				"ParaBlock"
+			],
+			[
+				"fun",
+				"fun: Function"
+			],
+			[
+				"T",
+				"TODO"
+			],
+			[
+				"fu",
+				"fun: Function"
+			],
+			[
+				"con",
+				"consume"
+			],
+			[
+				"prot",
+				"prototype"
+			],
+			[
+				"getT",
+				"getBlockType"
+			],
+			[
+				"Cont",
+				"ContainerNode"
+			],
+			[
+				"li",
+				"lines"
+			],
+			[
+				"PA",
+				"PARA"
+			],
+			[
+				"BlockType",
+				"BlockTypes"
+			],
+			[
+				"Bloc",
+				"BlockNodeProto"
+			],
+			[
+				"Blo",
+				"BlockTypes"
+			]
 		]
 	},
 	"buffers":
 	[
+		{
+			"file": "/home/subtenante/Dropbox/code/orgjs/script/org.regexps.js",
+			"settings":
+			{
+				"buffer_size": 0,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/subtenante/Dropbox/code/orgjs/script/org.main.js",
+			"settings":
+			{
+				"buffer_size": 57,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/subtenante/Dropbox/code/orgjs/script/org.outline.js",
+			"settings":
+			{
+				"buffer_size": 13745,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/subtenante/Dropbox/code/orgjs/script/org.content.js",
+			"settings":
+			{
+				"buffer_size": 7831,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/subtenante/Dropbox/code/orgjs/script/org.render.js",
+			"settings":
+			{
+				"buffer_size": 1673,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/subtenante/Dropbox/code/orgjs/test/document.org",
+			"settings":
+			{
+				"buffer_size": 4447,
+				"line_ending": "Windows"
+			}
+		}
 	],
 	"build_system": "",
 	"command_palette":
@@ -27,12 +191,23 @@
 	},
 	"file_history":
 	[
+		"/home/subtenante/.config/sublime-text-2/Packages/User/Base File.sublime-settings",
+		"/home/subtenante/.config/sublime-text-2/Packages/User/Global.sublime-settings",
+		"/home/subtenante/.config/sublime-text-2/Packages/Default/Global.sublime-settings",
+		"/home/subtenante/Dropbox/code/orgjs/test/document.org",
+		"/home/subtenante/Dropbox/code/orgjs/test.html",
 		"/home/subtenante/Dropbox/code/orgjs/script/orgmode.js",
+		"/home/subtenante/.config/sublime-text-2/Packages/JavaScript/JavaScript.tmLanguage",
+		"/home/subtenante/.config/sublime-text-2/Packages/JavaScript/JavaScript.sublime-settings",
+		"/home/subtenante/.config/sublime-text-2/Packages/JavaScript/for-()-{}.sublime-snippet",
+		"/home/subtenante/.config/sublime-text-2/Packages/JavaScript/JavaScript Indent.tmPreferences",
+		"/home/subtenante/Dropbox/code/orgjs/script/org.js",
+		"/home/subtenante/Dropbox/code/orgjs/test/org-test.js",
+		"/home/subtenante/Dropbox/code/simple_parser/parser.js",
 		"/home/subtenante/Dropbox/org/messages/stephanie_20110710.org",
 		"/usr/local/share/sublime/Pristine Packages/JavaScript.sublime-package",
 		"/home/subtenante/code/donut/donut.c",
-		"/home/subtenante/Dropbox/stoa/rr/45_AskZeno_WearyAcademic.md",
-		"/home/subtenante/.config/sublime-text-2/Packages/Default/Global.sublime-settings"
+		"/home/subtenante/Dropbox/stoa/rr/45_AskZeno_WearyAcademic.md"
 	],
 	"find_in_files":
 	{
@@ -45,9 +220,18 @@
 	},
 	"find_state":
 	{
-		"case_sensitive": false,
+		"case_sensitive": true,
 		"find_history":
 		[
+			"#",
+			"consol",
+			"getNewBlock",
+			"Indent",
+			"	",
+			"ListItemBlock",
+			"log(",
+			"console",
+			"getNewBlock"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -55,6 +239,8 @@
 		"regex": false,
 		"replace_history":
 		[
+			"  ",
+			"UlistItemBlock"
 		],
 		"reverse": false,
 		"show_context": true,
@@ -66,14 +252,186 @@
 	{
 		"mount_points":
 		[
-			"/home/subtenante/Dropbox/code/orgjs"
+			"/home/subtenante/Dropbox/code/orgjs",
+			"/home/subtenante/Dropbox/code/simple_parser"
 		]
 	},
 	"groups":
 	[
 		{
+			"selected": 1,
 			"sheets":
 			[
+				{
+					"buffer": 0,
+					"file": "/home/subtenante/Dropbox/code/orgjs/script/org.regexps.js",
+					"settings":
+					{
+						"buffer_size": 0,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
+						},
+						"translation.x": 0,
+						"translation.y": 0,
+						"zoom_level": 1
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "/home/subtenante/Dropbox/code/orgjs/script/org.main.js",
+					"settings":
+					{
+						"buffer_size": 57,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								37,
+								37
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0,
+						"translation.y": 0,
+						"zoom_level": 1
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "/home/subtenante/Dropbox/code/orgjs/script/org.outline.js",
+					"settings":
+					{
+						"buffer_size": 13745,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								13745,
+								13745
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0,
+						"translation.y": 6772,
+						"zoom_level": 1
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "/home/subtenante/Dropbox/code/orgjs/script/org.content.js",
+					"settings":
+					{
+						"buffer_size": 7831,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								166,
+								166
+							]
+						],
+						"settings":
+						{
+							"rulers":
+							[
+								80
+							],
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0,
+						"translation.y": 0,
+						"zoom_level": 1
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "/home/subtenante/Dropbox/code/orgjs/script/org.render.js",
+					"settings":
+					{
+						"buffer_size": 1673,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1476,
+								1476
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0,
+						"translation.y": 816,
+						"zoom_level": 1
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "/home/subtenante/Dropbox/code/orgjs/test/document.org",
+					"settings":
+					{
+						"buffer_size": 4447,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								565,
+								565
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0,
+						"translation.y": 288,
+						"zoom_level": 1
+					},
+					"type": "text"
+				}
 			]
 		}
 	],
@@ -119,7 +477,7 @@
 	},
 	"show_minimap": true,
 	"show_tabs": true,
-	"side_bar_visible": false,
-	"side_bar_width": 150,
+	"side_bar_visible": true,
+	"side_bar_width": 199,
 	"status_bar_visible": true
 }

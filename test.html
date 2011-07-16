@@ -4,6 +4,9 @@
     <title>ORG Js demo</title>
     <link href="style/org.css" media="screen, print" rel="stylesheet" type="text/css" />
     <script type='text/javascript' src='http://code.jquery.com/jquery-1.6.1.js'></script>
+    <script type='text/javascript' src='script/org.main.js'></script>
+    <script type='text/javascript' src='script/org.regexps.js'></script>
+    <script type='text/javascript' src='script/org.utils.js'></script>
     <script type='text/javascript' src='script/org.outline.js'></script>
     <script type='text/javascript' src='script/org.content.js'></script>
     <script type='text/javascript' src='script/org.render.js'></script>
@@ -17,8 +20,8 @@
     setTimeout(function(){
       var section = $("section[id='doc#2/0/0/'] p");
       var txt = section.text();
-      var lines = splitLines(txt);
-      window.root = parseContent(lines);
+      var lines = Org.Utils.lines(txt);
+      window.root = Org.Content.parse(lines);
       var newContent = root.render();
       section.parent().html(newContent);
       console.log(root);

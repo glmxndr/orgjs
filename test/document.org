@@ -18,11 +18,11 @@ Some header content.
 
   Just a simple paragraph with some content
 
-  #+BEGIN_VERSE
+  #+BEGIN_QUOTE
  which changes
    indentation
 without notice!
-  #+END_VERSE
+  #+END_QUOTE
 
   + Here starts a list with an item
     continuing here
