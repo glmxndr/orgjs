@@ -13,8 +13,6 @@
 
 Some header content.
 
-* Head again
-
   #+BEGIN_CENTER
   Centered text?
   #+END_CENTER
@@ -24,6 +22,8 @@ Some header content.
   & < > ' "
   deadline: /DEADLINE: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>$/
   #+END_EXAMPLE
+
+* Head again
 
 ** Some headline
 

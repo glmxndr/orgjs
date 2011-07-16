@@ -1,6 +1,8 @@
 // Load the document and parse it
 $(function(){
   $.get("test/document.org", function(data){
-    $('#doc').html(Org.Outline.parse(data).render());
+    var root = Org.Outline.parse(data);
+    $('#doc').html(root.render());
+    Org.Utils.log(root);
   });
 });

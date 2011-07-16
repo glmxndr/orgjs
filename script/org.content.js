@@ -1,19 +1,36 @@
 Org.Content = (function(Org){
 
+  var _U  = Org.Utils;
+  var RGX = Org.Regexps;
+
+  // The object that will be returned, and filled throughout this function.
   var Content = {};
 
-  var LineType = {
-    "BLANK":        0,
-    "NORMAL":       1,
-    "ULITEM":       2,
-    "OLITEM":       3,
-    "DLITEM":       4,
-    "VERSE":        5,
-    "QUOTE":        6,
-    "CENTER":       7,
-    "EXAMPLE":      8
-  };
-  Content.LineType = LineType;
+  var LineDef = (function(){
+    var l = -1;
+    return {
+      "BLANK":    {id: ++l},
+      "PARA":     {id: ++l},
+      "ULITEM":   {id: ++l},
+      "OLITEM":   {id: ++l},
+      "DLITEM":   {id: ++l},
+      "VERSE":    {id: ++l, beginEnd:1},
+      "QUOTE":    {id: ++l, beginEnd:1},
+      "CENTER":   {id: ++l, beginEnd:1},
+      "EXAMPLE":  {id: ++l, beginEnd:1}
+    };
+  }());
+
+  // Defining some other arrangements of the line definitions :
+  //  + Simple index : type name => number
+  var LineType = {};
+  _U.each(LineDef, function(v, k){LineType[k] = v.id;});
+  //  + Reversed type index : number => type name
+  var LineTypeArr = [];
+  _U.each(LineDef, function(v, k){LineTypeArr[v.id] = k;});
+  //  + List of names of the blocks in #+BEGIN_... / #+END_... form
+  var BeginEndBlocks = {};
+  _U.each(LineDef, function(v, k){if(v.beginEnd) BeginEndBlocks[k] = 1;});
 
   function getLineType(line){
     // First test on a line beginning with a letter,
@@ -23,7 +40,7 @@ Org.Content = (function(Org){
       return LineType.PARA;
     }
     // Then test all the other cases
-    if(/^(?:\s*[+-] |\s+\* )/.exec(line)){
+    if(/^\s+[+*-] /.exec(line)){
       if(/ :: /.exec(line)){
         return LineType.DLITEM;
       }
@@ -35,17 +52,10 @@ Org.Content = (function(Org){
     if(/^\s*$/.exec(line)){
       return LineType.BLANK;
     }
-    if(/#\+BEGIN_VERSE/.exec(line)){
-      return LineType.VERSE;
-    }
-    if(/#\+BEGIN_QUOTE/.exec(line)){
-      return LineType.QUOTE;
-    }
-    if(/#\+BEGIN_CENTER/.exec(line)){
-      return LineType.CENTER;
-    }
-    if(/#\+BEGIN_EXAMPLE/.exec(line)){
-      return LineType.EXAMPLE;
+    for(k in BeginEndBlocks){
+      if(RGX.beginBlock(k).exec(line)){
+        return LineType[k];
+      }
     }
     return LineType.PARA;
   }
@@ -57,29 +67,9 @@ Org.Content = (function(Org){
   }
 
   function getNewBlock(line, parent){
-    var type = getLineType(line);
-    if(type === LineType.ULITEM){
-      return new UlistBlock(parent, line);
-    }
-    if(type === LineType.OLITEM){
-      return new OlistBlock(parent, line);
-    }
-    if(type === LineType.DLITEM){
-      return new DlistBlock(parent, line);
-    }
-    if(type === LineType.VERSE){
-      return new VerseBlock(parent);
-    }
-    if(type === LineType.QUOTE){
-      return new QuoteBlock(parent);
-    }
-    if(type === LineType.CENTER){
-      return new CenterBlock(parent);
-    }
-    if(type === LineType.EXAMPLE){
-      return new ExampleBlock(parent);
-    }
-    else return new ParaBlock(parent);
+    var type = getLineType(line, line);
+    var constr = LineDef[LineTypeArr[type]].constr || LineDef.PARA.constr;
+    return new constr(parent, line);
   }
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -118,7 +108,7 @@ Org.Content = (function(Org){
     ContentBlock.call(this, parent);
     this.indent = parent.indent || 0;
   };
-  Content.ParaBlock = ParaBlock;
+  LineDef.PARA.constr = Content.ParaBlock = ParaBlock;
 
   ParaBlock.prototype.accept = function(line){
     var indent;
@@ -145,9 +135,12 @@ Org.Content = (function(Org){
 
   ////////////////////////////////////////////////////////////////////////////////
   //  BEGINENDBLOCK
-  var BeginEndBlock = function(parent){
+  var BeginEndBlock = function(parent, line, type){
     ContentBlock.call(this, parent);
+    this.indent = getLineIndent(line);
     this.ended = false;
+    this.beginre = RGX.beginBlock(type);
+    this.endre   = RGX.endBlock(type);
   };
 
   BeginEndBlock.prototype.accept      = function(line){return !this.ended;};
@@ -161,46 +154,34 @@ Org.Content = (function(Org){
 
   ////////////////////////////////////////////////////////////////////////////////
   //  VERSEBLOCK
-  var VerseBlock = function(parent){
-    BeginEndBlock.call(this, parent);
-    this.beginre = /#\+BEGIN_VERSE/;
-    this.endre = /#\+END_VERSE/;
+  var VerseBlock = function(parent, line){
+    BeginEndBlock.call(this, parent, line, "VERSE");
   };
-  Content.VerseBlock = VerseBlock;
-
+  LineDef.VERSE.constr = Content.VerseBlock = VerseBlock;
   VerseBlock.prototype = Object.create(BeginEndBlock.prototype);
 
   ////////////////////////////////////////////////////////////////////////////////
   //  QUOTEBLOCK
-  var QuoteBlock = function(parent){
-    BeginEndBlock.call(this, parent);
-    this.beginre = /#\+BEGIN_QUOTE/;
-    this.endre = /#\+END_QUOTE/;
+  var QuoteBlock = function(parent, line){
+    BeginEndBlock.call(this, parent, line, "QUOTE");
   };
-  Content.QuoteBlock = QuoteBlock;
-
+  LineDef.QUOTE.constr = Content.QuoteBlock = QuoteBlock;
   QuoteBlock.prototype = Object.create(BeginEndBlock.prototype);
 
   ////////////////////////////////////////////////////////////////////////////////
   //  CENTERBLOCK
-  var CenterBlock = function(parent){
-    BeginEndBlock.call(this, parent);
-    this.beginre = /#\+BEGIN_CENTER/;
-    this.endre = /#\+END_CENTER/;
+  var CenterBlock = function(parent, line){
+    BeginEndBlock.call(this, parent, line, "CENTER");
   };
-  Content.CenterBlock = CenterBlock;
-
+  LineDef.CENTER.constr = Content.CenterBlock = CenterBlock;
   CenterBlock.prototype = Object.create(BeginEndBlock.prototype);
 
   ////////////////////////////////////////////////////////////////////////////////
   //  EXAMPLEBLOCK
-  var ExampleBlock = function(parent){
-    BeginEndBlock.call(this, parent);
-    this.beginre = /#\+BEGIN_EXAMPLE/;
-    this.endre = /#\+END_EXAMPLE/;
+  var ExampleBlock = function(parent, line){
+    BeginEndBlock.call(this, parent, line, "EXAMPLE");
   };
-  Content.ExampleBlock = ExampleBlock;
-
+  LineDef.EXAMPLE.constr = Content.ExampleBlock = ExampleBlock;
   ExampleBlock.prototype = Object.create(BeginEndBlock.prototype);
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -209,7 +190,7 @@ Org.Content = (function(Org){
     ContainerBlock.call(this, parent);
     this.indent = getLineIndent(line);
   };
-  Content.UlistBlock = UlistBlock;
+  LineDef.ULITEM.constr = Content.UlistBlock = UlistBlock;
 
   UlistBlock.prototype.accept  = function(line){
     return getLineType(line) === LineType.ULITEM &&
@@ -230,7 +211,7 @@ Org.Content = (function(Org){
     var match = /^\s*\d+[.)]\s+\[@(\d+)\]/.exec(line);
     this.start = match ? +(match[1]) : 1;
   };
-  Content.OlistBlock = OlistBlock;
+  LineDef.OLITEM.constr = Content.OlistBlock = OlistBlock;
 
   OlistBlock.prototype.accept  = function(line){
     return getLineType(line) === LineType.OLITEM &&
@@ -250,7 +231,7 @@ Org.Content = (function(Org){
     ContainerBlock.call(this, parent);
     this.indent = getLineIndent(line);
   };
-  Content.DlistBlock = DlistBlock;
+  LineDef.DLITEM.constr = Content.DlistBlock = DlistBlock;
 
   DlistBlock.prototype.accept  = function(line){
     return getLineType(line) === LineType.DLITEM &&
@@ -327,7 +308,7 @@ Org.Content = (function(Org){
 
   ////////////////////////////////////////////////////////////////////////////////
   //       PARSECONTENT
-  Content.parse = function parseContent(lines){
+  Content.parse = function(lines){
     var root = new RootBlock();
     var current = root;
     var line = lines.shift();

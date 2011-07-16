@@ -154,7 +154,8 @@
 
     var contentTxt = this.parser.getContent();
     var lines = _U.lines(contentTxt);
-    var contentHtml = Org.Content.parse(lines).render();
+    this.contentNode = Org.Content.parse(lines);
+    var contentHtml = this.contentNode.render();
     html = html.replace(/%CONTENT%/, contentHtml);
 
     var childrenHtml = renderChildren.call(this);

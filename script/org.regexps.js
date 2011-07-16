@@ -81,8 +81,19 @@ Org.Regexps = (function(Org){
     clockLine: /CLOCK: \[(\d{4}-\d\d-\d\d) [A-Za-z]{3}\.? (\d\d:\d\d)\](?:--\[(\d{4}-\d\d-\d\d) [A-Za-z]{3}\.? (\d\d:\d\d)\] =>\s*(-?\d+:\d\d))?/g,
 
     scheduled: /SCHEDULED: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>/,
-    deadline: /DEADLINE: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>/
 
+    deadline: /DEADLINE: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>/,
+
+    _bBlk: {},
+    beginBlock: function(type){
+      return this._bBlk[k] || 
+        (this._bBlk[k] = new RegExp("^\\s*#\\+BEGIN_" + type + "|\\s\n]"));
+    },
+    _eBlk: {},
+    endBlock: function(type){
+      return this._eBlk[k] || 
+        (this._eBlk[k] = new RegExp("^\\s*#\\+END_" + type + "|\\s\n]"));
+    }
 
   };
 
