@@ -1,19 +1,14 @@
 Org.Outline = (function(Org, undefined){
 
-  //////////////////////////////////////////////////////////////////////////////
-  // REGEXP BANK
   var RGX = Org.Regexps;
-
-  //////////////////////////////////////////////////////////////////////////////
-  // UTILS
   var _U = Org.Utils;
 
   /////////////////////////////////////////////////////////////////////////////
-  // ORG NODE : corresponds to a line starting with stars "*** ..."
+  // NODE : corresponds to a line starting with stars "*** ..."
   
-  var OrgNode = function(whole, params){
+  var Node = function(whole, params){
     params = params || {};
-    this.doc_id = params.doc_id;
+    this.docid = params.docid;
     this.parent = params.parent;
     this.children = params.children || [];
     
@@ -28,19 +23,19 @@ Org.Outline = (function(Org, undefined){
     
   };
 
-  OrgNode.prototype = {
+  Node.prototype = {
     siblings: function(){
-      if(this.parent){
-        return this.parent.children;
-      }
-      else return [];
+      return this.parent 
+              ? this.parent.children
+              : [];
     },
+
     // Computes the ID of this node
     id: function(){
       if (!this.parent){
-        return this.doc_id 
-                ? this.doc_id
-                : "doc#" + (OrgNode.doc_count++) + "/";
+        return this.docid 
+                ? this.docid
+                : "doc#" + (Node.doc_count++) + "/";
       }
       return this.parent.id() + "" + this.siblings().indexOf(this) + "/";
     }
@@ -49,21 +44,22 @@ Org.Outline = (function(Org, undefined){
   /**
    * Counting the documents generated in this page.
    * Helps to generate an ID for the nodes 
-   * when no doc_id is given in the root node.
+   * when no docid is given in the root node.
    */
-  OrgNode.doc_count = 0;
+  Node.doc_count = 0;
   
   /////////////////////////////////////////////////////////////////////////////
   // PARSING
   
   /**
-   * HeadingLine embeds the parsing of a heading line.
+   * Headline embeds the parsing of a heading line.
    */
-  var HeadingLine = function(txt){
+  var Headline = function(txt){
     this.repr = _U.trim(txt);
     this.match = RGX.headingLine.exec(this.repr) || [];
   };
-  HeadingLine.prototype = {
+
+  Headline.prototype = {
     getStars: function(){
       return this.match[1];
     },
@@ -88,6 +84,7 @@ Org.Outline = (function(Org, undefined){
   var NodeParser = function(txt){
     this.content = txt;
   };
+
   NodeParser.prototype = {
     /**
      * Returns the heading object for this node
@@ -95,9 +92,10 @@ Org.Outline = (function(Org, undefined){
     getHeading: function(){
       if(this.heading){return this.heading;}
       var firstLine = _U.firstLine(this.content);
-      this.heading = new HeadingLine(firstLine);
+      this.heading = new Headline(firstLine);
       return this.heading;
     },
+
     /**
      * Returns the map of headers (defined by "#+META: ..." line definitions)
      */
@@ -109,6 +107,7 @@ Org.Outline = (function(Org, undefined){
       this.meta = meta;
       return this.meta;
     },
+
     /**
      * Returns the properties as defined in the :PROPERTIES: field
      */
@@ -131,6 +130,7 @@ Org.Outline = (function(Org, undefined){
       this.props = props;
       return this.props;
     },
+
     /**
      * Returns the whole content without the heading nor the subitems
      */
@@ -144,6 +144,7 @@ Org.Outline = (function(Org, undefined){
       this.item = content;
       return content;
     }, 
+
     /**
      * Returns the content only : no heading, no properties, no subitems, no clock, etc.
      */
@@ -159,6 +160,7 @@ Org.Outline = (function(Org, undefined){
       this.text = content;
       return content;
     },
+
     /**
      * Extracts all the ""#+HEADER: Content" lines
      * at the beginning of the given text, and returns a map
@@ -216,12 +218,16 @@ Org.Outline = (function(Org, undefined){
         }
       );
     },
+
     /**
      * Creates a list of all the org-node contents
      */
     nodeList: function(text){
-      return _U.map(this.nodeTextList(text), function(t, idx){return new OrgNode(t);});
+      return _U.map( this.nodeTextList(text) ,
+        function(t, idx){ return new Node(t); }
+      );
     },
+
     buildTree: function(){
       var nodes = this.nodeList(this.txt);
       var length = nodes.length;
@@ -244,18 +250,15 @@ Org.Outline = (function(Org, undefined){
     }
   };
 
-  /////////////////////////////////////////////////////////////////////////////
-  function parse_org(txt){
-    var parser = new Parser(txt);
-    return parser.buildTree();
-  }
-
   return {
-    parse:           parse_org,
-    Node:            OrgNode,
-    Heading:         HeadingLine,
-    Parser:          Parser,
-    NodeParser:      NodeParser
+    Node:       Node,
+    Headline:   Headline,
+    Parser:     Parser,
+    NodeParser: NodeParser,
+    parse:      function(txt){
+      var parser = new Parser(txt);
+      return parser.buildTree();
+    }
   };
 
 }(Org));
