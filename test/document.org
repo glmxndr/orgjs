@@ -18,6 +18,8 @@ Some header content.
 
   Just a simple paragraph with some content
 
+  @x + 1 > y²@
+
   #+BEGIN_QUOTE
  which changes
    indentation
@@ -36,8 +38,10 @@ broken here
       1. [@5] item 5
       6. item 6
          #+BEGIN_VERSE
-         Oh here is some poetry
-         That does not even rhyme
+Oh here is some poetry
+That does not even rhyme
+    Why should we care, dear?
+It's all over now.
          #+END_VERSE
       10. item 7
     - And continues
@@ -73,7 +77,7 @@ broken here
 
   #+BEGIN_QUOTE
   This is a quoted message with the begin,end notation.
-  --- Al Eintein & Dick Feynman, /Rambling thoughts/ @III.2.
+    -- Al Eintein & Dick Feynman, /Rambling thoughts/ @III.2.
   #+END_QUOTE
 
   #+BEGIN_CENTER
@@ -91,7 +95,7 @@ broken here
 
   * This is a list item starting with a star
 
-  Here is an equation: $y = x^2 + x + 1$
+  Here is an equation: $4 y = x^2 + x + 1$
 
   Here is a long equation: $$y = x^2 + x + 1$$
 

@@ -2,7 +2,6 @@
 section{
   margin-left:2em;
   margin-top:0.5em;
-
 }
 
 div.title{
@@ -21,7 +20,15 @@ div.title + details {
 span.tag{
   border: 1px dotted #AAA;
   background-color: #CCC;
-  padding:2px;
+  padding:1px;
   margin:2px;
   font-size: 90%;
+  vertical-align: super;
 }
+
+blockquote{
+  margin-left:1em;
+  padding-left:1em;
+  border-left: 1px dashed gray;
+}
+

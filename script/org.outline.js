@@ -1,4 +1,4 @@
-Org.Outline = (function($, Org, undefined){
+Org.Outline = (function(Org, undefined){
 
   //////////////////////////////////////////////////////////////////////////////
   // REGEXP BANK
@@ -6,8 +6,7 @@ Org.Outline = (function($, Org, undefined){
 
   //////////////////////////////////////////////////////////////////////////////
   // UTILS
-  var Utils = Org.Utils;
-  var _U = Utils;
+  var _U = Org.Utils;
 
   /////////////////////////////////////////////////////////////////////////////
   // ORG NODE : corresponds to a line starting with stars "*** ..."
@@ -44,37 +43,6 @@ Org.Outline = (function($, Org, undefined){
                 : "doc#" + (OrgNode.doc_count++) + "/";
       }
       return this.parent.id() + "" + this.siblings().indexOf(this) + "/";
-    },
-    // Renders the node as html
-    render: function(){
-      
-      var title = this.level === 0 ? this.meta["TITLE"] : this.heading.getTitle();
-      
-      var html = $("<section id='" + this.id()
-        + "' class='orgnode level-" + this.level
-        + "'><div class='title'>" //+ _U.repeat("*", this.level) 
-        + " " + title
-        + "</div></section>");
-
-      var title = $('div.title', html);
-      _U.each(this.heading.getTags(), function(tag, idx){
-        if(tag.length){
-          title.append(" <span class='tag'>" + tag + "</span>");
-        }
-      });
-      var properties = this.properties; 
-      var details = $("<details/>");
-      var dl = $("<dl/>").appendTo(details);
-      _U.each(properties, function(val, key){
-        dl.append("<dd>" + key + "</dd><dt>" + val + "</dt>");
-      });
-      
-      title.after(details);
-      html.append(new ContentRenderer(this.parser.getContent()).render());
-      _U.each(this.children, function(child, idx){
-        html.append(child.render());
-      });
-      return html;
     }
   };
   
@@ -84,41 +52,6 @@ Org.Outline = (function($, Org, undefined){
    * when no doc_id is given in the root node.
    */
   OrgNode.doc_count = 0;
-  
-  /////////////////////////////////////////////////////////////////////////////
-  // RENDERING
-  /**
-   * Content renderer : works line by line and creates the HTML structure
-   */
-  var ContentRenderer = function(txt){
-    this.content = txt;
-  };
-  ContentRenderer.prototype = {
-    render: function(){
-      var content = this.content;
-      content = content.replace(/\/([^\s][^/]*[^\s])\//g, "<em>$1</em>");
-      content = content.replace(/\\\\/g, "<br/>");
-      content = content.replace(/\@([^\s][^@]*[^\s])\@/g, "<code>$1</code>");
-      content = content.replace(/\*([^\s][^*]*[^\s])\*/g, "<strong>$1</strong>");
-      content = content.replace(/#\+BEGIN_SRC(?:\s+([^'"\s]+))?\s*\n([\s\S]*?)\n?\s*#\+END_SRC/g, "<code class='$1'><pre>$2</pre></code>");
-      //content = content.replace(/#\+BEGIN_QUOTE\s*\n([\s\S]*?)\n?\s*#\+END_QUOTE/g, "<blockquote>$1</blockquote>");
-      //content = content.replace(/\+([^\s][^+]*[^\s])\+/g, "<del>$1</del>");
-      return "<p>" + content + "</p>";
-    }
-  };
-  
-  var Line = {};
-  Line.getType = function(text){
-    if(_U.trim(text).length == 0){return Line.TYPE.EMPTY;}
-    if(text.match(/^(?:\s*[+-]|\s+\*)\s+/)){return Line.TYPE.ULIST;}
-    if(text.match(/^\s*\d+[.)]\s+/)){return Line.TYPE.OLIST;}
-    if(text.match(/^\s*>\s+/)){return Line.TYPE.QUOTE;}
-    if(text.match(/^\s*:\s+/)){return Line.TYPE.SRC;}
-
-    if(text.match(/^\s*#+BEGIN/)){return Line.TYPE.BEGIN;}
-    if(text.match(/^\s*#+END/)){return Line.TYPE.END;}
-    return Line.TYPE.TEXT;
-  };
   
   /////////////////////////////////////////////////////////////////////////////
   // PARSING
@@ -314,7 +247,7 @@ Org.Outline = (function($, Org, undefined){
   /////////////////////////////////////////////////////////////////////////////
   function parse_org(txt){
     var parser = new Parser(txt);
-    return parser.buildTree().render();
+    return parser.buildTree();
   }
 
   return {
@@ -322,9 +255,8 @@ Org.Outline = (function($, Org, undefined){
     Node:            OrgNode,
     Heading:         HeadingLine,
     Parser:          Parser,
-    NodeParser:      NodeParser, 
-    ContentRenderer: ContentRenderer
+    NodeParser:      NodeParser
   };
 
-}(jQuery, Org));
+}(Org));
 
