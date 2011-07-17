@@ -1,3 +1,12 @@
+/*orgdoc+++/
+
+* =Org.Outline= : the outline/headlines parser
+
+  This section describes the outline parser.
+
+   #+BEGIN_SRC js
+/-orgdoc*/
+
 Org.Outline = (function(Org, undefined){
 
   var RGX = Org.Regexps;
@@ -102,7 +111,7 @@ Org.Outline = (function(Org, undefined){
     getMeta: function(){
       if(this.meta){return this.meta;}
       var content = this.content;
-      content = content.replace(RGX.headingLine, "\n");
+      if(this.level > 0){content = content.replace(RGX.headingLine, "\n");}
       var meta = this.parseHeaders(content);
       this.meta = meta;
       return this.meta;
@@ -263,3 +272,6 @@ Org.Outline = (function(Org, undefined){
 
 }(Org));
 
+/*orgdoc+/
+   #+END_SRC
+/---orgdoc*/

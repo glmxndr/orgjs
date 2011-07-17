@@ -1,3 +1,12 @@
+/*orgdoc+++/
+* =Org.Utils= : useful functions
+
+  Many functionalities are used throughout the parser, mainly to process
+  strings. The =Org.Utils= object contains these functions.
+
+   #+BEGIN_SRC js
+/-orgdoc*/
+
 Org.Utils = (function(Org){
   
   var RGX = Org.Regexps;
@@ -58,3 +67,7 @@ Org.Utils = (function(Org){
   };
 
 }(Org));
+
+/*orgdoc+/
+   #+END_SRC
+/---orgdoc*/

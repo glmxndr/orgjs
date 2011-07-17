@@ -1,3 +1,13 @@
+/*orgdoc+++/
+
+* =Org.Content= : the content parser
+
+  This section describes the parser for the actual content within the sections
+  of the =org= file.
+
+   #+BEGIN_SRC js
+/-orgdoc*/
+
 Org.Content = (function(Org){
 
   var _U  = Org.Utils;
@@ -39,6 +49,9 @@ Org.Content = (function(Org){
     if(/^\s*[a-z]/i.exec(line)){
       return LineType.PARA;
     }
+    if(line == 0){
+      return LineType.BLANK;
+    }
     // Then test all the other cases
     if(/^\s+[+*-] /.exec(line)){
       if(/ :: /.exec(line)){
@@ -49,9 +62,9 @@ Org.Content = (function(Org){
     if(/^\s*\d+[.)] /.exec(line)){
       return LineType.OLITEM;
     }
-    if(/^\s*$/.exec(line)){
-      return LineType.BLANK;
-    }
+    //if(/^\s*$/.exec(line)){
+    //  return LineType.BLANK;
+    //}
     for(k in BeginEndBlocks){
       if(RGX.beginBlock(k).exec(line)){
         return LineType[k];
@@ -128,7 +141,7 @@ Org.Content = (function(Org){
     return true;
   };
 
-  ParaBlock.prototype.consume = function(line) {
+  ParaBlock.prototype.consume = function(line){
     this.lines.push(line);
     return this;
   };
@@ -223,7 +236,6 @@ Org.Content = (function(Org){
     this.children.push(item);
     return item.consume(line);
   };
-
 
   ////////////////////////////////////////////////////////////////////////////////
   //  DLISTBLOCK
@@ -333,3 +345,7 @@ Org.Content = (function(Org){
   return Content;
 
 }(Org));
+
+/*orgdoc+/
+   #+END_SRC
+/---orgdoc*/

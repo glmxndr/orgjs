@@ -1,7 +1,18 @@
+/*orgdoc+++/
+
+* =Org.Regexps= : the regexp bank
+
+  The parser needs a lot of regular expressions.
+  Non trivial regexps will be found in the file =org.regexps.js=, 
+  and accessible under the object =Org.Regexps=.
+
+   #+BEGIN_SRC js
+/-orgdoc*/
+
 Org.Regexps = (function(Org){
   
   var RGX = {
-    
+
     /**
      * A new line declaration, either windows or unix-like
      */
@@ -40,7 +51,7 @@ Org.Regexps = (function(Org){
      * How a meta information begins ( "#+META_KEY:" )
      */
     metaDeclaration: /\s*#\+[A-Z0-9_]+:/,
-  
+
     /**
      * A meta information line, capturing:
      * - the meta key,
@@ -51,7 +62,7 @@ Org.Regexps = (function(Org){
      *    #+TITLE: The title
      * ----
      * captures "TITLE", "The title" 
-     */
+     */ 
     metaLine: /(?:^|\s*)#\+([A-Z0-9_]+):\s*(.*)(\n|$)/m,
   
     /**
@@ -89,6 +100,7 @@ Org.Regexps = (function(Org){
       return this._bBlk[k] || 
         (this._bBlk[k] = new RegExp("^\\s*#\\+BEGIN_" + type + "|\\s\n]"));
     },
+
     _eBlk: {},
     endBlock: function(type){
       return this._eBlk[k] || 
@@ -100,3 +112,7 @@ Org.Regexps = (function(Org){
   return RGX;
   
 }(Org));
+
+/*orgdoc+/
+   #+END_SRC
+/---orgdoc*/

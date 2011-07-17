@@ -11,7 +11,11 @@
 #+EXPORT_SELECT_TAGS: export
 #+EXPORT_EXCLUDE_TAGS: noexport
 
-Some header content.
+Some header content. Some /emphasis/, some *bold text*, some _underlined
+ text_, some ~verbatim text~, some =code text=, some +striken-
+through text+. 
+
+Some tricky stuff... /+/ oh and /+/.
 
   #+BEGIN_CENTER
   Centered text?
@@ -29,7 +33,7 @@ Some header content.
 
   Just a simple paragraph with some content
 
-  This is an equation: @x + 1 > y²@
+  This is an equation: =x + 1 > y²=
 
   #+BEGIN_QUOTE
  which changes
@@ -117,7 +121,7 @@ It's all over now.
    This is some text. \\
    I just came back to the next line. Didn't I?
 
-   With @some@ content.
+   With ~some~ content.
    + a list
      - a sublist
      - yes, several items
