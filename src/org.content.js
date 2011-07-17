@@ -20,6 +20,7 @@ Org.Content = (function(Org){
     var l = -1;
     return {
       "BLANK":    {id: ++l},
+      "IGNORED":  {id: ++l},
       "PARA":     {id: ++l},
       "ULITEM":   {id: ++l},
       "OLITEM":   {id: ++l},
@@ -27,7 +28,10 @@ Org.Content = (function(Org){
       "VERSE":    {id: ++l, beginEnd:1},
       "QUOTE":    {id: ++l, beginEnd:1},
       "CENTER":   {id: ++l, beginEnd:1},
-      "EXAMPLE":  {id: ++l, beginEnd:1}
+      "EXAMPLE":  {id: ++l, beginEnd:1},
+      "SRC":      {id: ++l, beginEnd:1},
+      "HTML":     {id: ++l, beginEnd:1},
+      "COMMENT":  {id: ++l, beginEnd:1}
     };
   }());
 
@@ -52,9 +56,12 @@ Org.Content = (function(Org){
     if(line == 0){
       return LineType.BLANK;
     }
+    if(/^#/.exec(line)){
+      return LineType.IGNORED;
+    }
     // Then test all the other cases
     if(/^\s+[+*-] /.exec(line)){
-      if(/ :: /.exec(line)){
+      if(/ ::/.exec(line)){
         return LineType.DLITEM;
       }
       return LineType.ULITEM;
@@ -142,7 +149,10 @@ Org.Content = (function(Org){
   };
 
   ParaBlock.prototype.consume = function(line){
-    this.lines.push(line);
+    var type = getLineType(line);
+    if(type !== LineType.IGNORED){
+      this.lines.push(line);
+    }
     return this;
   };
 
@@ -161,7 +171,16 @@ Org.Content = (function(Org){
   BeginEndBlock.prototype.consume     = function(line){
     if(this.beginre.exec(line)){ this.treatBegin(line); }
     else if(this.endre.exec(line)){ this.ended = true; }
-    else { this.lines.push(line); }
+    else { 
+      if(this.verbatim){
+        this.lines.push(line);
+      } else {
+        var type = getLineType(line);
+        if(type !== LineType.IGNORED){
+          this.lines.push(line);
+        }
+      }  
+    }
     return this;
   };
 
@@ -193,9 +212,40 @@ Org.Content = (function(Org){
   //  EXAMPLEBLOCK
   var ExampleBlock = function(parent, line){
     BeginEndBlock.call(this, parent, line, "EXAMPLE");
+    this.verbatim = true;
   };
   LineDef.EXAMPLE.constr = Content.ExampleBlock = ExampleBlock;
   ExampleBlock.prototype = Object.create(BeginEndBlock.prototype);
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  SRCBLOCK
+  var SrcBlock = function(parent, line){
+    BeginEndBlock.call(this, parent, line, "SRC");
+    this.verbatim = true;
+    var match = /BEGIN_SRC\s+([a-z-]+)(?:\s*|$)/i.exec(line);
+    this.language = match ? match[1] : null;
+  };
+  LineDef.SRC.constr = Content.SrcBlock = SrcBlock;
+  SrcBlock.prototype = Object.create(BeginEndBlock.prototype);
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  HTMLBLOCK
+  var HtmlBlock = function(parent, line){
+    BeginEndBlock.call(this, parent, line, "HTML");
+    this.verbatim = true;
+  };
+  LineDef.HTML.constr = Content.HtmlBlock = HtmlBlock;
+  HtmlBlock.prototype = Object.create(BeginEndBlock.prototype);
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  COMMENTBLOCK
+  var CommentBlock = function(parent, line){
+    BeginEndBlock.call(this, parent, line, "COMMENT");
+    this.verbatim = true;
+  };
+  LineDef.COMMENT.constr = Content.CommentBlock = CommentBlock;
+  CommentBlock.prototype = Object.create(BeginEndBlock.prototype);
+
 
   ////////////////////////////////////////////////////////////////////////////////
   //  ULISTBLOCK
@@ -309,13 +359,13 @@ Org.Content = (function(Org){
   //  DLISTITEMBLOCK
   var DlistItemBlock = function(parent, line){
     ListItemBlock.call(this, parent,line);
-    this.title = /^\s*[+*-] (.*) :: /.exec(line)[1];
+    this.title = /^\s*[+*-] (.*) ::/.exec(line)[1];
   };
   Content.DlistItemBlock = DlistItemBlock;
 
   DlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
   DlistItemBlock.prototype.preprocess = function(line){
-    return line.replace(/^(\s*)[+*-]\s+.*? :: /, "$1  ");
+    return line.replace(/^(\s*)[+*-]\s+.*? ::/, "$1  ");
   };
 
   ////////////////////////////////////////////////////////////////////////////////

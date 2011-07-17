@@ -32,7 +32,7 @@
                   characters in HTML/XML: =&=, =>=, =<=, ='= and ="=,
                   which are all translated to their corresponding
                   entity.
-     + Arguments :: =str=
+     + Arguments ::
        + =str= :: any value, converted into a string at the beginning
                   of the function.
      #+BEGIN_SRC js
@@ -53,7 +53,7 @@
 *** renderMarkup                                                   :function:
      + Purpose :: this function converts the wiki-style markup of
                   Org-Mode into HTML.
-     + Arguments :: =str=
+     + Arguments ::
        + =str= :: any value, converted into a string at the beginning
                   of the function.
      #+BEGIN_SRC js
@@ -325,6 +325,60 @@
 /*orgdoc+/
     #+END_SRC
 
+
+*** Rendering =SrcBlock=
+     =SrcBlock=s are rendered with a =pre.src= tag with a =code= tag within.
+     The =code= tag may have a class attribute if the language of the
+     block is known. In case there is, the class would take the language 
+     identifier.
+
+     The content is not processed with the =renderMarkup= function, only
+     with the =escapeHtml= function.
+
+    #+BEGIN_SRC js
+/-orgdoc*/
+
+  OC.SrcBlock.prototype.render = function(){
+    var content = this.lines.join("\n") + "\n";
+    var markup = escapeHtml(content);
+    var l = this.language;
+    var out = "<pre class='src'><code" +
+              ( l ? " class='" + l + "'>":">") + 
+              "\n" + markup + "</code></pre>\n";
+    return out;
+  };
+
+/*orgdoc+/
+    #+END_SRC
+
+*** Rendering =HtmlBlock=
+     =HtmlBlock=s are rendered by simply outputting the HTML content
+     verbatim, with no modification whatsoever.
+
+    #+BEGIN_SRC js
+/-orgdoc*/
+
+  OC.HtmlBlock.prototype.render = function(){
+    var out = this.lines.join("\n") + "\n";
+    return out;
+  };
+
+/*orgdoc+/
+    #+END_SRC
+
+*** Rendering =CommentBlock=
+     =CommentBlock=s are ignored.
+
+    #+BEGIN_SRC js
+/-orgdoc*/
+
+  OC.CommentBlock.prototype.render = function(){
+    return "";
+  };
+
+/*orgdoc+/
+    #+END_SRC
+
 ** Rendering headlines
 
     Here we render headlines, represented by =Outline.Node= objects.
@@ -347,11 +401,7 @@
   OO.Node.prototype.render = function(){
     var headline = this.level === 0 ? this.meta["TITLE"] : this.heading.getTitle();
 
-    var html = "<section id='%ID%' class='orgnode level-%LEVEL%'>" +
-        "%TITLE%\n" +
-        "%CONTENT%\n" +
-        "%CHILDREN%" +
-      "</section>";
+    var html = "<section id='%ID%' class='orgnode level-%LEVEL%'>";
     html = html.replace(/%ID%/, this.id());
     html = html.replace(/%LEVEL%/, this.level);
 
@@ -365,16 +415,18 @@
     });
     title = title.replace(/%TAGS%/, tags);
 
-    html = html.replace(/%TITLE%/, title);
+    html += title;
 
     var contentTxt = this.parser.getContent();
     var lines = _U.lines(contentTxt);
     this.contentNode = Org.Content.parse(lines);
     var contentHtml = this.contentNode.render();
-    html = html.replace(/%CONTENT%/, contentHtml);
+    html += contentHtml;
 
     var childrenHtml = renderChildren.call(this);
-    html = html.replace(/%CHILDREN%/, childrenHtml);
+    html += childrenHtml;
+
+    html += "</section>";
     return html;
   };
 

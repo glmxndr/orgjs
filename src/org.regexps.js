@@ -98,13 +98,13 @@ Org.Regexps = (function(Org){
     _bBlk: {},
     beginBlock: function(type){
       return this._bBlk[k] || 
-        (this._bBlk[k] = new RegExp("^\\s*#\\+BEGIN_" + type + "|\\s\n]"));
+        (this._bBlk[k] = new RegExp("^\\s*#\\+BEGIN_" + type + "|\\s\n]", "i"));
     },
 
     _eBlk: {},
     endBlock: function(type){
       return this._eBlk[k] || 
-        (this._eBlk[k] = new RegExp("^\\s*#\\+END_" + type + "|\\s\n]"));
+        (this._eBlk[k] = new RegExp("^\\s*#\\+END_" + type + "|\\s\n]", "i"));
     }
 
   };

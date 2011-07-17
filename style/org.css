@@ -32,3 +32,9 @@ blockquote{
   border-left: 1px dashed gray;
 }
 
+pre.src {
+  border:1px dotted gray;
+  margin-left: 2em;
+  background-color: #dec;
+  color: #123;
+}

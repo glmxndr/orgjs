@@ -108,8 +108,8 @@ function buildDoc(){
     }
   }
   function concat(err, data){
-    data = data.replace(/\s*\/\*orgdoc\++\/\s*/g, "\n");
-    data = data.replace(/\s*\/-+orgdoc\*\/\s*/g, "\n");
+    data = data.replace(/\s*\/\*orgdoc\++\/[\s\n]*/g, "\n");
+    data = data.replace(/\s*\/-+orgdoc\*\/[\s\n]*/g, "\n");
     data = data.replace(/^\n+/, "");
     out += data + "\n\n";
     readFile();

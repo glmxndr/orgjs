@@ -112,13 +112,13 @@ Org.Regexps = (function(Org){
     _bBlk: {},
     beginBlock: function(type){
       return this._bBlk[k] || 
-        (this._bBlk[k] = new RegExp("^\\s*#\\+BEGIN_" + type + "|\\s\n]"));
+        (this._bBlk[k] = new RegExp("^\\s*#\\+BEGIN_" + type + "|\\s\n]", "i"));
     },
 
     _eBlk: {},
     endBlock: function(type){
       return this._eBlk[k] || 
-        (this._eBlk[k] = new RegExp("^\\s*#\\+END_" + type + "|\\s\n]"));
+        (this._eBlk[k] = new RegExp("^\\s*#\\+END_" + type + "|\\s\n]", "i"));
     }
 
   };
@@ -490,6 +490,7 @@ Org.Content = (function(Org){
     var l = -1;
     return {
       "BLANK":    {id: ++l},
+      "IGNORED":  {id: ++l},
       "PARA":     {id: ++l},
       "ULITEM":   {id: ++l},
       "OLITEM":   {id: ++l},
@@ -497,7 +498,10 @@ Org.Content = (function(Org){
       "VERSE":    {id: ++l, beginEnd:1},
       "QUOTE":    {id: ++l, beginEnd:1},
       "CENTER":   {id: ++l, beginEnd:1},
-      "EXAMPLE":  {id: ++l, beginEnd:1}
+      "EXAMPLE":  {id: ++l, beginEnd:1},
+      "SRC":      {id: ++l, beginEnd:1},
+      "HTML":     {id: ++l, beginEnd:1},
+      "COMMENT":  {id: ++l, beginEnd:1}
     };
   }());
 
@@ -522,9 +526,12 @@ Org.Content = (function(Org){
     if(line == 0){
       return LineType.BLANK;
     }
+    if(/^#/.exec(line)){
+      return LineType.IGNORED;
+    }
     // Then test all the other cases
     if(/^\s+[+*-] /.exec(line)){
-      if(/ :: /.exec(line)){
+      if(/ ::/.exec(line)){
         return LineType.DLITEM;
       }
       return LineType.ULITEM;
@@ -612,7 +619,10 @@ Org.Content = (function(Org){
   };
 
   ParaBlock.prototype.consume = function(line){
-    this.lines.push(line);
+    var type = getLineType(line);
+    if(type !== LineType.IGNORED){
+      this.lines.push(line);
+    }
     return this;
   };
 
@@ -631,7 +641,16 @@ Org.Content = (function(Org){
   BeginEndBlock.prototype.consume     = function(line){
     if(this.beginre.exec(line)){ this.treatBegin(line); }
     else if(this.endre.exec(line)){ this.ended = true; }
-    else { this.lines.push(line); }
+    else { 
+      if(this.verbatim){
+        this.lines.push(line);
+      } else {
+        var type = getLineType(line);
+        if(type !== LineType.IGNORED){
+          this.lines.push(line);
+        }
+      }  
+    }
     return this;
   };
 
@@ -663,9 +682,40 @@ Org.Content = (function(Org){
   //  EXAMPLEBLOCK
   var ExampleBlock = function(parent, line){
     BeginEndBlock.call(this, parent, line, "EXAMPLE");
+    this.verbatim = true;
   };
   LineDef.EXAMPLE.constr = Content.ExampleBlock = ExampleBlock;
   ExampleBlock.prototype = Object.create(BeginEndBlock.prototype);
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  SRCBLOCK
+  var SrcBlock = function(parent, line){
+    BeginEndBlock.call(this, parent, line, "SRC");
+    this.verbatim = true;
+    var match = /BEGIN_SRC\s+([a-z-]+)(?:\s*|$)/i.exec(line);
+    this.language = match ? match[1] : null;
+  };
+  LineDef.SRC.constr = Content.SrcBlock = SrcBlock;
+  SrcBlock.prototype = Object.create(BeginEndBlock.prototype);
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  HTMLBLOCK
+  var HtmlBlock = function(parent, line){
+    BeginEndBlock.call(this, parent, line, "HTML");
+    this.verbatim = true;
+  };
+  LineDef.HTML.constr = Content.HtmlBlock = HtmlBlock;
+  HtmlBlock.prototype = Object.create(BeginEndBlock.prototype);
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  COMMENTBLOCK
+  var CommentBlock = function(parent, line){
+    BeginEndBlock.call(this, parent, line, "COMMENT");
+    this.verbatim = true;
+  };
+  LineDef.COMMENT.constr = Content.CommentBlock = CommentBlock;
+  CommentBlock.prototype = Object.create(BeginEndBlock.prototype);
+
 
   ////////////////////////////////////////////////////////////////////////////////
   //  ULISTBLOCK
@@ -779,13 +829,13 @@ Org.Content = (function(Org){
   //  DLISTITEMBLOCK
   var DlistItemBlock = function(parent, line){
     ListItemBlock.call(this, parent,line);
-    this.title = /^\s*[+*-] (.*) :: /.exec(line)[1];
+    this.title = /^\s*[+*-] (.*) ::/.exec(line)[1];
   };
   Content.DlistItemBlock = DlistItemBlock;
 
   DlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
   DlistItemBlock.prototype.preprocess = function(line){
-    return line.replace(/^(\s*)[+*-]\s+.*? :: /, "$1  ");
+    return line.replace(/^(\s*)[+*-]\s+.*? ::/, "$1  ");
   };
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -848,7 +898,7 @@ Org.Content = (function(Org){
                   characters in HTML/XML: =&=, =>=, =<=, ='= and ="=,
                   which are all translated to their corresponding
                   entity.
-     + Arguments :: =str=
+     + Arguments ::
        + =str= :: any value, converted into a string at the beginning
                   of the function.
 */
@@ -867,7 +917,7 @@ Org.Content = (function(Org){
 *** renderMarkup                                                   :function:
      + Purpose :: this function converts the wiki-style markup of
                   Org-Mode into HTML.
-     + Arguments :: =str=
+     + Arguments ::
        + =str= :: any value, converted into a string at the beginning
                   of the function.
 */
@@ -1113,6 +1163,54 @@ Org.Content = (function(Org){
 
 /***orgdoc***
 
+
+*** Rendering =SrcBlock=
+     =SrcBlock=s are rendered with a =pre.src= tag with a =code= tag within.
+     The =code= tag may have a class attribute if the language of the
+     block is known. In case there is, the class would take the language 
+     identifier.
+
+     The content is not processed with the =renderMarkup= function, only
+     with the =escapeHtml= function.
+
+*/
+
+  OC.SrcBlock.prototype.render = function(){
+    var content = this.lines.join("\n") + "\n";
+    var markup = escapeHtml(content);
+    var l = this.language;
+    var out = "<pre class='src'><code" +
+              ( l ? " class='" + l + "'>":">") + 
+              "\n" + markup + "</code></pre>\n";
+    return out;
+  };
+
+/***orgdoc***
+
+*** Rendering =HtmlBlock=
+     =HtmlBlock=s are rendered by simply outputting the HTML content
+     verbatim, with no modification whatsoever.
+
+*/
+
+  OC.HtmlBlock.prototype.render = function(){
+    var out = this.lines.join("\n") + "\n";
+    return out;
+  };
+
+/***orgdoc***
+
+*** Rendering =CommentBlock=
+     =CommentBlock=s are ignored.
+
+*/
+
+  OC.CommentBlock.prototype.render = function(){
+    return "";
+  };
+
+/***orgdoc***
+
 ** Rendering headlines
 
     Here we render headlines, represented by =Outline.Node= objects.
@@ -1134,11 +1232,7 @@ Org.Content = (function(Org){
   OO.Node.prototype.render = function(){
     var headline = this.level === 0 ? this.meta["TITLE"] : this.heading.getTitle();
 
-    var html = "<section id='%ID%' class='orgnode level-%LEVEL%'>" +
-        "%TITLE%\n" +
-        "%CONTENT%\n" +
-        "%CHILDREN%" +
-      "</section>";
+    var html = "<section id='%ID%' class='orgnode level-%LEVEL%'>";
     html = html.replace(/%ID%/, this.id());
     html = html.replace(/%LEVEL%/, this.level);
 
@@ -1152,16 +1246,18 @@ Org.Content = (function(Org){
     });
     title = title.replace(/%TAGS%/, tags);
 
-    html = html.replace(/%TITLE%/, title);
+    html += title;
 
     var contentTxt = this.parser.getContent();
     var lines = _U.lines(contentTxt);
     this.contentNode = Org.Content.parse(lines);
     var contentHtml = this.contentNode.render();
-    html = html.replace(/%CONTENT%/, contentHtml);
+    html += contentHtml;
 
     var childrenHtml = renderChildren.call(this);
-    html = html.replace(/%CHILDREN%/, childrenHtml);
+    html += childrenHtml;
+
+    html += "</section>";
     return html;
   };
 
