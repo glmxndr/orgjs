@@ -45,7 +45,7 @@ Org.Markup = (function(Org){
     this.token = token;
     this.type = getLinkType(this);
   };
-
+  Markup.Link = Link;
 
 ///////////////////////////////////////////////////////////////////////////////
 // TYPO
@@ -93,9 +93,44 @@ Org.Markup = (function(Org){
   };
   Markup.EmphMarkers = EmphMarkers;
 
+  function makeInline(constr, parent, food){
+    var inline = new constr(parent);
+    parent.adopt(inline);
+    if(food){inline.consume(food);}
+    return inline;
+  }
+
   var EmphInline = function(parent){
     this.parent = parent;
     this.children = [];
+  };
+  EmphInline.prototype.adopt = function(child){
+    this.children.push(child);
+    child.parent = this;
+  };
+  EmphInline.prototype.replaceTokens = function(tokens){
+    if(this.children.length){
+      _U.each(this.children, function(v){v.replaceTokens(tokens);});
+    }
+    if(this.content && this.content.length){
+      var content = this.content;
+      var pipedKeys =  _U.joinKeys("|", tokens);
+      if(pipedKeys == 0){return;}
+      var rgx = new RegExp('^((?:.|\n)*?)(' + pipedKeys + ')((?:.|\n)*)$');
+      var match, pre, token, rest;
+      var inline = new EmphInline(this);
+      while(match = rgx.exec(content)){
+        pre = match[1]; token = match[2]; rest = match[3];
+        if(_U.notBlank(pre)){ makeInline(EmphRaw, inline, pre); }
+        inline.adopt(tokens[token]);
+        content = rest;
+      }
+      if(inline.children.length){
+        if(_U.notBlank(rest)){ makeInline(EmphRaw, inline, rest); }
+        this.content = "";
+        this.adopt(inline);
+      }
+    }
   };
   EmphInline.prototype.consume = function(content){
     var regexp = EmphMarkers.getRegexpAll();
@@ -104,29 +139,19 @@ Org.Markup = (function(Org){
     var pre, hasEmph, type, inner, length;
     var raw, sub;
     while((_U.trim(rest).length > 0) && (match = regexp.exec(rest))){
-      pre = match[1];
-      hasEmph = match[2];
-      token = match[3] || "";
+      pre = match[1]; 
+      hasEmph = match[2]; 
+      token = match[3] || ""; 
       inner = match[4] || "";
       length = pre.length + inner.length + (hasEmph ? 2 : 0);
       if(length === 0){break;}
       rest = rest.substr(length);
-      if(_U.trim(pre).length > 0){
-        raw = new EmphRaw(this);
-        this.children.push(raw);
-        raw.consume(pre);
-      }
-      if(hasEmph !== void(0)){
-        sub = EmphMarkers.getInline(token, this);
-        this.children.push(sub);
-        sub.consume(inner);
+      if(_U.notBlank(pre)){ makeInline(EmphRaw, this, pre); }
+      if(hasEmph !== void(0)){ 
+        makeInline(EmphMarkers[token].constr, this, inner);
       }
     }
-    if(_U.trim(rest).length > 0){
-      raw = new EmphRaw(this);
-      this.children.push(raw);
-      raw.consume(rest);
-    }
+    if(_U.notBlank(rest)){ makeInline(EmphRaw, this, rest); }
   };
   Markup.EmphInline = EmphInline;
 
@@ -229,7 +254,9 @@ Org.Markup = (function(Org){
     str = str.replace(descLinkRegex, linkReplacer(1, 1));
     
     // Treating bare URLs, or URLs without a description attached.
-    var urlRegex = new RegExp("(?:" + _C.urlProtocols.join("|") + '):[^\\s]+', "gi");
+    var urlRegex = new RegExp("(?:" + 
+                      _C.urlProtocols.join("|") + 
+                      '):[^\\s]+', "gi");
     str = str.replace(urlRegex, linkReplacer(0, 0));
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -239,6 +266,7 @@ Org.Markup = (function(Org){
 
     var iObj = new EmphInline(parent);
     iObj.consume(str);
+    iObj.replaceTokens(links);
     return iObj;
   };
 

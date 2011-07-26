@@ -39,6 +39,26 @@ Org.Utils = (function(Org){
       return str && str.length ? str.replace(/^\s*|\s*$/g, "") : "";
     },
 
+    empty: function(o){
+      // Valid only for strings and arrays
+      return (!(o && o.length));
+    },
+
+    notEmpty: function(o){
+      // Valid only for strings and arrays
+      return !this.empthy(o);
+    },
+
+    blank: function(str){
+      // Valid only for strings and arrays
+      return str && str == 0;
+    },
+
+    notBlank: function(str){
+      // Valid only for strings and arrays
+      return !this.blank(str);
+    },
+
     repeat: function(str, times){
       var result = [];
       for(var i=0; i<times; i++){
@@ -94,6 +114,16 @@ Org.Utils = (function(Org){
       for( var i=0; i < length; i++ )
           str += available.charAt(Math.floor(Math.random() * available.length));
       return str;
+    },
+
+    keys: function(obj){
+      var result = [];
+      this.each(obj, function(v, k){result.push(k);});
+      return result;
+    },
+
+    joinKeys: function(str, obj){
+      return this.keys(obj).join(str);
     },
 
     getAbsentToken: function(str, prefix){

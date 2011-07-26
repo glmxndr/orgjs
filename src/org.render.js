@@ -105,7 +105,9 @@
     return renderChildren.call(this);
   };
   OM.EmphRaw.prototype.render = function(){
-    console.log("Rendering " + this.content);
+    if(this.children.length){
+      return renderChildren.call(this);
+    }
     return "<span class='org-inline-raw'>" + escapeHtml(this.content).replace(/\\(.)/g, "$1") + "</span>\n";
   };
   OM.EmphCode.prototype.render = function(){
@@ -127,7 +129,9 @@
     return "<del class='org-inline-strike'>" + renderChildren.call(this) + "</del>\n";
   };
 
-
+  OM.Link.prototype.render = function(){
+    return "<a class='org-inline-link' href='" + this.url + "'>" + this.desc + "</a>\n";
+  };
 
 
 
