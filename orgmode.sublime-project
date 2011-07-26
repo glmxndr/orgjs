@@ -4,6 +4,22 @@
 		"selected_items":
 		[
 			[
+				"cons",
+				"console"
+			],
+			[
+				"Emp",
+				"EmphMarkers"
+			],
+			[
+				"repl",
+				"replace"
+			],
+			[
+				"esc",
+				"escapeHtml"
+			],
+			[
 				"ini",
 				"initStr"
 			],
@@ -259,6 +275,17 @@
 	},
 	"file_history":
 	[
+		"/F/dropbox/code/orgjs/test_src.html",
+		"/F/dropbox/code/orgjs/src/org.content.js",
+		"/F/dropbox/code/orgjs/src/org.outline.js",
+		"/F/dropbox/code/orgjs/src/org.render.js",
+		"/F/dropbox/code/orgjs/src/org.utils.js",
+		"/F/dropbox/code/orgjs/src/org.markup.js",
+		"/F/work/tm_trad/in/MM/DATA/files.txt",
+		"/F/work/tm_trad/in/MM/DATA/FR-051XX_MM-FR_261100_200-801-A01-a.xml",
+		"/F/work/tm_trad/in/MM/DATA/FR-051XX_MM-FR_710001_940-801-A01-a.xml",
+		"/F/work/tm_trad/in/MM/DATA/FR-051XX_MM-FR_121020_610-801-A01-a.xml",
+		"/F/dropbox/code/orgjs/build/make.js",
 		"/F/home/ghiom/org/EPE.org",
 		"/F/doc/books/CoffeeScript/Smooth CoffeeScript.lyx",
 		"/F/env/eclipse_sessions/tm_basis_4311/make/made/BASIS_Publisher_v1-5-9_SVN10058__20110725-162701/conf/fr/studec/turbomeca/conf/clientModel.conf",
@@ -268,8 +295,6 @@
 		"/D/tmp/RI1418/patch_1/installUpdate/installeur/launch4j.cfg.xml",
 		"/F/dropbox/conf/.emacs",
 		"/F/dropbox/code/orgjs/src/org.utils.coffee",
-		"/F/dropbox/code/orgjs/test_src.html",
-		"/F/dropbox/code/orgjs/src/org.utils.js",
 		"/F/dropbox/code/orgjs/src/org.wiki.js",
 		"/D/FTP/data/scripts/script_ALL.txt",
 		"/D/BASIS/Produit/checkout.bat",
@@ -300,7 +325,6 @@
 		"/G/RI1442/trace/tdm_xsl_exec.txt",
 		"/G/RI1442/trace/EMTATOP05.xml",
 		"/G/RI1442/trace/tdm.xsl",
-		"/F/dropbox/code/orgjs/build/make.js",
 		"/F/dropbox/code/orgjs/script/sugar.js",
 		"/G/TURBOMECA/VIEWER_C_292_M5_460_9/viewer/webapps/ROOT/themes/defaut/script/init.js",
 		"/D/tmp/RI1418/patch_1/data/sandbox/xsl/elements_basis/pgproc.xsl",
@@ -369,6 +393,11 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"MArKUP.",
+			"OM.",
+			"Wiki",
+			"wiki",
+			"Wiki",
 			"LCC",
 			"INFO",
 			"output",
@@ -436,10 +465,11 @@
 		],
 		"highlight": true,
 		"in_selection": false,
-		"preserve_case": true,
+		"preserve_case": false,
 		"regex": false,
 		"replace_history":
 		[
+			"Markup.",
 			"##################################################################################################  $1",
 			"   $1   ",
 			"   \\1   ",
