@@ -9,19 +9,42 @@
 
 Org.Utils = (function(Org){
   
+  if (typeof Object.create !== 'function') {
+    Object.create = function (o) {
+      function F() {}
+      F.prototype = o;
+      return new F();
+    };
+  }
+
   var RGX = Org.Regexps;
 
   return {
+    range: function(){
+      var from, to, step, args = arguments, result = [], i;
+      switch(args.length){
+        case 0: return result;
+        case 1: from = 0;       to = args[0]; step = to > from ? 1 : -1; break;
+        case 2: from = args[0]; to = args[1]; step = to > from ? 1 : -1; break;
+        case 3: from = args[0]; to = args[1]; step = args[2];            break;
+      }
+      if(step === 0){return result;}
+      for(i = from; step > 0 ? i < to : i > to ; i += step){
+        result.push(i);
+      }
+      return result;
+    },
+
     trim: function(str){
       return str && str.length ? str.replace(/^\s*|\s*$/g, "") : "";
     },
 
     repeat: function(str, times){
-      var result = "";
+      var result = [];
       for(var i=0; i<times; i++){
-        result += str;
+        result.push(str);
       }
-      return result;
+      return result.join('');
     },
     
     each: function(arr, fn){
@@ -63,7 +86,26 @@ Org.Utils = (function(Org){
     
     indentLevel: function(str){
       return /^\s*/.exec(str)[0].length;
+    },
+
+    randomStr: function(length){
+      var str = "";
+      var available = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+      for( var i=0; i < length; i++ )
+          str += available.charAt(Math.floor(Math.random() * available.length));
+      return str;
+    },
+
+    getAbsentToken: function(str, prefix){
+      var token, start = prefix + "_";
+      if(str.indexOf(start) === -1){return start;}
+      token = start + this.randomStr(5);
+      while(str.indexOf(token) !== -1){
+        token = start + this.randomStr(5);
+      }
+      return token;
     }
+
   };
 
 }(Org));

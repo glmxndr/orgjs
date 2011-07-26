@@ -1,16 +1,18 @@
 #! /usr/bin/env node
 
 var fs  = require('fs'),
-    sys = require('sys'),
-    exec  = require('child_process').exec;
+    sys = require('sys');
 
 var srcFiles = [
   './src/org.main.js',
+  './src/org.config.js',
   './src/org.regexps.js',
   './src/org.utils.js',
   './src/org.outline.js',
   './src/org.content.js',
-  './src/org.render.js'
+  './src/org.markup.js',
+  './src/org.render.js',
+  './src/org.api.js'
 ];
 
 var isBuildingSrc = false;
@@ -33,12 +35,6 @@ log("Start listening...");
 fs.realpath('.',function(err,path){
   log("Base folder : " + path);
 });
-
-for(idx in srcFiles){
-  watch(srcFiles[idx]);
-}
-
-buildAll();
 
 function watch(file){
   fs.realpath('.',function(err,path){
@@ -121,3 +117,9 @@ function buildDoc(){
     });
   }
 }
+
+for(idx in srcFiles){
+  watch(srcFiles[idx]);
+}
+
+buildAll();

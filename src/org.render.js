@@ -21,6 +21,7 @@
 (function(Org){
 
   var OC = Org.Content;
+  var OM = Org.Markup;
   var OO = Org.Outline;
   var _U = Org.Utils;
 
@@ -97,6 +98,38 @@
     }
     return out;
   }
+
+
+
+  OM.EmphInline.prototype.render = function(){
+    return renderChildren.call(this);
+  };
+  OM.EmphRaw.prototype.render = function(){
+    console.log("Rendering " + this.content);
+    return "<span class='org-inline-raw'>" + escapeHtml(this.content).replace(/\\(.)/g, "$1") + "</span>\n";
+  };
+  OM.EmphCode.prototype.render = function(){
+    return "<code class='org-inline-code'>" + escapeHtml(this.content).replace(/\\(.)/g, "$1") + "</code>\n";
+  };
+  OM.EmphVerbatim.prototype.render = function(){
+    return "<samp class='org-inline-samp'>" + escapeHtml(this.content).replace(/\\(.)/g, "$1") + "</samp>\n";
+  };
+  OM.EmphItalic.prototype.render = function(){
+    return "<em class='org-inline-italic'>" + renderChildren.call(this) + "</em>\n";
+  };
+  OM.EmphBold.prototype.render = function(){
+    return "<strong class='org-inline-bold'>" + renderChildren.call(this) + "</strong>\n";
+  };
+  OM.EmphUnderline.prototype.render = function(){
+    return "<u class='org-inline-underline'>" + renderChildren.call(this) + "</u>\n";
+  };
+  OM.EmphStrike.prototype.render = function(){
+    return "<del class='org-inline-strike'>" + renderChildren.call(this) + "</del>\n";
+  };
+
+
+
+
 
 /*orgdoc+/
      #+END_SRC
@@ -239,8 +272,8 @@
 
   OC.ParaBlock.prototype.render = function(){
     var content = this.lines.join("\n") + "\n";
-    var markup = renderMarkup(content);
-    var out = "<p>\n" + markup + "</p>\n";
+    var out = OM.tokenize(this, content);
+    out = "<p>\n" + out.render() + "</p>\n";
     return out;
   };
 
