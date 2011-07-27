@@ -10,6 +10,7 @@
 Org.Outline = (function(Org, undefined){
 
   var RGX = Org.Regexps;
+  var OC = Org.Content;
   var _U = Org.Utils;
 
   /////////////////////////////////////////////////////////////////////////////
@@ -33,6 +34,11 @@ Org.Outline = (function(Org, undefined){
   };
 
   Node.prototype = {
+    parseContent: function(){
+      var lines = _U.lines(this.content);
+      this.contentNode = OC.parse(this, lines);
+    },
+
     siblings: function(){
       return this.parent 
               ? this.parent.children
@@ -47,9 +53,29 @@ Org.Outline = (function(Org, undefined){
                 : "doc#" + (Node.tocnum++) + "/";
       }
       return this.parent.id() + "" + this.siblings().indexOf(this) + "/";
+    }, 
+
+    addFootnoteDef: function(inline, name){
+      if(this.fnByName === void(0)){
+        this.fnByName = {};
+        this.fnNameByNum = [];
+        this.fnNextNum = 1;
+      }
+      console.log("Define Footnote : " + name + " / " + inline)
+      if(!name){name = "" + this.fnNextNum;}
+      if(this.fnByName[name]){
+        this.fnByName[name].inline = inline;
+        return this.fnNextNum;
+      }
+      else {
+        this.fnByName[name] = {"inline": inline, "num": this.fnNextNum, "name": name};
+        this.fnNameByNum[this.fnNextNum] = name;
+        this.fnNextNum = this.fnNextNum + 1;
+        return this.fnNextNum - 1;
+      }
     }
   };
-  
+
   /**
    * Counting the documents generated in this page.
    * Helps to generate an ID for the nodes 
@@ -219,7 +245,6 @@ Org.Outline = (function(Org, undefined){
      */
     nodeTextList: function(text){
       var content = text;
-      //console.log(content);
       return _U.map(
         content.split(/^\*/m), 
         function(t, idx){
@@ -239,9 +264,10 @@ Org.Outline = (function(Org, undefined){
 
     buildTree: function(){
       var nodes = this.nodeList(this.txt);
+      var root = nodes[0];
       var length = nodes.length;
-      var done, j, level;
-      for(var i = 1; i < length ; i++){
+      var done, i, j, level;
+      for(i = 1; i < length ; i++){
         level = nodes[i].level;
         done = false;
         j = i;
@@ -255,7 +281,10 @@ Org.Outline = (function(Org, undefined){
           }
         }
       }
-      return nodes[0];
+      for(i = 0; i < length ; i++){
+        nodes[i].parseContent();
+      }
+      return root;
     }
   };
 

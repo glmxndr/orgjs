@@ -47,6 +47,14 @@ Org.Markup = (function(Org){
   };
   Markup.Link = Link;
 
+  var FootNoteRef = function(parent, raw, name, token){
+    this.raw = raw;
+    this.parent = parent;
+    this.name = name;
+    this.token = token;
+  };
+  Markup.FootNoteRef = FootNoteRef;
+
 ///////////////////////////////////////////////////////////////////////////////
 // TYPO
   
@@ -256,11 +264,31 @@ Org.Markup = (function(Org){
     // Treating bare URLs, or URLs without a description attached.
     var urlRegex = new RegExp("(?:" + 
                       _C.urlProtocols.join("|") + 
-                      '):[^\\s]+', "gi");
+                      '):[^\\s),;]+', "gi");
     str = str.replace(urlRegex, linkReplacer(0, 0));
 
 ///////////////////////////////////////////////////////////////////////////////
 //     FOOTNOTES
+
+    var refFootnoteRegex = /\[(?:(\d+)|fn:([^:]*)(?::((?:.|\s)+?))?)\]/g;
+    str = str.replace(refFootnoteRegex, function(){
+      var a = arguments;
+      var raw = a[0], name = a[2], def = a[3];
+      if(!name){name = a[1];}
+      if(!name){name = "anon_" + _U.root(parent).fnNextNum;}
+      var t = linkToken();
+      var fn = new FootNoteRef(parent, raw, name, t);
+      if(def){
+        var root = _U.root(parent);
+        console.log("FROM MARKUP::::");
+        console.log(root);
+        var inline = new EmphInline(root);
+        inline.consume(def);
+        root.addFootnoteDef(inline, name);
+      }
+      links[t] = fn;
+      return t;
+    });
 
 // TODO
 

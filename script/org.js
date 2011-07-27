@@ -1,16 +1,24 @@
 /***orgdoc***
 #+TITLE:     Org-Mode Javascript Parser
 
-  This project aims to provide a parser and easily customizable renderer
+  Some para here !
+
+  [fn:2] Oh, right!
+
+  [1] Oh, right again!
+
+
+  This project aims to provide[fn:2] a parser and easily customizable renderer
   for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 
 * =Org= : the Main object
 
-  The global context is extended with only one object, named =Org=.
+  The global context[1] is extended with only one object, named =Org=.
 
-  This is a /sample _paragraph_/. With some formatting (see http://google.com/ ).
+  This is a /sample _paragraph_/. With some formatting (see http://google.com/).
   + A *\*bold\** word
   + A tilde: ~\~~
+
 
 */
 var Org = {
@@ -182,6 +190,12 @@ Org.Utils = (function(Org){
   var RGX = Org.Regexps;
 
   return {
+    root: function(obj){
+      var result = obj;
+      while(result.parent){result = result.parent;}
+      return result;
+    },
+
     range: function(){
       var from, to, step, args = arguments, result = [], i;
       switch(args.length){
@@ -208,12 +222,12 @@ Org.Utils = (function(Org){
 
     notEmpty: function(o){
       // Valid only for strings and arrays
-      return !this.empthy(o);
+      return !this.empty(o);
     },
 
     blank: function(str){
       // Valid only for strings and arrays
-      return str && str == 0;
+      return !str || str == 0;
     },
 
     notBlank: function(str){
@@ -303,681 +317,10 @@ Org.Utils = (function(Org){
 }(Org));
 
 /***orgdoc***
-
-* =Org.Outline= : the outline/headlines parser
-
-  This section describes the outline parser.
-
-*/
-
-Org.Outline = (function(Org, undefined){
-
-  var RGX = Org.Regexps;
-  var _U = Org.Utils;
-
-  /////////////////////////////////////////////////////////////////////////////
-  // NODE : corresponds to a line starting with stars "*** ..."
-  
-  var Node = function(whole, params){
-    params = params || {};
-    this.docid = params.docid;
-    this.parent = params.parent;
-    this.children = params.children || [];
-    
-    this.whole = whole;
-    this.parser = new NodeParser(this.whole);
-    this.heading = this.parser.getHeading();
-    this.level = params.level || (this.heading.getStars() || "").length;
-    
-    this.properties = this.parser.getProperties();
-    this.meta = this.parser.getMeta();
-    this.content = this.parser.getContent();
-    
-  };
-
-  Node.prototype = {
-    siblings: function(){
-      return this.parent 
-              ? this.parent.children
-              : [];
-    },
-
-    // Computes the ID of this node
-    id: function(){
-      if (!this.parent){
-        return this.docid 
-                ? this.docid
-                : "doc#" + (Node.tocnum++) + "/";
-      }
-      return this.parent.id() + "" + this.siblings().indexOf(this) + "/";
-    }
-  };
-  
-  /**
-   * Counting the documents generated in this page.
-   * Helps to generate an ID for the nodes 
-   * when no docid is given in the root node.
-   */
-  Node.tocnum = 0;
-  
-  /////////////////////////////////////////////////////////////////////////////
-  // PARSING
-  
-  /**
-   * Headline embeds the parsing of a heading line.
-   */
-  var Headline = function(txt){
-    this.repr = _U.trim(txt);
-    this.match = RGX.headingLine.exec(this.repr) || [];
-  };
-
-  Headline.prototype = {
-    getStars: function(){
-      return this.match[1];
-    },
-    getTodo: function(){
-      return this.match[2];
-    },
-    getPriority: function(){
-      return this.match[3];
-    },
-    getTitle: function(){
-      return this.match[4] || "";
-    },
-    getTags: function(){
-      var tags = this.match[5];
-      return tags ? tags.split(":") : [];
-    }
-  };
-  
-  /**
-   * Parsing a whole section
-   */
-  var NodeParser = function(txt){
-    this.content = txt;
-  };
-
-  NodeParser.prototype = {
-    /**
-     * Returns the heading object for this node
-     */
-    getHeading: function(){
-      if(this.heading){return this.heading;}
-      var firstLine = _U.firstLine(this.content);
-      this.heading = new Headline(firstLine);
-      return this.heading;
-    },
-
-    /**
-     * Returns the map of headers (defined by "#+META: ..." line definitions)
-     */
-    getMeta: function(){
-      if(this.meta){return this.meta;}
-      var content = this.content;
-      if(this.level > 0){content = content.replace(RGX.headingLine, "\n");}
-      var meta = this.parseHeaders(content);
-      this.meta = meta;
-      return this.meta;
-    },
-
-    /**
-     * Returns the properties as defined in the :PROPERTIES: field
-     */
-    getProperties: function(){
-      if(this.props){return this.props;}
-      var content = this.content;
-      content = content.replace(RGX.headingLine, "\n");
-      var subHeadingStars = "\n" + this.getHeading().getStars() + "*";
-      content = content.split(subHeadingStars)[0];
-      var props = this.props = {};
-      var propMatch = RGX.propertySection.exec(content);
-      if(!propMatch){return this.props;}
-      var propLines = _U.lines(propMatch[1]);
-      _U.each(propLines, function(line, idx){
-        var match = RGX.propertyLine.exec(line);
-        if(!match){return 1;} // continue
-        // Properties may be defined on several lines ; concatenate the values if needed
-        props[match[1]] = props[match[1]] ? props[match[1]] + " " + match[2] : match[2];
-      });
-      this.props = props;
-      return this.props;
-    },
-
-    /**
-     * Returns the whole content without the heading nor the subitems
-     */
-    getItem: function(){
-      if(this.item){return this.item;}
-      var content = this.content;
-      content = content.replace(RGX.headingLine, "\n");
-      var subHeadingStars = "\n" + this.getHeading().getStars() + "*";
-      //_U.log(subHeadingStars);
-      content = content.split(subHeadingStars)[0];
-      this.item = content;
-      return content;
-    }, 
-
-    /**
-     * Returns the content only : no heading, no properties, no subitems, no clock, etc.
-     */
-    getContent: function(){
-      if(this.text){return this.text;}
-      var content = this.getItem();
-      content = this.removeHeaders(content);
-      content = content.replace(RGX.propertySection, "");
-      content = content.replace(RGX.scheduled, "");
-      content = content.replace(RGX.deadline, "");
-      content = content.replace(RGX.clockSection, "");
-      content = content.replace(RGX.clockLine, "");
-      this.text = content;
-      return content;
-    },
-
-    /**
-     * Extracts all the ""#+HEADER: Content" lines
-     * at the beginning of the given text, and returns a map
-     * of HEADER => Content
-     */
-    parseHeaders: function(txt){
-      var result = {};
-      var lines = txt.split(RGX.newline);
-      _U.each(lines, function(line, idx){
-        if(_U.trim(line).length == 0){return true;}
-        if(!line.match(RGX.metaDeclaration)){return false;} // we went ahead the headers : break the loop
-        var match = RGX.metaLine.exec(line);
-        if (match){
-          result[match[1]] = match[2];
-        }
-        return true;
-      });
-      // _U.log(result);
-      return result;
-    },
-    /**
-     * Returns the given text without the "#+HEADER: Content" lines at the beginning
-     */
-    removeHeaders: function(txt){
-      var result = "";
-      var lines = txt.split(RGX.newline);
-      var header = true;
-      _U.each(lines, function(line, idx){
-        if(header && _U.trim(line).length == 0){return;}
-        if(header && line.match(RGX.metaDeclaration)){return;}
-        header = false;
-        result += "\n" + line;
-      });
-      return result;
-    }
-  };
-  
-  /**
-   * General purpose parser.
-   */
-  var Parser = function(txt){
-    this.txt = txt;
-  };
-  Parser.prototype = {
-    /**
-     * Creates a list of all the org-node contents
-     */
-    nodeTextList: function(text){
-      var content = text;
-      //console.log(content);
-      return _U.map(
-        content.split(/^\*/m), 
-        function(t, idx){
-          return idx == 0 ? "\n" + t : "*" + t;
-        }
-      );
-    },
-
-    /**
-     * Creates a list of all the org-node contents
-     */
-    nodeList: function(text){
-      return _U.map( this.nodeTextList(text) ,
-        function(t, idx){ return new Node(t); }
-      );
-    },
-
-    buildTree: function(){
-      var nodes = this.nodeList(this.txt);
-      var length = nodes.length;
-      var done, j, level;
-      for(var i = 1; i < length ; i++){
-        level = nodes[i].level;
-        done = false;
-        j = i;
-        while(!done){
-          j = j - 1;
-          if(j < 0){break;}
-          if(nodes[j].level < level){
-            nodes[i].parent = nodes[j];
-            nodes[j].children.push(nodes[i]);
-            done = true;
-          }
-        }
-      }
-      return nodes[0];
-    }
-  };
-
-  return {
-    Node:       Node,
-    Headline:   Headline,
-    Parser:     Parser,
-    NodeParser: NodeParser,
-    parse:      function(txt){
-      var parser = new Parser(txt);
-      return parser.buildTree();
-    }
-  };
-
-}(Org));
-
-/***orgdoc***
-
-* =Org.Content= : the content parser
-
-  This section describes the parser for the actual content within the sections
-  of the =org= file.
-
-*/
-
-Org.Content = (function(Org){
-
-  var _U  = Org.Utils;
-  var RGX = Org.Regexps;
-
-  // The object that will be returned, and filled throughout this function.
-  var Content = {};
-
-  var LineDef = (function(){
-    var l = -1;
-    return {
-      "BLANK":    {id: ++l},
-      "IGNORED":  {id: ++l},
-      "PARA":     {id: ++l},
-      "ULITEM":   {id: ++l},
-      "OLITEM":   {id: ++l},
-      "DLITEM":   {id: ++l},
-      "VERSE":    {id: ++l, beginEnd:1},
-      "QUOTE":    {id: ++l, beginEnd:1},
-      "CENTER":   {id: ++l, beginEnd:1},
-      "EXAMPLE":  {id: ++l, beginEnd:1},
-      "SRC":      {id: ++l, beginEnd:1},
-      "HTML":     {id: ++l, beginEnd:1},
-      "COMMENT":  {id: ++l, beginEnd:1}
-    };
-  }());
-
-  // Defining some other arrangements of the line definitions :
-  //  + Simple index : type name => number
-  var LineType = {};
-  _U.each(LineDef, function(v, k){LineType[k] = v.id;});
-  //  + Reversed type index : number => type name
-  var LineTypeArr = [];
-  _U.each(LineDef, function(v, k){LineTypeArr[v.id] = k;});
-  //  + List of names of the blocks in #+BEGIN_... / #+END_... form
-  var BeginEndBlocks = {};
-  _U.each(LineDef, function(v, k){if(v.beginEnd) BeginEndBlocks[k] = 1;});
-
-  function getLineType(line){
-    // First test on a line beginning with a letter,
-    // the most common case, to avoid making all the
-    // other tests before returning the default.
-    if(/^\s*[a-z]/i.exec(line)){
-      return LineType.PARA;
-    }
-    if(line == 0){
-      return LineType.BLANK;
-    }
-    if(/^#/.exec(line)){
-      return LineType.IGNORED;
-    }
-    // Then test all the other cases
-    if(/^\s+[+*-] /.exec(line)){
-      if(/ ::/.exec(line)){
-        return LineType.DLITEM;
-      }
-      return LineType.ULITEM;
-    }
-    if(/^\s*\d+[.)] /.exec(line)){
-      return LineType.OLITEM;
-    }
-    //if(/^\s*$/.exec(line)){
-    //  return LineType.BLANK;
-    //}
-    for(k in BeginEndBlocks){
-      if(RGX.beginBlock(k).exec(line)){
-        return LineType[k];
-      }
-    }
-    return LineType.PARA;
-  }
-
-  function getLineIndent(line){
-    line = line || "";
-    var indent = /^\s*/.exec(line)[0].length;
-    return indent;
-  }
-
-  function getNewBlock(line, parent){
-    var type = getLineType(line, line);
-    var constr = LineDef[LineTypeArr[type]].constr || LineDef.PARA.constr;
-    return new constr(parent, line);
-  }
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  CONTAINERBLOCK
-  var ContainerBlock = function(parent){
-    this.parent = parent;
-    this.isContainer = true;
-    this.children = [];
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  ROOTBLOCK
-  var RootBlock = function(){
-    ContainerBlock.call(this, null);
-  };
-  Content.RootBlock = RootBlock;
-
-  RootBlock.prototype.accept  = function(line){return true;};
-  RootBlock.prototype.consume = function(line){
-    var block = getNewBlock(line, this);
-    this.children.push(block);
-    return block.consume(line);
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  CONTENTBLOCK
-  var ContentBlock = function(parent){
-    this.parent = parent;
-    this.isContent = true;
-    this.lines = [];
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  PARABLOCK
-  var ParaBlock = function(parent){
-    ContentBlock.call(this, parent);
-    this.indent = parent.indent || 0;
-  };
-  LineDef.PARA.constr = Content.ParaBlock = ParaBlock;
-
-  ParaBlock.prototype.accept = function(line){
-    var indent;
-    var type = getLineType(line);
-    if(type === LineType.BLANK){
-      if(this.ended){return true;}
-      this.ended = true; return true;
-    }
-    if(type !== LineType.PARA){return false;}
-    if(this.ended){return false;}
-
-    if(this.indent === 0){return true;}
-    indent = getLineIndent(line);
-    if(indent <= this.indent){
-      return false;    
-    }
-    return true;
-  };
-
-  ParaBlock.prototype.consume = function(line){
-    var type = getLineType(line);
-    if(type !== LineType.IGNORED){
-      this.lines.push(line);
-    }
-    return this;
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  BEGINENDBLOCK
-  var BeginEndBlock = function(parent, line, type){
-    ContentBlock.call(this, parent);
-    this.indent = getLineIndent(line);
-    this.ended = false;
-    this.beginre = RGX.beginBlock(type);
-    this.endre   = RGX.endBlock(type);
-  };
-
-  BeginEndBlock.prototype.accept      = function(line){return !this.ended;};
-  BeginEndBlock.prototype.treatBegin  = function(line){};
-  BeginEndBlock.prototype.consume     = function(line){
-    if(this.beginre.exec(line)){ this.treatBegin(line); }
-    else if(this.endre.exec(line)){ this.ended = true; }
-    else { 
-      if(this.verbatim){
-        this.lines.push(line);
-      } else {
-        var type = getLineType(line);
-        if(type !== LineType.IGNORED){
-          this.lines.push(line);
-        }
-      }  
-    }
-    return this;
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  VERSEBLOCK
-  var VerseBlock = function(parent, line){
-    BeginEndBlock.call(this, parent, line, "VERSE");
-  };
-  LineDef.VERSE.constr = Content.VerseBlock = VerseBlock;
-  VerseBlock.prototype = Object.create(BeginEndBlock.prototype);
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  QUOTEBLOCK
-  var QuoteBlock = function(parent, line){
-    BeginEndBlock.call(this, parent, line, "QUOTE");
-  };
-  LineDef.QUOTE.constr = Content.QuoteBlock = QuoteBlock;
-  QuoteBlock.prototype = Object.create(BeginEndBlock.prototype);
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  CENTERBLOCK
-  var CenterBlock = function(parent, line){
-    BeginEndBlock.call(this, parent, line, "CENTER");
-  };
-  LineDef.CENTER.constr = Content.CenterBlock = CenterBlock;
-  CenterBlock.prototype = Object.create(BeginEndBlock.prototype);
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  EXAMPLEBLOCK
-  var ExampleBlock = function(parent, line){
-    BeginEndBlock.call(this, parent, line, "EXAMPLE");
-    this.verbatim = true;
-  };
-  LineDef.EXAMPLE.constr = Content.ExampleBlock = ExampleBlock;
-  ExampleBlock.prototype = Object.create(BeginEndBlock.prototype);
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  SRCBLOCK
-  var SrcBlock = function(parent, line){
-    BeginEndBlock.call(this, parent, line, "SRC");
-    this.verbatim = true;
-    var match = /BEGIN_SRC\s+([a-z-]+)(?:\s*|$)/i.exec(line);
-    this.language = match ? match[1] : null;
-  };
-  LineDef.SRC.constr = Content.SrcBlock = SrcBlock;
-  SrcBlock.prototype = Object.create(BeginEndBlock.prototype);
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  HTMLBLOCK
-  var HtmlBlock = function(parent, line){
-    BeginEndBlock.call(this, parent, line, "HTML");
-    this.verbatim = true;
-  };
-  LineDef.HTML.constr = Content.HtmlBlock = HtmlBlock;
-  HtmlBlock.prototype = Object.create(BeginEndBlock.prototype);
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  COMMENTBLOCK
-  var CommentBlock = function(parent, line){
-    BeginEndBlock.call(this, parent, line, "COMMENT");
-    this.verbatim = true;
-  };
-  LineDef.COMMENT.constr = Content.CommentBlock = CommentBlock;
-  CommentBlock.prototype = Object.create(BeginEndBlock.prototype);
-
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  ULISTBLOCK
-  var UlistBlock = function(parent, line){
-    ContainerBlock.call(this, parent);
-    this.indent = getLineIndent(line);
-  };
-  LineDef.ULITEM.constr = Content.UlistBlock = UlistBlock;
-
-  UlistBlock.prototype.accept  = function(line){
-    return getLineType(line) === LineType.ULITEM &&
-      getLineIndent(line) === this.indent;
-  };
-
-  UlistBlock.prototype.consume = function(line){
-    var item = new UlistItemBlock(this, line);
-    this.children.push(item);
-    return item.consume(line);
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  OLISTBLOCK
-  var OlistBlock = function(parent, line){
-    ContainerBlock.call(this, parent);
-    this.indent = getLineIndent(line);
-    var match = /^\s*\d+[.)]\s+\[@(\d+)\]/.exec(line);
-    this.start = match ? +(match[1]) : 1;
-  };
-  LineDef.OLITEM.constr = Content.OlistBlock = OlistBlock;
-
-  OlistBlock.prototype.accept  = function(line){
-    return getLineType(line) === LineType.OLITEM &&
-      getLineIndent(line) === this.indent;
-  };
-
-  OlistBlock.prototype.consume = function(line){
-    var item = new OlistItemBlock(this, line);
-    this.children.push(item);
-    return item.consume(line);
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  DLISTBLOCK
-  var DlistBlock = function(parent, line){
-    ContainerBlock.call(this, parent);
-    this.indent = getLineIndent(line);
-  };
-  LineDef.DLITEM.constr = Content.DlistBlock = DlistBlock;
-
-  DlistBlock.prototype.accept  = function(line){
-    return getLineType(line) === LineType.DLITEM &&
-      getLineIndent(line) === this.indent;
-  };
-
-  DlistBlock.prototype.consume = function(line){
-    var item = new DlistItemBlock(this, line);
-    this.children.push(item);
-    return item.consume(line);
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  LISTITEMBLOCK
-  var ListItemBlock = function(parent, line){
-    ContainerBlock.call(this, parent);
-    this.indent = parent.indent;
-  };
-
-  ListItemBlock.prototype.accept  = function(line){
-    var isMoreIndented = getLineIndent(line) > this.indent;
-    return isMoreIndented;
-  };
-
-  ListItemBlock.prototype.consume = function(line){
-    var block;
-    if(this.children.length === 0){
-      line = this.preprocess(line);
-    }
-    block = getNewBlock(line, this);
-    this.children.push(block);
-    return block.consume(line);
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  ULISTITEMBLOCK
-  var UlistItemBlock = function(parent, line){
-    ListItemBlock.call(this, parent, line);
-  };
-  Content.UlistItemBlock = UlistItemBlock;
-
-  UlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
-  UlistItemBlock.prototype.preprocess = function(line){
-    return line.replace(/^(\s*)[+*-] /, "$1  ");
-  };
-
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  OLISTITEMBLOCK
-  var OlistItemBlock = function(parent, line){
-    ListItemBlock.call(this, parent, line);
-    var match = /^\s*(\d+)[.)] /.exec(line);
-    this.number = match ? +(match[1]) : 1;
-  };
-  Content.OlistItemBlock = OlistItemBlock;
-
-  OlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
-  OlistItemBlock.prototype.preprocess = function(line){
-    return line.replace(/^(\s+)\d+[.)](?:\s+\[@\d+\])? /, "$1  ");
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  DLISTITEMBLOCK
-  var DlistItemBlock = function(parent, line){
-    ListItemBlock.call(this, parent,line);
-    this.title = /^\s*[+*-] (.*) ::/.exec(line)[1];
-  };
-  Content.DlistItemBlock = DlistItemBlock;
-
-  DlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
-  DlistItemBlock.prototype.preprocess = function(line){
-    return line.replace(/^(\s*)[+*-]\s+.*? ::/, "$1  ");
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //       PARSECONTENT
-  Content.parse = function(lines){
-    var root = new RootBlock();
-    var current = root;
-    var line = lines.shift();
-    // Ignore first blank lines...
-    while(line !== undefined && getLineType(line) === LineType.BLANK){
-      line = lines.shift();
-    }
-    while(line !== undefined){
-      while(current){
-        if(current.accept(line)){
-          current = current.consume(line);
-          break;
-        } else {
-          current = current.parent;
-        }
-      }
-      line = lines.shift();
-    };
-    return root;
-  };
-
-  return Content;
-
-}(Org));
-
-/***orgdoc***
 * Markup parser
 
   This file contains the code for the Org-Mode wiki-style markup.
 
-    #+BEGIN_SRC js
 */
 Org.Markup = (function(Org){
 
@@ -1020,6 +363,14 @@ Org.Markup = (function(Org){
     this.type = getLinkType(this);
   };
   Markup.Link = Link;
+
+  var FootNoteRef = function(parent, raw, name, token){
+    this.raw = raw;
+    this.parent = parent;
+    this.name = name;
+    this.token = token;
+  };
+  Markup.FootNoteRef = FootNoteRef;
 
 ///////////////////////////////////////////////////////////////////////////////
 // TYPO
@@ -1230,11 +581,31 @@ Org.Markup = (function(Org){
     // Treating bare URLs, or URLs without a description attached.
     var urlRegex = new RegExp("(?:" + 
                       _C.urlProtocols.join("|") + 
-                      '):[^\\s]+', "gi");
+                      '):[^\\s),;]+', "gi");
     str = str.replace(urlRegex, linkReplacer(0, 0));
 
 ///////////////////////////////////////////////////////////////////////////////
 //     FOOTNOTES
+
+    var refFootnoteRegex = /\[(?:(\d+)|fn:([^:]*)(?::((?:.|\s)+?))?)\]/g;
+    str = str.replace(refFootnoteRegex, function(){
+      var a = arguments;
+      var raw = a[0], name = a[2], def = a[3];
+      if(!name){name = a[1];}
+      if(!name){name = "anon_" + _U.root(parent).fnNextNum;}
+      var t = linkToken();
+      var fn = new FootNoteRef(parent, raw, name, t);
+      if(def){
+        var root = _U.root(parent);
+        console.log("FROM MARKUP::::");
+        console.log(root);
+        var inline = new EmphInline(root);
+        inline.consume(def);
+        root.addFootnoteDef(inline, name);
+      }
+      links[t] = fn;
+      return t;
+    });
 
 // TODO
 
@@ -1249,12 +620,787 @@ Org.Markup = (function(Org){
 
 }(Org));
 /***orgdoc***
-    #+END_SRC
+
+* =Org.Content= : the content parser
+
+  This section describes the parser for the actual content within the sections
+  of the =org= file.
+
+*/
+
+Org.Content = (function(Org){
+
+  var _U  = Org.Utils;
+  var OM = Org.Markup;
+  var RGX = Org.Regexps;
+
+  // The object that will be returned, and filled throughout this function.
+  var Content = {};
+
+  var LineDef = (function(){
+    var l = -1;
+    return {
+      "BLANK":    {id: ++l},
+      "IGNORED":  {id: ++l},
+      "FNDEF":    {id: ++l},
+      "PARA":     {id: ++l},
+      "ULITEM":   {id: ++l},
+      "OLITEM":   {id: ++l},
+      "DLITEM":   {id: ++l},
+      "VERSE":    {id: ++l, beginEnd:1},
+      "QUOTE":    {id: ++l, beginEnd:1},
+      "CENTER":   {id: ++l, beginEnd:1},
+      "EXAMPLE":  {id: ++l, beginEnd:1},
+      "SRC":      {id: ++l, beginEnd:1},
+      "HTML":     {id: ++l, beginEnd:1},
+      "COMMENT":  {id: ++l, beginEnd:1}
+    };
+  }());
+
+  // Defining some other arrangements of the line definitions :
+  //  + Simple index : type name => number
+  var LineType = {};
+  _U.each(LineDef, function(v, k){LineType[k] = v.id;});
+  //  + Reversed type index : number => type name
+  var LineTypeArr = [];
+  _U.each(LineDef, function(v, k){LineTypeArr[v.id] = k;});
+  //  + List of names of the blocks in #+BEGIN_... / #+END_... form
+  var BeginEndBlocks = {};
+  _U.each(LineDef, function(v, k){if(v.beginEnd) BeginEndBlocks[k] = 1;});
+
+  function getLineType(line){
+    // First test on a line beginning with a letter,
+    // the most common case, to avoid making all the
+    // other tests before returning the default.
+    if(/^\s*[a-z]/i.exec(line)){
+      return LineType.PARA;
+    }
+    if(line == 0){
+      return LineType.BLANK;
+    }
+    if(/^#/.exec(line)){
+      return LineType.IGNORED;
+    }
+    // Then test all the other cases
+    if(/^\s+[+*-] /.exec(line)){
+      if(/ ::/.exec(line)){
+        return LineType.DLITEM;
+      }
+      return LineType.ULITEM;
+    }
+    if(/^\s*\d+[.)] /.exec(line)){
+      return LineType.OLITEM;
+    }
+    if(/^\s*\[(\d+|fn:.+?)\]/.exec(line)){
+      return LineType.FNDEF;
+    }
+
+    //if(/^\s*$/.exec(line)){
+    //  return LineType.BLANK;
+    //}
+    for(k in BeginEndBlocks){
+      if(RGX.beginBlock(k).exec(line)){
+        return LineType[k];
+      }
+    }
+    return LineType.PARA;
+  }
+
+  function getLineIndent(line){
+    line = line || "";
+    var indent = /^\s*/.exec(line)[0].length;
+    return indent;
+  }
+
+  function getNewBlock(line, parent){
+    var type = getLineType(line, line);
+    var constr = LineDef[LineTypeArr[type]].constr || LineDef.PARA.constr;
+    return new constr(parent, line);
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  CONTAINERBLOCK
+  var ContainerBlock = function(parent){
+    this.parent = parent;
+    this.isContainer = true;
+    this.children = [];
+  };
+  ContainerBlock.prototype.finalize = function(){};
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  ROOTBLOCK
+  var RootBlock = function(parent){
+    ContainerBlock.call(this, parent);
+  };
+  Content.RootBlock = RootBlock;
+  RootBlock.prototype = Object.create(ContainerBlock.prototype);
+
+  RootBlock.prototype.accept  = function(line){return true;};
+  RootBlock.prototype.consume = function(line){
+    var block = getNewBlock(line, this);
+    this.children.push(block);
+    return block.consume(line);
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  CONTENTBLOCK
+  var ContentBlock = function(parent){
+    this.parent = parent;
+    this.isContent = true;
+    this.lines = [];
+  };
+  ContentBlock.prototype.finalize = function(){};
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  CONTENTMARKUPBLOCK
+  var ContentMarkupBlock = function(parent){
+    ContentBlock.call(this, parent);
+    this.hasMarkup = true;
+    this.children = [];
+  };
+  ContentMarkupBlock.prototype.finalize = function(){
+    var content = this.lines.join("\n");
+    var inline = OM.tokenize(this, content);
+    this.children.push(inline);
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  PARABLOCK
+  var ParaBlock = function(parent){
+    ContentMarkupBlock.call(this, parent);
+    this.indent = parent.indent || 0;
+  };
+  LineDef.PARA.constr = Content.ParaBlock = ParaBlock;
+  ParaBlock.prototype = Object.create(ContentMarkupBlock.prototype);
+  ParaBlock.prototype.accept = function(line){
+    var indent;
+    var type = getLineType(line);
+    if(type === LineType.BLANK){
+      if(this.ended){return true;}
+      this.ended = true; return true;
+    }
+    if(type !== LineType.PARA){return false;}
+    if(this.ended){return false;}
+
+    if(this.indent === 0){return true;}
+    indent = getLineIndent(line);
+    if(indent <= this.indent){
+      return false;    
+    }
+    return true;
+  };
+
+  ParaBlock.prototype.consume = function(line){
+    var type = getLineType(line);
+    if(type !== LineType.IGNORED){
+      this.lines.push(line);
+    }
+    return this;
+  };
+
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  FNDEFBLOCK
+  var FndefBlock = function(parent){
+    ContentMarkupBlock.call(this, parent);
+    this.indent = parent.indent || 0;
+    this.firstline = true;
+  };
+  LineDef.FNDEF.constr = Content.FndefBlock = FndefBlock;
+  FndefBlock.prototype = Object.create(ContentMarkupBlock.prototype);
+
+  FndefBlock.prototype.accept = function(line){
+    var indent;
+    var type = getLineType(line);
+    if(type === LineType.FNDEF){
+      if(this.ended){return false;}
+      return true;
+    }
+    if(type === LineType.BLANK){
+      if(this.ended){ return true; }
+      this.ended = true; return true;
+    }
+    if(this.ended){ return false; }
+    return true;
+  };
+
+  FndefBlock.prototype.consume = function(line){
+    var type = getLineType(line);
+    if(this.firstline){
+      this.name = /^\s*\[(.*?)\]/.exec(line)[1].replace(/^fn:/, '');
+      this.firstline = false;
+    }
+    if(type !== LineType.IGNORED){
+      this.lines.push(line);
+    }
+    return this;
+  };
+
+  FndefBlock.prototype.finalize = function(line){
+    var root = _U.root(this);
+    var content = this.lines.join("\n");
+    content = content.replace(/^(\s*)\[.*?\]/, "$1");
+    var inline = OM.tokenize(this, content);
+    root.addFootnoteDef(inline, this.name);
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  BEGINENDBLOCK
+  var BeginEndBlock = function(parent, line, type){
+    ContentBlock.call(this, parent);
+    this.indent = getLineIndent(line);
+    this.ended = false;
+    this.beginre = RGX.beginBlock(type);
+    this.endre   = RGX.endBlock(type);
+  };
+  BeginEndBlock.prototype = Object.create(ContentBlock.prototype);
+  BeginEndBlock.prototype.accept      = function(line){return !this.ended;};
+  BeginEndBlock.prototype.treatBegin  = function(line){};
+  BeginEndBlock.prototype.consume     = function(line){
+    if(this.beginre.exec(line)){ this.treatBegin(line); }
+    else if(this.endre.exec(line)){ this.ended = true; }
+    else { 
+      if(this.verbatim){
+        this.lines.push(line);
+      } else {
+        var type = getLineType(line);
+        if(type !== LineType.IGNORED){
+          this.lines.push(line);
+        }
+      }  
+    }
+    return this;
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  VERSEBLOCK
+  var VerseBlock = function(parent, line){
+    ContentMarkupBlock.call(this, parent);
+    BeginEndBlock.call(this, parent, line, "VERSE");
+  };
+  LineDef.VERSE.constr = Content.VerseBlock = VerseBlock;
+  VerseBlock.prototype = Object.create(BeginEndBlock.prototype);
+  VerseBlock.prototype.finalize = ContentMarkupBlock.finalize;
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  QUOTEBLOCK
+  var QuoteBlock = function(parent, line){
+    ContentMarkupBlock.call(this, parent);
+    BeginEndBlock.call(this, parent, line, "QUOTE");
+  };
+  LineDef.QUOTE.constr = Content.QuoteBlock = QuoteBlock;
+  QuoteBlock.prototype = Object.create(BeginEndBlock.prototype);
+  QuoteBlock.prototype.finalize = ContentMarkupBlock.finalize;
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  CENTERBLOCK
+  var CenterBlock = function(parent, line){
+    ContentMarkupBlock.call(this, parent);
+    BeginEndBlock.call(this, parent, line, "CENTER");
+  };
+  LineDef.CENTER.constr = Content.CenterBlock = CenterBlock;
+  CenterBlock.prototype = Object.create(BeginEndBlock.prototype);
+  CenterBlock.prototype.finalize = ContentMarkupBlock.finalize;
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  EXAMPLEBLOCK
+  var ExampleBlock = function(parent, line){
+    BeginEndBlock.call(this, parent, line, "EXAMPLE");
+    this.verbatim = true;
+  };
+  LineDef.EXAMPLE.constr = Content.ExampleBlock = ExampleBlock;
+  ExampleBlock.prototype = Object.create(BeginEndBlock.prototype);
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  SRCBLOCK
+  var SrcBlock = function(parent, line){
+    BeginEndBlock.call(this, parent, line, "SRC");
+    this.verbatim = true;
+    var match = /BEGIN_SRC\s+([a-z-]+)(?:\s*|$)/i.exec(line);
+    this.language = match ? match[1] : null;
+  };
+  LineDef.SRC.constr = Content.SrcBlock = SrcBlock;
+  SrcBlock.prototype = Object.create(BeginEndBlock.prototype);
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  HTMLBLOCK
+  var HtmlBlock = function(parent, line){
+    BeginEndBlock.call(this, parent, line, "HTML");
+    this.verbatim = true;
+  };
+  LineDef.HTML.constr = Content.HtmlBlock = HtmlBlock;
+  HtmlBlock.prototype = Object.create(BeginEndBlock.prototype);
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  COMMENTBLOCK
+  var CommentBlock = function(parent, line){
+    BeginEndBlock.call(this, parent, line, "COMMENT");
+    this.verbatim = true;
+  };
+  LineDef.COMMENT.constr = Content.CommentBlock = CommentBlock;
+  CommentBlock.prototype = Object.create(BeginEndBlock.prototype);
+
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  ULISTBLOCK
+  var UlistBlock = function(parent, line){
+    ContainerBlock.call(this, parent);
+    this.indent = getLineIndent(line);
+  };
+  LineDef.ULITEM.constr = Content.UlistBlock = UlistBlock;
+  UlistBlock.prototype = Object.create(ContainerBlock.prototype);
+
+  UlistBlock.prototype.accept  = function(line){
+    return getLineType(line) === LineType.ULITEM &&
+      getLineIndent(line) === this.indent;
+  };
+
+  UlistBlock.prototype.consume = function(line){
+    var item = new UlistItemBlock(this, line);
+    this.children.push(item);
+    return item.consume(line);
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  OLISTBLOCK
+  var OlistBlock = function(parent, line){
+    ContainerBlock.call(this, parent);
+    this.indent = getLineIndent(line);
+    var match = /^\s*\d+[.)]\s+\[@(\d+)\]/.exec(line);
+    this.start = match ? +(match[1]) : 1;
+  };
+  LineDef.OLITEM.constr = Content.OlistBlock = OlistBlock;
+  OlistBlock.prototype = Object.create(ContainerBlock.prototype);
+
+  OlistBlock.prototype.accept  = function(line){
+    return getLineType(line) === LineType.OLITEM &&
+      getLineIndent(line) === this.indent;
+  };
+
+  OlistBlock.prototype.consume = function(line){
+    var item = new OlistItemBlock(this, line);
+    this.children.push(item);
+    return item.consume(line);
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  DLISTBLOCK
+  var DlistBlock = function(parent, line){
+    ContainerBlock.call(this, parent);
+    this.indent = getLineIndent(line);
+  };
+  LineDef.DLITEM.constr = Content.DlistBlock = DlistBlock;
+  DlistBlock.prototype = Object.create(ContainerBlock.prototype);
+
+  DlistBlock.prototype.accept  = function(line){
+    return getLineType(line) === LineType.DLITEM &&
+      getLineIndent(line) === this.indent;
+  };
+
+  DlistBlock.prototype.consume = function(line){
+    var item = new DlistItemBlock(this, line);
+    this.children.push(item);
+    return item.consume(line);
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  LISTITEMBLOCK
+  var ListItemBlock = function(parent, line){
+    ContainerBlock.call(this, parent);
+    this.indent = parent.indent;
+  };
+  ListItemBlock.prototype = Object.create(ContainerBlock.prototype);
+
+  ListItemBlock.prototype.accept  = function(line){
+    var isMoreIndented = getLineIndent(line) > this.indent;
+    return isMoreIndented;
+  };
+
+  ListItemBlock.prototype.consume = function(line){
+    var block;
+    if(this.children.length === 0){
+      line = this.preprocess(line);
+    }
+    block = getNewBlock(line, this);
+    this.children.push(block);
+    return block.consume(line);
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  ULISTITEMBLOCK
+  var UlistItemBlock = function(parent, line){
+    ListItemBlock.call(this, parent, line);
+  };
+  Content.UlistItemBlock = UlistItemBlock;
+
+  UlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
+  UlistItemBlock.prototype.preprocess = function(line){
+    return line.replace(/^(\s*)[+*-] /, "$1  ");
+  };
+
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  OLISTITEMBLOCK
+  var OlistItemBlock = function(parent, line){
+    ListItemBlock.call(this, parent, line);
+    var match = /^\s*(\d+)[.)] /.exec(line);
+    this.number = match ? +(match[1]) : 1;
+  };
+  Content.OlistItemBlock = OlistItemBlock;
+
+  OlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
+  OlistItemBlock.prototype.preprocess = function(line){
+    return line.replace(/^(\s+)\d+[.)](?:\s+\[@\d+\])? /, "$1  ");
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  DLISTITEMBLOCK
+  var DlistItemBlock = function(parent, line){
+    ListItemBlock.call(this, parent,line);
+    var title = /^\s*[+*-] (.*) ::/.exec(line)[1]
+    this.titleInline = OM.tokenize(this, title);
+  };
+  Content.DlistItemBlock = DlistItemBlock;
+
+  DlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
+  DlistItemBlock.prototype.preprocess = function(line){
+    return line.replace(/^(\s*)[+*-]\s+.*? ::/, "$1  ");
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //       PARSECONTENT
+  Content.parse = function(parent, lines){
+    var root = new RootBlock(parent);
+    var current = root;
+    var line = lines.shift();
+    // Ignore first blank lines...
+    while(line !== undefined && getLineType(line) === LineType.BLANK){
+      line = lines.shift();
+    }
+    while(line !== undefined){
+      while(current){
+        if(current.accept(line)){
+          current = current.consume(line);
+          break;
+        } else {
+          current.finalize();
+          current = current.parent;
+        }
+      }
+      line = lines.shift();
+    };
+    if(current){current.finalize();}
+    return root;
+  };
+
+  return Content;
+
+}(Org));
+
+/***orgdoc***
+
+* =Org.Outline= : the outline/headlines parser
+
+  This section describes the outline parser.
+
+*/
+
+Org.Outline = (function(Org, undefined){
+
+  var RGX = Org.Regexps;
+  var OC = Org.Content;
+  var _U = Org.Utils;
+
+  /////////////////////////////////////////////////////////////////////////////
+  // NODE : corresponds to a line starting with stars "*** ..."
+  
+  var Node = function(whole, params){
+    params = params || {};
+    this.docid = params.docid;
+    this.parent = params.parent;
+    this.children = params.children || [];
+    
+    this.whole = whole;
+    this.parser = new NodeParser(this.whole);
+    this.heading = this.parser.getHeading();
+    this.level = params.level || (this.heading.getStars() || "").length;
+    
+    this.properties = this.parser.getProperties();
+    this.meta = this.parser.getMeta();
+    this.content = this.parser.getContent();
+    
+  };
+
+  Node.prototype = {
+    parseContent: function(){
+      var lines = _U.lines(this.content);
+      this.contentNode = OC.parse(this, lines);
+    },
+
+    siblings: function(){
+      return this.parent 
+              ? this.parent.children
+              : [];
+    },
+
+    // Computes the ID of this node
+    id: function(){
+      if (!this.parent){
+        return this.docid 
+                ? this.docid
+                : "doc#" + (Node.tocnum++) + "/";
+      }
+      return this.parent.id() + "" + this.siblings().indexOf(this) + "/";
+    }, 
+
+    addFootnoteDef: function(inline, name){
+      if(this.fnByName === void(0)){
+        this.fnByName = {};
+        this.fnNameByNum = [];
+        this.fnNextNum = 1;
+      }
+      console.log("Define Footnote : " + name + " / " + inline)
+      if(!name){name = "" + this.fnNextNum;}
+      if(this.fnByName[name]){
+        this.fnByName[name].inline = inline;
+        return this.fnNextNum;
+      }
+      else {
+        this.fnByName[name] = {"inline": inline, "num": this.fnNextNum, "name": name};
+        this.fnNameByNum[this.fnNextNum] = name;
+        this.fnNextNum = this.fnNextNum + 1;
+        return this.fnNextNum - 1;
+      }
+    }
+  };
+
+  /**
+   * Counting the documents generated in this page.
+   * Helps to generate an ID for the nodes 
+   * when no docid is given in the root node.
+   */
+  Node.tocnum = 0;
+  
+  /////////////////////////////////////////////////////////////////////////////
+  // PARSING
+  
+  /**
+   * Headline embeds the parsing of a heading line.
+   */
+  var Headline = function(txt){
+    this.repr = _U.trim(txt);
+    this.match = RGX.headingLine.exec(this.repr) || [];
+  };
+
+  Headline.prototype = {
+    getStars: function(){
+      return this.match[1];
+    },
+    getTodo: function(){
+      return this.match[2];
+    },
+    getPriority: function(){
+      return this.match[3];
+    },
+    getTitle: function(){
+      return this.match[4] || "";
+    },
+    getTags: function(){
+      var tags = this.match[5];
+      return tags ? tags.split(":") : [];
+    }
+  };
+  
+  /**
+   * Parsing a whole section
+   */
+  var NodeParser = function(txt){
+    this.content = txt;
+  };
+
+  NodeParser.prototype = {
+    /**
+     * Returns the heading object for this node
+     */
+    getHeading: function(){
+      if(this.heading){return this.heading;}
+      var firstLine = _U.firstLine(this.content);
+      this.heading = new Headline(firstLine);
+      return this.heading;
+    },
+
+    /**
+     * Returns the map of headers (defined by "#+META: ..." line definitions)
+     */
+    getMeta: function(){
+      if(this.meta){return this.meta;}
+      var content = this.content;
+      if(this.level > 0){content = content.replace(RGX.headingLine, "\n");}
+      var meta = this.parseHeaders(content);
+      this.meta = meta;
+      return this.meta;
+    },
+
+    /**
+     * Returns the properties as defined in the :PROPERTIES: field
+     */
+    getProperties: function(){
+      if(this.props){return this.props;}
+      var content = this.content;
+      content = content.replace(RGX.headingLine, "\n");
+      var subHeadingStars = "\n" + this.getHeading().getStars() + "*";
+      content = content.split(subHeadingStars)[0];
+      var props = this.props = {};
+      var propMatch = RGX.propertySection.exec(content);
+      if(!propMatch){return this.props;}
+      var propLines = _U.lines(propMatch[1]);
+      _U.each(propLines, function(line, idx){
+        var match = RGX.propertyLine.exec(line);
+        if(!match){return 1;} // continue
+        // Properties may be defined on several lines ; concatenate the values if needed
+        props[match[1]] = props[match[1]] ? props[match[1]] + " " + match[2] : match[2];
+      });
+      this.props = props;
+      return this.props;
+    },
+
+    /**
+     * Returns the whole content without the heading nor the subitems
+     */
+    getItem: function(){
+      if(this.item){return this.item;}
+      var content = this.content;
+      content = content.replace(RGX.headingLine, "\n");
+      var subHeadingStars = "\n" + this.getHeading().getStars() + "*";
+      //_U.log(subHeadingStars);
+      content = content.split(subHeadingStars)[0];
+      this.item = content;
+      return content;
+    }, 
+
+    /**
+     * Returns the content only : no heading, no properties, no subitems, no clock, etc.
+     */
+    getContent: function(){
+      if(this.text){return this.text;}
+      var content = this.getItem();
+      content = this.removeHeaders(content);
+      content = content.replace(RGX.propertySection, "");
+      content = content.replace(RGX.scheduled, "");
+      content = content.replace(RGX.deadline, "");
+      content = content.replace(RGX.clockSection, "");
+      content = content.replace(RGX.clockLine, "");
+      this.text = content;
+      return content;
+    },
+
+    /**
+     * Extracts all the ""#+HEADER: Content" lines
+     * at the beginning of the given text, and returns a map
+     * of HEADER => Content
+     */
+    parseHeaders: function(txt){
+      var result = {};
+      var lines = txt.split(RGX.newline);
+      _U.each(lines, function(line, idx){
+        if(_U.trim(line).length == 0){return true;}
+        if(!line.match(RGX.metaDeclaration)){return false;} // we went ahead the headers : break the loop
+        var match = RGX.metaLine.exec(line);
+        if (match){
+          result[match[1]] = match[2];
+        }
+        return true;
+      });
+      // _U.log(result);
+      return result;
+    },
+    /**
+     * Returns the given text without the "#+HEADER: Content" lines at the beginning
+     */
+    removeHeaders: function(txt){
+      var result = "";
+      var lines = txt.split(RGX.newline);
+      var header = true;
+      _U.each(lines, function(line, idx){
+        if(header && _U.trim(line).length == 0){return;}
+        if(header && line.match(RGX.metaDeclaration)){return;}
+        header = false;
+        result += "\n" + line;
+      });
+      return result;
+    }
+  };
+  
+  /**
+   * General purpose parser.
+   */
+  var Parser = function(txt){
+    this.txt = txt;
+  };
+  Parser.prototype = {
+    /**
+     * Creates a list of all the org-node contents
+     */
+    nodeTextList: function(text){
+      var content = text;
+      return _U.map(
+        content.split(/^\*/m), 
+        function(t, idx){
+          return idx == 0 ? "\n" + t : "*" + t;
+        }
+      );
+    },
+
+    /**
+     * Creates a list of all the org-node contents
+     */
+    nodeList: function(text){
+      return _U.map( this.nodeTextList(text) ,
+        function(t, idx){ return new Node(t); }
+      );
+    },
+
+    buildTree: function(){
+      var nodes = this.nodeList(this.txt);
+      var root = nodes[0];
+      var length = nodes.length;
+      var done, i, j, level;
+      for(i = 1; i < length ; i++){
+        level = nodes[i].level;
+        done = false;
+        j = i;
+        while(!done){
+          j = j - 1;
+          if(j < 0){break;}
+          if(nodes[j].level < level){
+            nodes[i].parent = nodes[j];
+            nodes[j].children.push(nodes[i]);
+            done = true;
+          }
+        }
+      }
+      for(i = 0; i < length ; i++){
+        nodes[i].parseContent();
+      }
+      return root;
+    }
+  };
+
+  return {
+    Node:       Node,
+    Headline:   Headline,
+    Parser:     Parser,
+    NodeParser: NodeParser,
+    parse:      function(txt){
+      var parser = new Parser(txt);
+      return parser.buildTree();
+    }
+  };
+
+}(Org));
+
+/***orgdoc***
 * Default Rendering
-  :PROPERTIES:
-  :author: G.A.
-  :file: org.render.js
-  :END:
 
   This section provides a default HTML renderer for the parsed tree.
 
@@ -1295,6 +1441,19 @@ Org.Markup = (function(Org){
     str = str.replace(/'/g, "&apos;");
     str = str.replace(/"/g, "&quot;");
     return str;
+  }
+
+  function unBackslash(str){
+    str = "" + str;
+    str = str.replace(/\\\\/g, "<br/>");
+    str = str.replace(/\\ /g, "&nbsp;");
+    str = str.replace(/\\(.)/g, "$1");
+    str = str.replace(/\s--\s/g, " &#151; ");
+    return str;
+  }
+
+  function htmlize(str){
+    return unBackslash(escapeHtml(str));
   }
 
 /***orgdoc***
@@ -1352,29 +1511,46 @@ Org.Markup = (function(Org){
     if(this.children.length){
       return renderChildren.call(this);
     }
-    return "<span class='org-inline-raw'>" + escapeHtml(this.content).replace(/\\(.)/g, "$1") + "</span>\n";
+    return "<span class='org-inline-raw'>" + 
+            htmlize(this.content) + "</span>";
   };
   OM.EmphCode.prototype.render = function(){
-    return "<code class='org-inline-code'>" + escapeHtml(this.content).replace(/\\(.)/g, "$1") + "</code>\n";
+    return "<code class='org-inline-code'>" + 
+            htmlize(this.content) + "</code>";
   };
   OM.EmphVerbatim.prototype.render = function(){
-    return "<samp class='org-inline-samp'>" + escapeHtml(this.content).replace(/\\(.)/g, "$1") + "</samp>\n";
+    return "<samp class='org-inline-samp'>" + 
+            htmlize(this.content) + "</samp>";
   };
   OM.EmphItalic.prototype.render = function(){
-    return "<em class='org-inline-italic'>" + renderChildren.call(this) + "</em>\n";
+    return "<em class='org-inline-italic'>" + 
+            renderChildren.call(this) + "</em>";
   };
   OM.EmphBold.prototype.render = function(){
-    return "<strong class='org-inline-bold'>" + renderChildren.call(this) + "</strong>\n";
+    return "<strong class='org-inline-bold'>" + 
+            renderChildren.call(this) + "</strong>";
   };
   OM.EmphUnderline.prototype.render = function(){
-    return "<u class='org-inline-underline'>" + renderChildren.call(this) + "</u>\n";
+    return "<u class='org-inline-underline'>" + 
+            renderChildren.call(this) + "</u>";
   };
   OM.EmphStrike.prototype.render = function(){
-    return "<del class='org-inline-strike'>" + renderChildren.call(this) + "</del>\n";
+    return "<del class='org-inline-strike'>" + 
+            renderChildren.call(this) + "</del>";
   };
-
   OM.Link.prototype.render = function(){
-    return "<a class='org-inline-link' href='" + this.url + "'>" + this.desc + "</a>\n";
+    return "<a class='org-inline-link' href='" + this.url + "'>" + 
+            htmlize(this.desc) + "</a>";
+  };
+  OM.FootNoteRef.prototype.render = function(){
+    var root = _U.root(this);
+    console.log(root);
+    console.log(this);
+    console.log(root.fnByName[this.name]);
+    var num = root.fnByName[this.name].num;
+    return "<a name='fnref_" + this.name + "'/>" + 
+            "<a class='org-inline-fnref' href='#fndef_" + this.name + "'><sup>" + 
+            num + "</sup></a>";
   };
 
 
@@ -1488,7 +1664,7 @@ Org.Markup = (function(Org){
 */
 
   OC.DlistItemBlock.prototype.render = function(){
-    var out = "<dt>" + renderMarkup(this.title) + "</dt>\n<dd>\n";
+    var out = "<dt>" + this.titleInline.render() + "</dt>\n<dd>\n";
     out += renderChildren.call(this);
     out += "</dd>\n";
     return out;
@@ -1505,10 +1681,7 @@ Org.Markup = (function(Org){
 */
 
   OC.ParaBlock.prototype.render = function(){
-    var content = this.lines.join("\n") + "\n";
-    var out = OM.tokenize(this, content);
-    out = "<p>\n" + out.render() + "</p>\n";
-    return out;
+    return "<p>\n" + renderChildren.call(this); + "</p>\n";
   };
 
 /***orgdoc***
@@ -1524,10 +1697,8 @@ Org.Markup = (function(Org){
 */
 
   OC.VerseBlock.prototype.render = function(){
-    var content = this.lines.join("\\\\\n") + "\n";
-    var markup = renderMarkup(content);
-    markup = markup.replace(/ /g, "&nbsp;");
-    var out = "<p class='verse'>\n" + markup + "</p>\n";
+    var out = "<p class='verse'>\n" + renderChildren.call(this); + "</p>\n";
+    out = out.replace(/ /g, "&nbsp;");
     return out;
   };
 
@@ -1542,10 +1713,7 @@ Org.Markup = (function(Org){
 */
 
   OC.QuoteBlock.prototype.render = function(){
-    var content = this.lines.join("\n") + "\n";
-    content = content.replace(/\s(--\s)/g, "\\\\\n\\ \\ \\  $1");
-    var markup = renderMarkup(content);
-    var out = "<blockquote>\n" + markup + "</blockquote>\n";
+    var out = "<blockquote>\n" + renderChildren.call(this); + "</blockquote>\n";
     return out;
   };
 
@@ -1557,11 +1725,7 @@ Org.Markup = (function(Org){
 */
 
   OC.CenterBlock.prototype.render = function(){
-    var content = this.lines.join("\n") + "\n";
-    var markup = renderMarkup(content);
-    var out = "<center>\n" +
-              markup + "</center>\n";
-    return out;
+    return "<center>\n" + renderChildren.call(this); + "</center>\n";
   };
 
 /***orgdoc***
@@ -1625,6 +1789,7 @@ Org.Markup = (function(Org){
 
 */
 
+  OC.FndefBlock.prototype.render = 
   OC.CommentBlock.prototype.render = function(){
     return "";
   };
@@ -1668,14 +1833,27 @@ Org.Markup = (function(Org){
 
     html += title;
 
-    var contentTxt = this.parser.getContent();
-    var lines = _U.lines(contentTxt);
-    this.contentNode = Org.Content.parse(lines);
     var contentHtml = this.contentNode.render();
     html += contentHtml;
 
     var childrenHtml = renderChildren.call(this);
     html += childrenHtml;
+
+    if(_U.notEmpty(this.fnNameByNum)){
+      var root = this;
+      html += "<section class='org-footnotes'><title>Notes</title>";
+      _U.each(root.fnNameByNum, function(name, idx){
+        if(!name){return;}
+        var fn = root.fnByName[name];
+        var inline = fn.inline;
+        var num = fn.num;
+        html += "<p class='org-footnote'><a name='fndef_" + name + "'/>" + 
+            "<a class='org-inline-fnref' href='#fnref_" + name + "'><sup>" + 
+            num + "</sup></a>&nbsp;:&nbsp;<span id='fndef_" + name+ "'>" + 
+            inline.render() + "</span></p>";
+      });
+      html += "</section>";
+    }
 
     html += "</section>";
     return html;

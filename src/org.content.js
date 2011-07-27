@@ -11,6 +11,7 @@
 Org.Content = (function(Org){
 
   var _U  = Org.Utils;
+  var OM = Org.Markup;
   var RGX = Org.Regexps;
 
   // The object that will be returned, and filled throughout this function.
@@ -21,6 +22,7 @@ Org.Content = (function(Org){
     return {
       "BLANK":    {id: ++l},
       "IGNORED":  {id: ++l},
+      "FNDEF":    {id: ++l},
       "PARA":     {id: ++l},
       "ULITEM":   {id: ++l},
       "OLITEM":   {id: ++l},
@@ -69,6 +71,10 @@ Org.Content = (function(Org){
     if(/^\s*\d+[.)] /.exec(line)){
       return LineType.OLITEM;
     }
+    if(/^\s*\[(\d+|fn:.+?)\]/.exec(line)){
+      return LineType.FNDEF;
+    }
+
     //if(/^\s*$/.exec(line)){
     //  return LineType.BLANK;
     //}
@@ -99,13 +105,15 @@ Org.Content = (function(Org){
     this.isContainer = true;
     this.children = [];
   };
+  ContainerBlock.prototype.finalize = function(){};
 
   ////////////////////////////////////////////////////////////////////////////////
   //  ROOTBLOCK
-  var RootBlock = function(){
-    ContainerBlock.call(this, null);
+  var RootBlock = function(parent){
+    ContainerBlock.call(this, parent);
   };
   Content.RootBlock = RootBlock;
+  RootBlock.prototype = Object.create(ContainerBlock.prototype);
 
   RootBlock.prototype.accept  = function(line){return true;};
   RootBlock.prototype.consume = function(line){
@@ -121,15 +129,29 @@ Org.Content = (function(Org){
     this.isContent = true;
     this.lines = [];
   };
+  ContentBlock.prototype.finalize = function(){};
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  CONTENTMARKUPBLOCK
+  var ContentMarkupBlock = function(parent){
+    ContentBlock.call(this, parent);
+    this.hasMarkup = true;
+    this.children = [];
+  };
+  ContentMarkupBlock.prototype.finalize = function(){
+    var content = this.lines.join("\n");
+    var inline = OM.tokenize(this, content);
+    this.children.push(inline);
+  };
 
   ////////////////////////////////////////////////////////////////////////////////
   //  PARABLOCK
   var ParaBlock = function(parent){
-    ContentBlock.call(this, parent);
+    ContentMarkupBlock.call(this, parent);
     this.indent = parent.indent || 0;
   };
   LineDef.PARA.constr = Content.ParaBlock = ParaBlock;
-
+  ParaBlock.prototype = Object.create(ContentMarkupBlock.prototype);
   ParaBlock.prototype.accept = function(line){
     var indent;
     var type = getLineType(line);
@@ -156,6 +178,52 @@ Org.Content = (function(Org){
     return this;
   };
 
+
+  ////////////////////////////////////////////////////////////////////////////////
+  //  FNDEFBLOCK
+  var FndefBlock = function(parent){
+    ContentMarkupBlock.call(this, parent);
+    this.indent = parent.indent || 0;
+    this.firstline = true;
+  };
+  LineDef.FNDEF.constr = Content.FndefBlock = FndefBlock;
+  FndefBlock.prototype = Object.create(ContentMarkupBlock.prototype);
+
+  FndefBlock.prototype.accept = function(line){
+    var indent;
+    var type = getLineType(line);
+    if(type === LineType.FNDEF){
+      if(this.ended){return false;}
+      return true;
+    }
+    if(type === LineType.BLANK){
+      if(this.ended){ return true; }
+      this.ended = true; return true;
+    }
+    if(this.ended){ return false; }
+    return true;
+  };
+
+  FndefBlock.prototype.consume = function(line){
+    var type = getLineType(line);
+    if(this.firstline){
+      this.name = /^\s*\[(.*?)\]/.exec(line)[1].replace(/^fn:/, '');
+      this.firstline = false;
+    }
+    if(type !== LineType.IGNORED){
+      this.lines.push(line);
+    }
+    return this;
+  };
+
+  FndefBlock.prototype.finalize = function(line){
+    var root = _U.root(this);
+    var content = this.lines.join("\n");
+    content = content.replace(/^(\s*)\[.*?\]/, "$1");
+    var inline = OM.tokenize(this, content);
+    root.addFootnoteDef(inline, this.name);
+  };
+
   ////////////////////////////////////////////////////////////////////////////////
   //  BEGINENDBLOCK
   var BeginEndBlock = function(parent, line, type){
@@ -165,7 +233,7 @@ Org.Content = (function(Org){
     this.beginre = RGX.beginBlock(type);
     this.endre   = RGX.endBlock(type);
   };
-
+  BeginEndBlock.prototype = Object.create(ContentBlock.prototype);
   BeginEndBlock.prototype.accept      = function(line){return !this.ended;};
   BeginEndBlock.prototype.treatBegin  = function(line){};
   BeginEndBlock.prototype.consume     = function(line){
@@ -187,26 +255,32 @@ Org.Content = (function(Org){
   ////////////////////////////////////////////////////////////////////////////////
   //  VERSEBLOCK
   var VerseBlock = function(parent, line){
+    ContentMarkupBlock.call(this, parent);
     BeginEndBlock.call(this, parent, line, "VERSE");
   };
   LineDef.VERSE.constr = Content.VerseBlock = VerseBlock;
   VerseBlock.prototype = Object.create(BeginEndBlock.prototype);
+  VerseBlock.prototype.finalize = ContentMarkupBlock.finalize;
 
   ////////////////////////////////////////////////////////////////////////////////
   //  QUOTEBLOCK
   var QuoteBlock = function(parent, line){
+    ContentMarkupBlock.call(this, parent);
     BeginEndBlock.call(this, parent, line, "QUOTE");
   };
   LineDef.QUOTE.constr = Content.QuoteBlock = QuoteBlock;
   QuoteBlock.prototype = Object.create(BeginEndBlock.prototype);
+  QuoteBlock.prototype.finalize = ContentMarkupBlock.finalize;
 
   ////////////////////////////////////////////////////////////////////////////////
   //  CENTERBLOCK
   var CenterBlock = function(parent, line){
+    ContentMarkupBlock.call(this, parent);
     BeginEndBlock.call(this, parent, line, "CENTER");
   };
   LineDef.CENTER.constr = Content.CenterBlock = CenterBlock;
   CenterBlock.prototype = Object.create(BeginEndBlock.prototype);
+  CenterBlock.prototype.finalize = ContentMarkupBlock.finalize;
 
   ////////////////////////////////////////////////////////////////////////////////
   //  EXAMPLEBLOCK
@@ -254,6 +328,7 @@ Org.Content = (function(Org){
     this.indent = getLineIndent(line);
   };
   LineDef.ULITEM.constr = Content.UlistBlock = UlistBlock;
+  UlistBlock.prototype = Object.create(ContainerBlock.prototype);
 
   UlistBlock.prototype.accept  = function(line){
     return getLineType(line) === LineType.ULITEM &&
@@ -275,6 +350,7 @@ Org.Content = (function(Org){
     this.start = match ? +(match[1]) : 1;
   };
   LineDef.OLITEM.constr = Content.OlistBlock = OlistBlock;
+  OlistBlock.prototype = Object.create(ContainerBlock.prototype);
 
   OlistBlock.prototype.accept  = function(line){
     return getLineType(line) === LineType.OLITEM &&
@@ -294,6 +370,7 @@ Org.Content = (function(Org){
     this.indent = getLineIndent(line);
   };
   LineDef.DLITEM.constr = Content.DlistBlock = DlistBlock;
+  DlistBlock.prototype = Object.create(ContainerBlock.prototype);
 
   DlistBlock.prototype.accept  = function(line){
     return getLineType(line) === LineType.DLITEM &&
@@ -312,6 +389,7 @@ Org.Content = (function(Org){
     ContainerBlock.call(this, parent);
     this.indent = parent.indent;
   };
+  ListItemBlock.prototype = Object.create(ContainerBlock.prototype);
 
   ListItemBlock.prototype.accept  = function(line){
     var isMoreIndented = getLineIndent(line) > this.indent;
@@ -359,7 +437,8 @@ Org.Content = (function(Org){
   //  DLISTITEMBLOCK
   var DlistItemBlock = function(parent, line){
     ListItemBlock.call(this, parent,line);
-    this.title = /^\s*[+*-] (.*) ::/.exec(line)[1];
+    var title = /^\s*[+*-] (.*) ::/.exec(line)[1]
+    this.titleInline = OM.tokenize(this, title);
   };
   Content.DlistItemBlock = DlistItemBlock;
 
@@ -370,8 +449,8 @@ Org.Content = (function(Org){
 
   ////////////////////////////////////////////////////////////////////////////////
   //       PARSECONTENT
-  Content.parse = function(lines){
-    var root = new RootBlock();
+  Content.parse = function(parent, lines){
+    var root = new RootBlock(parent);
     var current = root;
     var line = lines.shift();
     // Ignore first blank lines...
@@ -384,11 +463,13 @@ Org.Content = (function(Org){
           current = current.consume(line);
           break;
         } else {
+          current.finalize();
           current = current.parent;
         }
       }
       line = lines.shift();
     };
+    if(current){current.finalize();}
     return root;
   };
 

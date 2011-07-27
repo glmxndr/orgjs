@@ -1,16 +1,24 @@
 /*orgdoc+++/
 #+TITLE:     Org-Mode Javascript Parser
 
-  This project aims to provide a parser and easily customizable renderer
+  Some para here !
+
+  [fn:2] Oh, right!
+
+  [1] Oh, right again!
+
+
+  This project aims to provide[fn:2] a parser and easily customizable renderer
   for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 
 * =Org= : the Main object
 
-  The global context is extended with only one object, named =Org=.
+  The global context[1] is extended with only one object, named =Org=.
 
-  This is a /sample _paragraph_/. With some formatting (see http://google.com/ ).
+  This is a /sample _paragraph_/. With some formatting (see http://google.com/).
   + A *\*bold\** word
   + A tilde: ~\~~
+
 
    #+BEGIN_SRC js
 /-orgdoc*/

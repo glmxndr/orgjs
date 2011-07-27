@@ -20,6 +20,12 @@ Org.Utils = (function(Org){
   var RGX = Org.Regexps;
 
   return {
+    root: function(obj){
+      var result = obj;
+      while(result.parent){result = result.parent;}
+      return result;
+    },
+
     range: function(){
       var from, to, step, args = arguments, result = [], i;
       switch(args.length){
@@ -46,12 +52,12 @@ Org.Utils = (function(Org){
 
     notEmpty: function(o){
       // Valid only for strings and arrays
-      return !this.empthy(o);
+      return !this.empty(o);
     },
 
     blank: function(str){
       // Valid only for strings and arrays
-      return str && str == 0;
+      return !str || str == 0;
     },
 
     notBlank: function(str){

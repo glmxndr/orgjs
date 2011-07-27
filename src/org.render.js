@@ -1,9 +1,5 @@
 /*orgdoc+++/
 * Default Rendering
-  :PROPERTIES:
-  :author: G.A.
-  :file: org.render.js
-  :END:
 
   This section provides a default HTML renderer for the parsed tree.
 
@@ -47,6 +43,19 @@
     str = str.replace(/'/g, "&apos;");
     str = str.replace(/"/g, "&quot;");
     return str;
+  }
+
+  function unBackslash(str){
+    str = "" + str;
+    str = str.replace(/\\\\/g, "<br/>");
+    str = str.replace(/\\ /g, "&nbsp;");
+    str = str.replace(/\\(.)/g, "$1");
+    str = str.replace(/\s--\s/g, " &#151; ");
+    return str;
+  }
+
+  function htmlize(str){
+    return unBackslash(escapeHtml(str));
   }
 
 /*orgdoc+/
@@ -108,29 +117,46 @@
     if(this.children.length){
       return renderChildren.call(this);
     }
-    return "<span class='org-inline-raw'>" + escapeHtml(this.content).replace(/\\(.)/g, "$1") + "</span>\n";
+    return "<span class='org-inline-raw'>" + 
+            htmlize(this.content) + "</span>";
   };
   OM.EmphCode.prototype.render = function(){
-    return "<code class='org-inline-code'>" + escapeHtml(this.content).replace(/\\(.)/g, "$1") + "</code>\n";
+    return "<code class='org-inline-code'>" + 
+            htmlize(this.content) + "</code>";
   };
   OM.EmphVerbatim.prototype.render = function(){
-    return "<samp class='org-inline-samp'>" + escapeHtml(this.content).replace(/\\(.)/g, "$1") + "</samp>\n";
+    return "<samp class='org-inline-samp'>" + 
+            htmlize(this.content) + "</samp>";
   };
   OM.EmphItalic.prototype.render = function(){
-    return "<em class='org-inline-italic'>" + renderChildren.call(this) + "</em>\n";
+    return "<em class='org-inline-italic'>" + 
+            renderChildren.call(this) + "</em>";
   };
   OM.EmphBold.prototype.render = function(){
-    return "<strong class='org-inline-bold'>" + renderChildren.call(this) + "</strong>\n";
+    return "<strong class='org-inline-bold'>" + 
+            renderChildren.call(this) + "</strong>";
   };
   OM.EmphUnderline.prototype.render = function(){
-    return "<u class='org-inline-underline'>" + renderChildren.call(this) + "</u>\n";
+    return "<u class='org-inline-underline'>" + 
+            renderChildren.call(this) + "</u>";
   };
   OM.EmphStrike.prototype.render = function(){
-    return "<del class='org-inline-strike'>" + renderChildren.call(this) + "</del>\n";
+    return "<del class='org-inline-strike'>" + 
+            renderChildren.call(this) + "</del>";
   };
-
   OM.Link.prototype.render = function(){
-    return "<a class='org-inline-link' href='" + this.url + "'>" + this.desc + "</a>\n";
+    return "<a class='org-inline-link' href='" + this.url + "'>" + 
+            htmlize(this.desc) + "</a>";
+  };
+  OM.FootNoteRef.prototype.render = function(){
+    var root = _U.root(this);
+    console.log(root);
+    console.log(this);
+    console.log(root.fnByName[this.name]);
+    var num = root.fnByName[this.name].num;
+    return "<a name='fnref_" + this.name + "'/>" + 
+            "<a class='org-inline-fnref' href='#fndef_" + this.name + "'><sup>" + 
+            num + "</sup></a>";
   };
 
 
@@ -256,7 +282,7 @@
 /-orgdoc*/
 
   OC.DlistItemBlock.prototype.render = function(){
-    var out = "<dt>" + renderMarkup(this.title) + "</dt>\n<dd>\n";
+    var out = "<dt>" + this.titleInline.render() + "</dt>\n<dd>\n";
     out += renderChildren.call(this);
     out += "</dd>\n";
     return out;
@@ -275,10 +301,7 @@
 /-orgdoc*/
 
   OC.ParaBlock.prototype.render = function(){
-    var content = this.lines.join("\n") + "\n";
-    var out = OM.tokenize(this, content);
-    out = "<p>\n" + out.render() + "</p>\n";
-    return out;
+    return "<p>\n" + renderChildren.call(this); + "</p>\n";
   };
 
 /*orgdoc+/
@@ -296,10 +319,8 @@
 /-orgdoc*/
 
   OC.VerseBlock.prototype.render = function(){
-    var content = this.lines.join("\\\\\n") + "\n";
-    var markup = renderMarkup(content);
-    markup = markup.replace(/ /g, "&nbsp;");
-    var out = "<p class='verse'>\n" + markup + "</p>\n";
+    var out = "<p class='verse'>\n" + renderChildren.call(this); + "</p>\n";
+    out = out.replace(/ /g, "&nbsp;");
     return out;
   };
 
@@ -316,10 +337,7 @@
 /-orgdoc*/
 
   OC.QuoteBlock.prototype.render = function(){
-    var content = this.lines.join("\n") + "\n";
-    content = content.replace(/\s(--\s)/g, "\\\\\n\\ \\ \\  $1");
-    var markup = renderMarkup(content);
-    var out = "<blockquote>\n" + markup + "</blockquote>\n";
+    var out = "<blockquote>\n" + renderChildren.call(this); + "</blockquote>\n";
     return out;
   };
 
@@ -333,11 +351,7 @@
 /-orgdoc*/
 
   OC.CenterBlock.prototype.render = function(){
-    var content = this.lines.join("\n") + "\n";
-    var markup = renderMarkup(content);
-    var out = "<center>\n" +
-              markup + "</center>\n";
-    return out;
+    return "<center>\n" + renderChildren.call(this); + "</center>\n";
   };
 
 /*orgdoc+/
@@ -409,6 +423,7 @@
     #+BEGIN_SRC js
 /-orgdoc*/
 
+  OC.FndefBlock.prototype.render = 
   OC.CommentBlock.prototype.render = function(){
     return "";
   };
@@ -454,14 +469,27 @@
 
     html += title;
 
-    var contentTxt = this.parser.getContent();
-    var lines = _U.lines(contentTxt);
-    this.contentNode = Org.Content.parse(lines);
     var contentHtml = this.contentNode.render();
     html += contentHtml;
 
     var childrenHtml = renderChildren.call(this);
     html += childrenHtml;
+
+    if(_U.notEmpty(this.fnNameByNum)){
+      var root = this;
+      html += "<section class='org-footnotes'><title>Notes</title>";
+      _U.each(root.fnNameByNum, function(name, idx){
+        if(!name){return;}
+        var fn = root.fnByName[name];
+        var inline = fn.inline;
+        var num = fn.num;
+        html += "<p class='org-footnote'><a name='fndef_" + name + "'/>" + 
+            "<a class='org-inline-fnref' href='#fnref_" + name + "'><sup>" + 
+            num + "</sup></a>&nbsp;:&nbsp;<span id='fndef_" + name+ "'>" + 
+            inline.render() + "</span></p>";
+      });
+      html += "</section>";
+    }
 
     html += "</section>";
     return html;
