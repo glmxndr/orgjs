@@ -10,8 +10,8 @@ $(function(){
 
   $.get("doc/org-js.org", function(data){
     var root = Org.Outline.parse(data);
-    $('#doc').html(root.render());
     Org.Utils.log(root);
+    $('#doc').html(root.render());
   });
 
 });

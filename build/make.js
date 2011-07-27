@@ -8,9 +8,9 @@ var srcFiles = [
   './src/org.config.js',
   './src/org.regexps.js',
   './src/org.utils.js',
-  './src/org.outline.js',
-  './src/org.content.js',
   './src/org.markup.js',
+  './src/org.content.js',
+  './src/org.outline.js',
   './src/org.render.js',
   './src/org.api.js'
 ];
@@ -30,10 +30,13 @@ var noop = function(){};
 function date(){return new Date().toTimeString();}
 function log(str){sys.puts(date() + ' # ' + str);}
 
-log("Start listening...");
 
-fs.realpath('.',function(err,path){
-  log("Base folder : " + path);
+var watchFiles = true;
+process.argv.forEach(function (val, index, array) {
+  if(val === "nowatch"){
+    log("No listening...");
+    watchFiles = false;
+  }
 });
 
 function watch(file){
@@ -120,8 +123,12 @@ function buildDoc(){
   }
 }
 
-for(idx in srcFiles){
-  watch(srcFiles[idx]);
+
+if(watchFiles){
+  log("Start listening...");
+  for(idx in srcFiles){
+    watch(srcFiles[idx]);
+  }
 }
 
 buildAll();
