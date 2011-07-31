@@ -187,6 +187,39 @@ Org.Utils = (function(Org){
     };
   }
 
+  if (!Array.prototype.indexOf) {
+    Array.prototype.indexOf = function (searchElement /*, fromIndex */ ) {
+      "use strict";
+      if (this === void 0 || this === null) {
+        throw new TypeError();
+      }
+      var t = Object(this);
+      var len = t.length >>> 0;
+      if (len === 0) {
+        return -1;
+      }
+      var n = 0;
+      if (arguments.length > 0) {
+        n = Number(arguments[1]);
+        if (n !== n) { // shortcut for verifying if it's NaN
+          n = 0;
+        } else if (n !== 0 && n !== (1 / 0) && n !== -(1 / 0)) {
+          n = (n > 0 || -1) * Math.floor(Math.abs(n));
+        }
+      }
+      if (n >= len) {
+          return -1;
+      }
+      var k = n >= 0 ? n : Math.max(len - Math.abs(n), 0);
+      for (; k < len; k++) {
+        if (k in t && t[k] === searchElement) {
+          return k;
+        }
+      }
+      return -1;
+    }
+  }
+
   var RGX = Org.Regexps;
 
   return {
@@ -267,7 +300,7 @@ Org.Utils = (function(Org){
     },
     
     log: function(o){
-      if(console && console.log){console.log(o);}
+      //if(console && console.log){console.log(o);}
     },
     
     firstLine: function(str){
@@ -1159,7 +1192,6 @@ Org.Outline = (function(Org, undefined){
         this.fnNameByNum = [];
         this.fnNextNum = 1;
       }
-      console.log("Define Footnote : " + name + " / " + inline)
       if(!name){name = "" + this.fnNextNum;}
       if(this.fnByName[name]){
         this.fnByName[name].inline = inline;
@@ -1544,16 +1576,11 @@ Org.Outline = (function(Org, undefined){
   };
   OM.FootNoteRef.prototype.render = function(){
     var root = _U.root(this);
-    console.log(root);
-    console.log(this);
-    console.log(root.fnByName[this.name]);
-    var num = root.fnByName[this.name].num;
+    var num = (root.fnByName && root.fnByName[this.name]) ? root.fnByName[this.name].num : 1;
     return "<a name='fnref_" + this.name + "'/>" + 
             "<a class='org-inline-fnref' href='#fndef_" + this.name + "'><sup>" + 
             num + "</sup></a>";
   };
-
-
 
 /***orgdoc***
 
@@ -1816,13 +1843,14 @@ Org.Outline = (function(Org, undefined){
 
   OO.Node.prototype.render = function(){
     var headline = this.level === 0 ? this.meta["TITLE"] : this.heading.getTitle();
+    var headInline = OM.tokenize(this, headline).render();
 
     var html = "<section id='%ID%' class='orgnode level-%LEVEL%'>";
     html = html.replace(/%ID%/, this.id());
     html = html.replace(/%LEVEL%/, this.level);
 
     var title = "<div class='title'>%HEADLINE%%TAGS%</div>";
-    title = title.replace(/%HEADLINE%/, renderMarkup(headline));
+    title = title.replace(/%HEADLINE%/, headInline);
     var tags = "";
     _U.each(this.heading.getTags(), function(tag, idx){
       if(tag.length){

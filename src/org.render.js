@@ -452,13 +452,14 @@
 
   OO.Node.prototype.render = function(){
     var headline = this.level === 0 ? this.meta["TITLE"] : this.heading.getTitle();
+    var headInline = OM.tokenize(this, headline).render();
 
     var html = "<section id='%ID%' class='orgnode level-%LEVEL%'>";
     html = html.replace(/%ID%/, this.id());
     html = html.replace(/%LEVEL%/, this.level);
 
     var title = "<div class='title'>%HEADLINE%%TAGS%</div>";
-    title = title.replace(/%HEADLINE%/, renderMarkup(headline));
+    title = title.replace(/%HEADLINE%/, headInline);
     var tags = "";
     _U.each(this.heading.getTags(), function(tag, idx){
       if(tag.length){

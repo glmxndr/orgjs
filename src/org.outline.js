@@ -61,7 +61,6 @@ Org.Outline = (function(Org, undefined){
         this.fnNameByNum = [];
         this.fnNextNum = 1;
       }
-      console.log("Define Footnote : " + name + " / " + inline)
       if(!name){name = "" + this.fnNextNum;}
       if(this.fnByName[name]){
         this.fnByName[name].inline = inline;
