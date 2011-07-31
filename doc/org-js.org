@@ -20,9 +20,16 @@
 
 
    #+BEGIN_SRC js
-var Org = {
-  version: "0.1",   
-  apiversion: "7.6"
+var Org = function(params){
+  this.version = "0.1";
+  this.apiversion = "7.6";
+  this.Config  = Org.getConfig( this, params);
+  this.Regexps = Org.getRegexps(this, params);
+  this.Utils   = Org.getUtils(  this, params);
+  this.Markup  = Org.getMarkup( this, params);
+  this.Content = Org.getContent(this, params);
+  this.Outline = Org.getOutline(this, params);
+  this.Render  = Org.getRender( this, params);
 };
 #+END_SRC
 
@@ -31,7 +38,7 @@ var Org = {
 
 
   #+BEGIN_SRC js
-Org.Config = (function(Org){
+Org.getConfig = function(org, params){
 
   var _C = {};
 
@@ -50,7 +57,7 @@ Org.Config = (function(Org){
 
   return _C;
 
-}(Org));
+};
 #+END_SRC
 
 ** Tab width
@@ -64,7 +71,7 @@ Org.Config = (function(Org){
   and accessible under the object =Org.Regexps=.
 
    #+BEGIN_SRC js
-Org.Regexps = (function(Org){
+Org.getRegexps = function(org, params){
   
   var RGX = {
 
@@ -166,7 +173,7 @@ Org.Regexps = (function(Org){
 
   return RGX;
   
-}(Org));
+};
 #+END_SRC
 
 
@@ -176,7 +183,7 @@ Org.Regexps = (function(Org){
   strings. The =Org.Utils= object contains these functions.
 
    #+BEGIN_SRC js
-Org.Utils = (function(Org){
+Org.getUtils = function(org, params){
   
   if (typeof Object.create !== 'function') {
     Object.create = function (o) {
@@ -219,7 +226,7 @@ Org.Utils = (function(Org){
     }
   }
 
-  var RGX = Org.Regexps;
+  var RGX = org.Regexps;
 
   return {
     root: function(obj){
@@ -346,7 +353,7 @@ Org.Utils = (function(Org){
 
   };
 
-}(Org));
+};
 #+END_SRC
 
 
@@ -355,10 +362,10 @@ Org.Utils = (function(Org){
   This file contains the code for the Org-Mode wiki-style markup.
 
     #+BEGIN_SRC js
-Org.Markup = (function(Org){
+Org.getMarkup = function(org, params){
 
-  var _U = Org.Utils;
-  var _C = Org.Config;
+  var _U = org.Utils;
+  var _C = org.Config;
 
   var Markup = {};
 
@@ -651,7 +658,7 @@ Org.Markup = (function(Org){
 
   return Markup;
 
-}(Org));
+};
 #+END_SRC
 
 
@@ -661,11 +668,11 @@ Org.Markup = (function(Org){
   of the =org= file.
 
    #+BEGIN_SRC js
-Org.Content = (function(Org){
+Org.getContent = function(org, params){
 
-  var _U  = Org.Utils;
-  var OM = Org.Markup;
-  var RGX = Org.Regexps;
+  var _U  = org.Utils;
+  var OM = org.Markup;
+  var RGX = org.Regexps;
 
   // The object that will be returned, and filled throughout this function.
   var Content = {};
@@ -1128,7 +1135,7 @@ Org.Content = (function(Org){
 
   return Content;
 
-}(Org));
+};
 #+END_SRC
 
 
@@ -1137,11 +1144,11 @@ Org.Content = (function(Org){
   This section describes the outline parser.
 
    #+BEGIN_SRC js
-Org.Outline = (function(Org, undefined){
+Org.getOutline = function(org, params){
 
-  var RGX = Org.Regexps;
-  var OC = Org.Content;
-  var _U = Org.Utils;
+  var RGX = org.Regexps;
+  var OC = org.Content;
+  var _U = org.Utils;
 
   /////////////////////////////////////////////////////////////////////////////
   // NODE : corresponds to a line starting with stars "*** ..."
@@ -1428,7 +1435,7 @@ Org.Outline = (function(Org, undefined){
     }
   };
 
-}(Org));
+};
 #+END_SRC
 
 
@@ -1446,12 +1453,12 @@ Org.Outline = (function(Org, undefined){
     =Org.Outline=.
 
     #+BEGIN_SRC js
-(function(Org){
+Org.getRender = function(org, params){
 
-  var OC = Org.Content;
-  var OM = Org.Markup;
-  var OO = Org.Outline;
-  var _U = Org.Utils;
+  var OC = org.Content;
+  var OM = org.Markup;
+  var OO = org.Outline;
+  var _U = org.Utils;
 #+END_SRC
 ** Utility functions
 *** escapeHtml(str)                                                :function:
@@ -1859,7 +1866,7 @@ OO.Node.prototype.render = function(){
     This is the end of the function creating the default renderer.
 
     #+BEGIN_SRC js
-}(Org));
+};
 #+END_SRC
 
 

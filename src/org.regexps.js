@@ -9,7 +9,7 @@
    #+BEGIN_SRC js
 /-orgdoc*/
 
-Org.Regexps = (function(Org){
+Org.getRegexps = function(org, params){
   
   var RGX = {
 
@@ -111,7 +111,7 @@ Org.Regexps = (function(Org){
 
   return RGX;
   
-}(Org));
+};
 
 /*orgdoc+/
    #+END_SRC

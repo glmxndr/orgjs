@@ -9,8 +9,9 @@ $(function(){
   //*///
 
   $.get("doc/org-js.org", function(data){
-    var root = Org.Outline.parse(data);
-    Org.Utils.log(root);
+    var org = new Org();
+    var root = org.Outline.parse(data);
+    org.Utils.log(root);
     $('#doc').html(root.render());
   });
 

@@ -21,9 +21,16 @@
 
 
 */
-var Org = {
-  version: "0.1",   
-  apiversion: "7.6"
+var Org = function(params){
+  this.version = "0.1";
+  this.apiversion = "7.6";
+  this.Config  = Org.getConfig( this, params);
+  this.Regexps = Org.getRegexps(this, params);
+  this.Utils   = Org.getUtils(  this, params);
+  this.Markup  = Org.getMarkup( this, params);
+  this.Content = Org.getContent(this, params);
+  this.Outline = Org.getOutline(this, params);
+  this.Render  = Org.getRender( this, params);
 };
 /***orgdoc***
 * TODO =Org.Config= : configuration
@@ -31,7 +38,7 @@ var Org = {
 
 */
 
-Org.Config = (function(Org){
+Org.getConfig = function(org, params){
 
   var _C = {};
 
@@ -50,7 +57,7 @@ Org.Config = (function(Org){
 
   return _C;
 
-}(Org));
+};
 
 /***orgdoc***
 
@@ -65,7 +72,7 @@ Org.Config = (function(Org){
 
 */
 
-Org.Regexps = (function(Org){
+Org.getRegexps = function(org, params){
   
   var RGX = {
 
@@ -167,7 +174,7 @@ Org.Regexps = (function(Org){
 
   return RGX;
   
-}(Org));
+};
 
 /***orgdoc***
 * =Org.Utils= : useful functions
@@ -177,7 +184,7 @@ Org.Regexps = (function(Org){
 
 */
 
-Org.Utils = (function(Org){
+Org.getUtils = function(org, params){
   
   if (typeof Object.create !== 'function') {
     Object.create = function (o) {
@@ -220,7 +227,7 @@ Org.Utils = (function(Org){
     }
   }
 
-  var RGX = Org.Regexps;
+  var RGX = org.Regexps;
 
   return {
     root: function(obj){
@@ -300,7 +307,7 @@ Org.Utils = (function(Org){
     },
     
     log: function(o){
-      //if(console && console.log){console.log(o);}
+      if(console && console.log){console.log(o);}
     },
     
     firstLine: function(str){
@@ -347,7 +354,7 @@ Org.Utils = (function(Org){
 
   };
 
-}(Org));
+};
 
 /***orgdoc***
 * Markup parser
@@ -355,10 +362,10 @@ Org.Utils = (function(Org){
   This file contains the code for the Org-Mode wiki-style markup.
 
 */
-Org.Markup = (function(Org){
+Org.getMarkup = function(org, params){
 
-  var _U = Org.Utils;
-  var _C = Org.Config;
+  var _U = org.Utils;
+  var _C = org.Config;
 
   var Markup = {};
 
@@ -651,7 +658,7 @@ Org.Markup = (function(Org){
 
   return Markup;
 
-}(Org));
+};
 /***orgdoc***
 
 * =Org.Content= : the content parser
@@ -661,11 +668,11 @@ Org.Markup = (function(Org){
 
 */
 
-Org.Content = (function(Org){
+Org.getContent = function(org, params){
 
-  var _U  = Org.Utils;
-  var OM = Org.Markup;
-  var RGX = Org.Regexps;
+  var _U  = org.Utils;
+  var OM = org.Markup;
+  var RGX = org.Regexps;
 
   // The object that will be returned, and filled throughout this function.
   var Content = {};
@@ -1128,7 +1135,7 @@ Org.Content = (function(Org){
 
   return Content;
 
-}(Org));
+};
 
 /***orgdoc***
 
@@ -1138,11 +1145,11 @@ Org.Content = (function(Org){
 
 */
 
-Org.Outline = (function(Org, undefined){
+Org.getOutline = function(org, params){
 
-  var RGX = Org.Regexps;
-  var OC = Org.Content;
-  var _U = Org.Utils;
+  var RGX = org.Regexps;
+  var OC = org.Content;
+  var _U = org.Utils;
 
   /////////////////////////////////////////////////////////////////////////////
   // NODE : corresponds to a line starting with stars "*** ..."
@@ -1429,7 +1436,7 @@ Org.Outline = (function(Org, undefined){
     }
   };
 
-}(Org));
+};
 
 /***orgdoc***
 * Default Rendering
@@ -1446,12 +1453,12 @@ Org.Outline = (function(Org, undefined){
     =Org.Outline=.
 
 */
-(function(Org){
+Org.getRender = function(org, params){
 
-  var OC = Org.Content;
-  var OM = Org.Markup;
-  var OO = Org.Outline;
-  var _U = Org.Utils;
+  var OC = org.Content;
+  var OM = org.Markup;
+  var OO = org.Outline;
+  var _U = org.Utils;
 
 /***orgdoc***
 ** Utility functions
@@ -1576,11 +1583,16 @@ Org.Outline = (function(Org, undefined){
   };
   OM.FootNoteRef.prototype.render = function(){
     var root = _U.root(this);
-    var num = (root.fnByName && root.fnByName[this.name]) ? root.fnByName[this.name].num : 1;
+    console.log(root);
+    console.log(this);
+    console.log(root.fnByName[this.name]);
+    var num = root.fnByName[this.name].num;
     return "<a name='fnref_" + this.name + "'/>" + 
             "<a class='org-inline-fnref' href='#fndef_" + this.name + "'><sup>" + 
             num + "</sup></a>";
   };
+
+
 
 /***orgdoc***
 
@@ -1895,7 +1907,7 @@ Org.Outline = (function(Org, undefined){
 
 */
 
-}(Org));
+};
 
 /***orgdoc***
 * TODO =Org.API= : API

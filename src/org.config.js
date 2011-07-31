@@ -5,7 +5,7 @@
   #+BEGIN_SRC js
 /-orgdoc*/
 
-Org.Config = (function(Org){
+Org.getConfig = function(org, params){
 
   var _C = {};
 
@@ -24,7 +24,7 @@ Org.Config = (function(Org){
 
   return _C;
 
-}(Org));
+};
 
 /*orgdoc+/
   #+END_SRC

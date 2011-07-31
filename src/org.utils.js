@@ -7,7 +7,7 @@
    #+BEGIN_SRC js
 /-orgdoc*/
 
-Org.Utils = (function(Org){
+Org.getUtils = function(org, params){
   
   if (typeof Object.create !== 'function') {
     Object.create = function (o) {
@@ -50,7 +50,7 @@ Org.Utils = (function(Org){
     }
   }
 
-  var RGX = Org.Regexps;
+  var RGX = org.Regexps;
 
   return {
     root: function(obj){
@@ -177,7 +177,7 @@ Org.Utils = (function(Org){
 
   };
 
-}(Org));
+};
 
 /*orgdoc+/
    #+END_SRC

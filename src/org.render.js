@@ -14,12 +14,12 @@
 
     #+BEGIN_SRC js
 /-orgdoc*/
-(function(Org){
+Org.getRender = function(org, params){
 
-  var OC = Org.Content;
-  var OM = Org.Markup;
-  var OO = Org.Outline;
-  var _U = Org.Utils;
+  var OC = org.Content;
+  var OM = org.Markup;
+  var OO = org.Outline;
+  var _U = org.Utils;
 
 /*orgdoc+/
     #+END_SRC
@@ -506,7 +506,7 @@
     #+BEGIN_SRC js
 /-orgdoc*/
 
-}(Org));
+};
 
 /*orgdoc+/
     #+END_SRC

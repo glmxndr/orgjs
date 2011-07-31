@@ -5,10 +5,10 @@
 
     #+BEGIN_SRC js
 /-orgdoc*/
-Org.Markup = (function(Org){
+Org.getMarkup = function(org, params){
 
-  var _U = Org.Utils;
-  var _C = Org.Config;
+  var _U = org.Utils;
+  var _C = org.Config;
 
   var Markup = {};
 
@@ -301,7 +301,7 @@ Org.Markup = (function(Org){
 
   return Markup;
 
-}(Org));
+};
 /*orgdoc+/
     #+END_SRC
 /---orgdoc*/

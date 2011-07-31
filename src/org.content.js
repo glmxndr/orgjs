@@ -8,11 +8,11 @@
    #+BEGIN_SRC js
 /-orgdoc*/
 
-Org.Content = (function(Org){
+Org.getContent = function(org, params){
 
-  var _U  = Org.Utils;
-  var OM = Org.Markup;
-  var RGX = Org.Regexps;
+  var _U  = org.Utils;
+  var OM = org.Markup;
+  var RGX = org.Regexps;
 
   // The object that will be returned, and filled throughout this function.
   var Content = {};
@@ -475,7 +475,7 @@ Org.Content = (function(Org){
 
   return Content;
 
-}(Org));
+};
 
 /*orgdoc+/
    #+END_SRC

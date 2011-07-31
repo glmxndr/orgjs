@@ -7,11 +7,11 @@
    #+BEGIN_SRC js
 /-orgdoc*/
 
-Org.Outline = (function(Org, undefined){
+Org.getOutline = function(org, params){
 
-  var RGX = Org.Regexps;
-  var OC = Org.Content;
-  var _U = Org.Utils;
+  var RGX = org.Regexps;
+  var OC = org.Content;
+  var _U = org.Utils;
 
   /////////////////////////////////////////////////////////////////////////////
   // NODE : corresponds to a line starting with stars "*** ..."
@@ -298,7 +298,7 @@ Org.Outline = (function(Org, undefined){
     }
   };
 
-}(Org));
+};
 
 /*orgdoc+/
    #+END_SRC

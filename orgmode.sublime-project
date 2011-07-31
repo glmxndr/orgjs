@@ -4,40 +4,52 @@
 		"selected_items":
 		[
 			[
-				"cons",
-				"console"
+				"fnN",
+				"fnNextNum"
 			],
 			[
-				"Emp",
-				"EmphMarkers"
-			],
-			[
-				"repl",
-				"replace"
+				"fnByN",
+				"fnByName"
 			],
 			[
 				"esc",
 				"escapeHtml"
 			],
 			[
-				"ini",
-				"initStr"
+				"unB",
+				"unBackslash"
 			],
 			[
-				"pa",
-				"parent"
+				"Mark",
+				"Markup"
 			],
 			[
-				"if",
-				"ifte: Ternary If"
+				"repl",
+				"replaceTokens"
 			],
 			[
-				"for",
-				"forr: Range comprehension (inclusive)"
+				"join",
+				"joinKeys"
 			],
 			[
-				"ran",
-				"randToken"
+				"typ",
+				"typoTokens"
+			],
+			[
+				"con",
+				"console"
+			],
+			[
+				"to",
+				"tokenize"
+			],
+			[
+				"lin",
+				"linkToken"
+			],
+			[
+				"inde",
+				"indexOf"
 			],
 			[
 				"IGN",
@@ -126,10 +138,6 @@
 			[
 				"rend",
 				"renderChildren"
-			],
-			[
-				"con",
-				"contentHtml"
 			],
 			[
 				"ren",
@@ -259,7 +267,7 @@
 	"build_system": "",
 	"command_palette":
 	{
-		"height": 376,
+		"height": 392,
 		"selected_items":
 		[
 		],
@@ -275,90 +283,32 @@
 	},
 	"file_history":
 	[
-		"/F/dropbox/code/orgjs/test_src.html",
-		"/F/dropbox/code/orgjs/src/org.content.js",
-		"/F/dropbox/code/orgjs/src/org.outline.js",
-		"/F/dropbox/code/orgjs/src/org.render.js",
-		"/F/dropbox/code/orgjs/src/org.utils.js",
-		"/F/dropbox/code/orgjs/src/org.markup.js",
-		"/F/work/tm_trad/in/MM/DATA/files.txt",
-		"/F/work/tm_trad/in/MM/DATA/FR-051XX_MM-FR_261100_200-801-A01-a.xml",
-		"/F/work/tm_trad/in/MM/DATA/FR-051XX_MM-FR_710001_940-801-A01-a.xml",
-		"/F/work/tm_trad/in/MM/DATA/FR-051XX_MM-FR_121020_610-801-A01-a.xml",
-		"/F/dropbox/code/orgjs/build/make.js",
-		"/F/home/ghiom/org/EPE.org",
-		"/F/doc/books/CoffeeScript/Smooth CoffeeScript.lyx",
-		"/F/env/eclipse_sessions/tm_basis_4311/make/made/BASIS_Publisher_v1-5-9_SVN10058__20110725-162701/conf/fr/studec/turbomeca/conf/clientModel.conf",
-		"/C/Documents and Settings/gandrieu/Mes documents/Downloads/Summary of CoffeeScript - Dr Nic - Mocra.mov",
-		"/F/env/eclipse_sessions/tm_basis_4311/make/made/BASIS_Publisher_v1-5-9_SVN10058__20110725-162701/conf/scripts/script.bat",
-		"/D/tmp/RI1418/patch_1/data/PUBLI/publi.conf",
-		"/D/tmp/RI1418/patch_1/installUpdate/installeur/launch4j.cfg.xml",
-		"/F/dropbox/conf/.emacs",
-		"/F/dropbox/code/orgjs/src/org.utils.coffee",
-		"/F/dropbox/code/orgjs/src/org.wiki.js",
-		"/D/FTP/data/scripts/script_ALL.txt",
-		"/D/BASIS/Produit/checkout.bat",
-		"/D/tmp/RI_LCC/log/operation_EXPORT_ARRIEL1_pub_NORMAL_20110722-003429.log",
-		"/F/dropbox/conf/sublime/Packages/indentxml.py",
-		"/C/Documents and Settings/gandrieu/Application Data/Sublime Text 2/Packages/User/CoffeeScript.sublime-build",
-		"/C/Documents and Settings/gandrieu/Application Data/Sublime Text 2/Packages/User/Default (Windows).sublime-keymap",
-		"/F/dropbox/code/orgjs/src/org.utils.cs",
-		"/G/RI1442/data/MR/EN/DATA/XML/Pack1/EN-048XX_MR-EN_000010_GUI-801-A01-a.xml",
-		"/G/RI1442/data/MR/EN/DATA/XML/Pack1/EN-048XX_MR-EN_000000_INT-801-A01-a.xml",
-		"/C/Documents and Settings/gandrieu/Application Data/Sublime Text 2/Packages/Default/delete_word.py",
-		"/C/Documents and Settings/gandrieu/Application Data/Sublime Text 2/Packages/Default/duplicate_line.py",
-		"/C/Documents and Settings/gandrieu/Application Data/Sublime Text 2/Packages/Default/comment.py",
-		"/C/Program Files/Sublime2/sublime_plugin.py",
-		"/F/dropbox/conf/sublime/Config/Default.sublime-keymap",
-		"/F/tmp/proj/MAJN/COR/FR/COR/FR-010XX_COR-FR_407050_ALL.xml",
-		"/F/tmp/proj/MAJN/COR/FR/COR/FR-010XX_COR-FR_NOT_ALL.xml",
-		"/F/tmp/proj/MAJN/COR/FR/xml/FR-010XX_COR-FR_000011_GUI-801-A01.xml",
-		"/F/tmp/proj/MAJN/COR/FR/xml/FR-010XX_COR-FR_000000_INT-801-A01.xml",
-		"/F/tmp/proj/MAJN/MR/EN/xml/sources/EN-010XX_MR-EN_051001_150-801-A01.xml",
-		"/F/tmp/proj/MAJN/COR/FR/COR/FR-010XX_COR-FR_REF_ALL.xml",
-		"/F/env/eclipse_sessions/tm_basis_4311/merge.log",
-		"/C/Documents and Settings/gandrieu/Mes documents/Downloads/Vim.sublime-package",
-		"/C/Documents and Settings/gandrieu/Mes documents/Downloads/xmlpp.py",
-		"/C/Documents and Settings/gandrieu/Application Data/Sublime Text 2/Packages/User/IndentXml.sublime-plugin",
-		"/C/Documents and Settings/gandrieu/Application Data/Sublime Text 2/Packages/User/indentxml.py",
-		"/F/env/eclipse_sessions/tm_basis_4311/merge.bat",
-		"/G/RI1442/trace/tdm_xsl_exec.txt",
-		"/G/RI1442/trace/EMTATOP05.xml",
-		"/G/RI1442/trace/tdm.xsl",
-		"/F/dropbox/code/orgjs/script/sugar.js",
-		"/G/TURBOMECA/VIEWER_C_292_M5_460_9/viewer/webapps/ROOT/themes/defaut/script/init.js",
-		"/D/tmp/RI1418/patch_1/data/sandbox/xsl/elements_basis/pgproc.xsl",
-		"/D/tmp/RI1418/patch_1/installUpdate/installeur/filelist.txt",
-		"/G/TURBOMECA/VIEWER_C_292_M5_460_9/Uninstall.bat",
-		"/D/tmp/RI1418/patch_1/installUpdate/installeur/build_install.bat",
-		"/F/dropbox/code/orgjs/src/tmp.js",
-		"/G/tmp/MM_71-02-07-280-802-A01_-1567848706.xml",
-		"/G/trad/Check_1_EN.log",
-		"/G/trad/Check_1_FR.log",
-		"/G/TURBOMECA/VIEWER_C_292_87_450_9/properties/viewer.properties",
-		"/G/TURBOMECA/VIEWER_C_292_87_450_9/Uninstall.bat",
-		"/C/Documents and Settings/gandrieu/Bureau/cleanSVN.bat",
-		"/G/tmp/out/myfile.pdf",
-		"/G/tmp/wrong_table.xml",
-		"/F/dropbox/code/orgjs/script/markdown.js",
-		"/F/dropbox/code/orgjs/orgmode.sublime-project",
 		"/home/subtenante/Dropbox/code/orgjs/src/org.render.js",
+		"/home/subtenante/Dropbox/code/orgjs/src/org.utils.js",
+		"/home/subtenante/Dropbox/code/orgjs/src/org.outline.js",
 		"/home/subtenante/Dropbox/code/orgjs/build/make.js",
-		"/home/subtenante/Dropbox/code/orgjs/src/org.main.js",
+		"/home/subtenante/Dropbox/code/orgjs/src/org.markup.js",
 		"/home/subtenante/Dropbox/code/orgjs/src/org.content.js",
+		"/home/subtenante/Dropbox/code/orgjs/src/org.main.js",
+		"/home/subtenante/Dropbox/code/orgjs/doc/org-js.org",
+		"/home/subtenante/Dropbox/code/orgjs/script/markdown.js",
+		"/home/subtenante/Dropbox/code/orgjs/src/org.wiki.js",
+		"/home/subtenante/Dropbox/code/orgjs/src/org.config.js",
+		"/home/subtenante/Dropbox/code/orgjs/src/org.utils.cs",
+		"/home/subtenante/Dropbox/code/orgjs/doc/#org-js.org#",
+		"/home/subtenante/Dropbox/code/orgjs/test/org-test.js",
+		"/home/subtenante/Dropbox/code/orgjs/src/tmp.js",
+		"/home/subtenante/Dropbox/code/orgjs/src/org.api.js",
 		"/home/subtenante/Dropbox/code/orgjs/src/org.regexps.js",
 		"/home/subtenante/Dropbox/code/orgjs/style/org.css",
-		"/home/subtenante/Dropbox/code/orgjs/src/org.utils.js",
 		"/home/subtenante/Dropbox/code/orgjs/script/org.regexps.js",
 		"/home/subtenante/Dropbox/code/orgjs/test/document.org",
 		"/home/subtenante/Dropbox/code/orgjs/script/org.main.js",
-		"/home/subtenante/Dropbox/code/orgjs/doc/org-js.org",
 		"/home/subtenante/Dropbox/code/orgjs/script/org.outline.js",
 		"/home/subtenante/Dropbox/code/orgjs/script/org.render.js",
 		"/home/subtenante/Dropbox/code/orgjs/script/org.utils.js",
 		"/home/subtenante/Dropbox/code/orgjs/script/org.js",
 		"/home/subtenante/Dropbox/code/orgjs/test.html",
-		"/home/subtenante/Dropbox/code/orgjs/test/org-test.js",
 		"/home/subtenante/Dropbox/code/orgjs/script/org.content.js",
 		"/home/subtenante/common/code/javascript/orgjs/scripts/watch.js",
 		"/home/subtenante/common/code/org-ruby/lib/org-ruby/regexp_helper.rb",
@@ -383,9 +333,12 @@
 	{
 		"include_history":
 		[
+			"*.js",
+			""
 		],
 		"location_history":
 		[
+			"<open folders>"
 		]
 	},
 	"find_state":
@@ -393,52 +346,14 @@
 		"case_sensitive": true,
 		"find_history":
 		[
-			"MArKUP.",
-			"OM.",
-			"Wiki",
-			"wiki",
-			"Wiki",
-			"LCC",
-			"INFO",
-			"output",
-			"write",
-			"strip",
-			"usage",
-			"_usage",
-			"                # Get the selected text  \n",
-			"sdf",
-			"sdfg \nfsdfsdf",
-			" ",
-			"sdfg \nfsdfsdf",
-			" ",
-			"sdfg \nfsdfsdf",
-			" ",
-			"sdfg \nfsdfsdf",
-			" ",
-			"sdfg \nfsdfsdf",
-			" ",
-			"sdfg \nfsdfsdf",
-			" ",
-			"sdfg \nfsdfsdf",
-			" ",
-			"sdfg \nfsdfsdf",
-			" ",
-			"sdfg \nfsdfsdf",
-			" ",
-			"sdfg \nfsdfsdf",
-			" ",
-			"sdfg \nfsdfsdf",
-			" ",
-			"(CASE \\d)",
-			"	(.)	",
-			"	.	",
-			"	!	",
-			"	.	",
-			"	 	",
-			"	(.)	",
-			"\\n",
+			"Content",
+			"Org.Content",
+			"RootBlock()",
+			"renderMarkup",
+			"Rendering",
+			"\"Rendering",
+			"Rendering",
 			" |\\n",
-			"\\n.*G24.*",
 			"TITLE",
 			"@",
 			"@([^@\\s]+)@",
@@ -466,16 +381,9 @@
 		"highlight": true,
 		"in_selection": false,
 		"preserve_case": false,
-		"regex": false,
+		"regex": true,
 		"replace_history":
 		[
-			"Markup.",
-			"##################################################################################################  $1",
-			"   $1   ",
-			"   \\1   ",
-			"   $1   ",
-			"   '$1'   ",
-			"\\n* ",
 			"",
 			"=$1=",
 			"docid",
