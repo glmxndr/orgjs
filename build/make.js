@@ -50,7 +50,7 @@ function buildAll(){
   if(!isBuilding()){
     isBuildingSrc = true;
     isBuildingDoc = true;
-    log("Start building all...")
+    log("Start building all...");
     buildSrc();
     buildDoc();
   }
@@ -126,7 +126,8 @@ function buildDoc(){
 
 if(watchFiles){
   log("Start listening...");
-  for(idx in srcFiles){
+  var idx;
+  for (idx in srcFiles) {
     watch(srcFiles[idx]);
   }
 }

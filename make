@@ -1,1 +1,3 @@
-node build/make.js
+#! /bin/bash
+node build/make.js &
+python -m SimpleHTTPServer 3000 &
