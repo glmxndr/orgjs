@@ -22,15 +22,16 @@
 
 */
 var Org = function(params){
-  this.version = "0.1";
+  this.version    = "0.1";
   this.apiversion = "7.6";
-  this.Config  = Org.getConfig( this, params);
-  this.Regexps = Org.getRegexps(this, params);
-  this.Utils   = Org.getUtils(  this, params);
-  this.Markup  = Org.getMarkup( this, params);
-  this.Content = Org.getContent(this, params);
-  this.Outline = Org.getOutline(this, params);
-  this.Render  = Org.getRender( this, params);
+  this.Config     = Org.getConfig(this, params);
+  this.Regexps    = Org.getRegexps(this, params);
+  this.Utils      = Org.getUtils(this, params);
+  this.Markup     = Org.getMarkup(this, params);
+  this.Content    = Org.getContent(this, params);
+  this.Outline    = Org.getOutline(this, params);
+  this.Render     = Org.getRender(this, params);
+  this.Renderers  = Org.getRenderers(this, params);
 };
 /***orgdoc***
 * TODO =Org.Config= : configuration
@@ -67,13 +68,13 @@ Org.getConfig = function(org, params){
 * =Org.Regexps= : the regexp bank
 
   The parser needs a lot of regular expressions.
-  Non trivial regexps will be found in the file =org.regexps.js=, 
+  Non trivial regexps will be found in the file =org.regexps.js=,
   and accessible under the object =Org.Regexps=.
 
 */
 
 Org.getRegexps = function(org, params){
-  
+
   var RGX = {
 
     /**
@@ -88,14 +89,14 @@ Org.getRegexps = function(org, params){
 
     /**
      * Selects anything in the given string until the next heading, or the end.
-     * Example : 
+     * Example :
      * ----
      * some content
-     * 
+     *
      * * next heading
      * ----
      * would match "some content\n\n*"
-     * 
+     *
      * Captures everything except the star of the following heading.
      */
     beforeNextHeading: /^([\s\S]*?)(?:\n\*|$)/,
@@ -119,30 +120,30 @@ Org.getRegexps = function(org, params){
      * A meta information line, capturing:
      * - the meta key,
      * - the meta value
-     * 
+     *
      * Example:
      * ----
      *    #+TITLE: The title
      * ----
-     * captures "TITLE", "The title" 
-     */ 
+     * captures "TITLE", "The title"
+     */
     metaLine: /(?:^|\s*)#\+([A-Z0-9_]+):\s*(.*)(\n|$)/m,
-  
+
     /**
      * The property section. Captures the content of the section.
      */
     propertySection: /:PROPERTIES:\s*\n([\s\S]+?)\n\s*:END:/,
-  
+
     /**
      * Property line. Captures the KEY and the value.
      */
     propertyLine: /^\s*:([A-Z0-9_-]+):\s*(\S[\s\S]*)\s*$/im,
-  
+
     /**
      * Clock section when several clock lines are defined.
      */
     clockSection: /:CLOCK:\s*\n([\s\S]+?)\n?\s*:END:/,
- 
+
     /**
      * Matches a clock line, either started only, or finished.
      * Captures:
@@ -160,20 +161,20 @@ Org.getRegexps = function(org, params){
 
     _bBlk: {},
     beginBlock: function(type){
-      return this._bBlk[k] || 
-        (this._bBlk[k] = new RegExp("^\\s*#\\+BEGIN_" + type + "|\\s\n]", "i"));
+      return this._bBlk[type] ||
+        (this._bBlk[type] = new RegExp("^\\s*#\\+BEGIN_" + type + "|\\s\n]", "i"));
     },
 
     _eBlk: {},
     endBlock: function(type){
-      return this._eBlk[k] || 
-        (this._eBlk[k] = new RegExp("^\\s*#\\+END_" + type + "|\\s\n]", "i"));
+      return this._eBlk[type] ||
+        (this._eBlk[type] = new RegExp("^\\s*#\\+END_" + type + "|\\s\n]", "i"));
     }
 
   };
 
   return RGX;
-  
+
 };
 
 /***orgdoc***
@@ -185,7 +186,7 @@ Org.getRegexps = function(org, params){
 */
 
 Org.getUtils = function(org, params){
-  
+
   if (typeof Object.create !== 'function') {
     Object.create = function (o) {
       function F() {}
@@ -224,7 +225,7 @@ Org.getUtils = function(org, params){
         }
       }
       return -1;
-    }
+    };
   }
 
   var RGX = org.Regexps;
@@ -282,7 +283,7 @@ Org.getUtils = function(org, params){
       }
       return result.join('');
     },
-    
+
     each: function(arr, fn){
       var name, length = arr.length, i = 0, isObj = length === undefined;
       if ( isObj ) {
@@ -292,36 +293,36 @@ Org.getUtils = function(org, params){
       } else {
         if(!length){return;}
         for ( var value = arr[0];
-          i < length && fn.call( value, value, i ) !== false; 
+          i < length && fn.call( value, value, i ) !== false;
           value = arr[++i] ) {}
       }
     },
-    
+
     map: function(arr, fn){
       var result = [];
       this.each(arr, function(val, idx){
         var mapped = fn.call(val, val, idx);
-        if (mapped != null){result.push(mapped);}
+        if (mapped !== null){result.push(mapped);}
       });
       return result;
     },
-    
+
     log: function(o){
       if(console && console.log){console.log(o);}
     },
-    
+
     firstLine: function(str){
       var match = RGX.firstLine.exec(str);
       return match ? match[0] : "";
     },
-    
+
     lines: function(str){
       if (!str && str !== ""){return [];}
       return str.split(RGX.newline);
     },
-    
+
     indentLevel: function(str){
-      return /^\s*/.exec(str)[0].length;
+      return (/^\s*/).exec(str)[0].length;
     },
 
     randomStr: function(length){
@@ -350,7 +351,9 @@ Org.getUtils = function(org, params){
         token = start + this.randomStr(5);
       }
       return token;
-    }
+    },
+    
+    noop: function(){}
 
   };
 
@@ -386,15 +389,17 @@ Org.getMarkup = function(org, params){
   }());
 
   var LinkType={};  _U.map(LinkDefs, function(v,k){LinkType[k] = v.id;});
-  var LinkTypeArr = _U.map(LinkType, function(v,k){LinkType[k];});
+  var LinkTypeArr = _U.map(LinkType, function(v,k){return LinkDefs[k];});
 
   function getLinkType(link){
+    var k;
     for(k in LinkTypeArr){
       if(link.url.match(LinkTypeArr[k].re)){return LinkType[k];}
     }
   }
 
   var Link = function(parent, raw, url, desc, token){
+    this.nodeType = "Link";
     this.raw = raw;
     this.parent = parent;
     this.url = url;
@@ -405,6 +410,7 @@ Org.getMarkup = function(org, params){
   Markup.Link = Link;
 
   var FootNoteRef = function(parent, raw, name, token){
+    this.nodeType = "FootNoteRef";
     this.raw = raw;
     this.parent = parent;
     this.name = name;
@@ -414,7 +420,7 @@ Org.getMarkup = function(org, params){
 
 ///////////////////////////////////////////////////////////////////////////////
 // TYPO
-  
+
 //   + Allowed pre:      " \t('\"{"
 //   + Allowed post:     "- \t.,:!?;'\")}\\"
 //   + Forbidden border: " \t\r\n,\"'"
@@ -452,9 +458,9 @@ Org.getMarkup = function(org, params){
     return new constr(parent);
   };
   EmphMarkers.getRegexpAll = function(){
-    // TODO : refactor to : 
+    // TODO : refactor to :
     //    - take the real pre/post/border char sets in config
-    return /(^(?:.|\n)*?)(([\/*~=+_])([^\s].*?[^\s\\]|[^\s\\])\3)/;        //*/
+    return (/(^(?:.|\n)*?)(([\/*~=+_])([^\s].*?[^\s\\]|[^\s\\])\3)/);        //*/
   };
   Markup.EmphMarkers = EmphMarkers;
 
@@ -466,6 +472,7 @@ Org.getMarkup = function(org, params){
   }
 
   var EmphInline = function(parent){
+    this.nodeType = "EmphInline";
     this.parent = parent;
     this.children = [];
   };
@@ -480,15 +487,17 @@ Org.getMarkup = function(org, params){
     if(this.content && this.content.length){
       var content = this.content;
       var pipedKeys =  _U.joinKeys("|", tokens);
-      if(pipedKeys == 0){return;}
+      if(_U.blank(pipedKeys)){return;}
       var rgx = new RegExp('^((?:.|\n)*?)(' + pipedKeys + ')((?:.|\n)*)$');
       var match, pre, token, rest;
       var inline = new EmphInline(this);
-      while(match = rgx.exec(content)){
+      match = rgx.exec(content);
+      while(match){
         pre = match[1]; token = match[2]; rest = match[3];
         if(_U.notBlank(pre)){ makeInline(EmphRaw, inline, pre); }
         inline.adopt(tokens[token]);
         content = rest;
+        match = rgx.exec(content);
       }
       if(inline.children.length){
         if(_U.notBlank(rest)){ makeInline(EmphRaw, inline, rest); }
@@ -504,15 +513,15 @@ Org.getMarkup = function(org, params){
     var pre, hasEmph, type, inner, length;
     var raw, sub;
     while((_U.trim(rest).length > 0) && (match = regexp.exec(rest))){
-      pre = match[1]; 
-      hasEmph = match[2]; 
-      token = match[3] || ""; 
+      pre = match[1];
+      hasEmph = match[2];
+      token = match[3] || "";
       inner = match[4] || "";
       length = pre.length + inner.length + (hasEmph ? 2 : 0);
       if(length === 0){break;}
       rest = rest.substr(length);
       if(_U.notBlank(pre)){ makeInline(EmphRaw, this, pre); }
-      if(hasEmph !== void(0)){ 
+      if(hasEmph !== void(0)){
         makeInline(EmphMarkers[token].constr, this, inner);
       }
     }
@@ -522,6 +531,7 @@ Org.getMarkup = function(org, params){
 
   var EmphRaw = function(parent){
     EmphInline.call(this, parent);
+    this.nodeType = "EmphRaw";
     this.recurse = false;
   };
   EmphRaw.prototype = Object.create(EmphInline.prototype);
@@ -533,6 +543,7 @@ Org.getMarkup = function(org, params){
 
   var EmphItalic = function(parent){
     EmphInline.call(this, parent);
+    this.nodeType = "EmphItalic";
     this.recurse = true;
   };
   EmphItalic.prototype = Object.create(EmphInline.prototype);
@@ -542,6 +553,7 @@ Org.getMarkup = function(org, params){
 
   var EmphBold = function(parent){
     EmphInline.call(this, parent);
+    this.nodeType = "EmphBold";
     this.recurse = true;
   };
   EmphBold.prototype = Object.create(EmphInline.prototype);
@@ -551,6 +563,7 @@ Org.getMarkup = function(org, params){
 
   var EmphUnderline = function(parent){
     EmphInline.call(this, parent);
+    this.nodeType = "EmphUnderline";
     this.recurse = true;
   };
   EmphUnderline.prototype = Object.create(EmphInline.prototype);
@@ -560,6 +573,7 @@ Org.getMarkup = function(org, params){
 
   var EmphStrike = function(parent){
     EmphInline.call(this, parent);
+    this.nodeType = "EmphStrike";
     this.recurse = true;
   };
   EmphStrike.prototype = Object.create(EmphInline.prototype);
@@ -569,6 +583,7 @@ Org.getMarkup = function(org, params){
 
   var EmphCode = function(parent){
     EmphRaw.call(this, parent);
+    this.nodeType = "EmphCode";
   };
   EmphCode.prototype = Object.create(EmphRaw.prototype);
   EmphMarkers["="].constr = EmphCode;
@@ -577,6 +592,7 @@ Org.getMarkup = function(org, params){
 
   var EmphVerbatim = function(parent){
     EmphRaw.call(this, parent);
+    this.nodeType = "EmphVerbatim";
   };
   EmphVerbatim.prototype = Object.create(EmphRaw.prototype);
   EmphMarkers["~"].constr = EmphVerbatim;
@@ -593,7 +609,7 @@ Org.getMarkup = function(org, params){
     var initStr = str;
 
     var links = {};
-    var linkTokenPrefix = uniqToken("LINK");  
+    var linkTokenPrefix = uniqToken("LINK");
 
     function uniqToken(p){return _U.getAbsentToken(initStr, p);}
 
@@ -613,14 +629,14 @@ Org.getMarkup = function(org, params){
     // Whole links with URL and description : [[url:...][Desc of the link]]
     var descLinkRegex = /\[\[((?:.|\s)*?)\]\[((?:.|\s)*?)\]\]/gm;
     str = str.replace(descLinkRegex, linkReplacer(1, 2));
-    
+
     // Single links with URL only : [[url:...]]
     var singleLinkRegex = /\[\[((?:.|\s)*?)\]\]/gm;
     str = str.replace(descLinkRegex, linkReplacer(1, 1));
-    
+
     // Treating bare URLs, or URLs without a description attached.
-    var urlRegex = new RegExp("(?:" + 
-                      _C.urlProtocols.join("|") + 
+    var urlRegex = new RegExp("(?:" +
+                      _C.urlProtocols.join("|") +
                       '):[^\\s),;]+', "gi");
     str = str.replace(urlRegex, linkReplacer(0, 0));
 
@@ -715,7 +731,7 @@ Org.getContent = function(org, params){
     if(/^\s*[a-z]/i.exec(line)){
       return LineType.PARA;
     }
-    if(line == 0){
+    if(_U.blank(line)){
       return LineType.BLANK;
     }
     if(/^#/.exec(line)){
@@ -738,6 +754,7 @@ Org.getContent = function(org, params){
     //if(/^\s*$/.exec(line)){
     //  return LineType.BLANK;
     //}
+    var k;
     for(k in BeginEndBlocks){
       if(RGX.beginBlock(k).exec(line)){
         return LineType[k];
@@ -762,6 +779,7 @@ Org.getContent = function(org, params){
   //  CONTAINERBLOCK
   var ContainerBlock = function(parent){
     this.parent = parent;
+    this.nodeType = "ContainerBlock";
     this.isContainer = true;
     this.children = [];
   };
@@ -771,6 +789,7 @@ Org.getContent = function(org, params){
   //  ROOTBLOCK
   var RootBlock = function(parent){
     ContainerBlock.call(this, parent);
+    this.nodeType = "RootBlock";
   };
   Content.RootBlock = RootBlock;
   RootBlock.prototype = Object.create(ContainerBlock.prototype);
@@ -786,6 +805,7 @@ Org.getContent = function(org, params){
   //  CONTENTBLOCK
   var ContentBlock = function(parent){
     this.parent = parent;
+    this.nodeType = "ContentBlock";
     this.isContent = true;
     this.lines = [];
   };
@@ -795,6 +815,7 @@ Org.getContent = function(org, params){
   //  CONTENTMARKUPBLOCK
   var ContentMarkupBlock = function(parent){
     ContentBlock.call(this, parent);
+    this.nodeType = "ContentMarkupBlock";
     this.hasMarkup = true;
     this.children = [];
   };
@@ -808,6 +829,7 @@ Org.getContent = function(org, params){
   //  PARABLOCK
   var ParaBlock = function(parent){
     ContentMarkupBlock.call(this, parent);
+    this.nodeType = "ParaBlock";
     this.indent = parent.indent || 0;
   };
   LineDef.PARA.constr = Content.ParaBlock = ParaBlock;
@@ -825,7 +847,7 @@ Org.getContent = function(org, params){
     if(this.indent === 0){return true;}
     indent = getLineIndent(line);
     if(indent <= this.indent){
-      return false;    
+      return false;
     }
     return true;
   };
@@ -843,6 +865,7 @@ Org.getContent = function(org, params){
   //  FNDEFBLOCK
   var FndefBlock = function(parent){
     ContentMarkupBlock.call(this, parent);
+    this.nodeType = "FndefBlock";
     this.indent = parent.indent || 0;
     this.firstline = true;
   };
@@ -888,6 +911,7 @@ Org.getContent = function(org, params){
   //  BEGINENDBLOCK
   var BeginEndBlock = function(parent, line, type){
     ContentBlock.call(this, parent);
+    this.nodeType = "BeginEndBlock";
     this.indent = getLineIndent(line);
     this.ended = false;
     this.beginre = RGX.beginBlock(type);
@@ -899,7 +923,7 @@ Org.getContent = function(org, params){
   BeginEndBlock.prototype.consume     = function(line){
     if(this.beginre.exec(line)){ this.treatBegin(line); }
     else if(this.endre.exec(line)){ this.ended = true; }
-    else { 
+    else {
       if(this.verbatim){
         this.lines.push(line);
       } else {
@@ -907,7 +931,7 @@ Org.getContent = function(org, params){
         if(type !== LineType.IGNORED){
           this.lines.push(line);
         }
-      }  
+      }
     }
     return this;
   };
@@ -917,6 +941,7 @@ Org.getContent = function(org, params){
   var VerseBlock = function(parent, line){
     ContentMarkupBlock.call(this, parent);
     BeginEndBlock.call(this, parent, line, "VERSE");
+    this.nodeType = "VerseBlock";
   };
   LineDef.VERSE.constr = Content.VerseBlock = VerseBlock;
   VerseBlock.prototype = Object.create(BeginEndBlock.prototype);
@@ -927,6 +952,7 @@ Org.getContent = function(org, params){
   var QuoteBlock = function(parent, line){
     ContentMarkupBlock.call(this, parent);
     BeginEndBlock.call(this, parent, line, "QUOTE");
+    this.nodeType = "QuoteBlock";
   };
   LineDef.QUOTE.constr = Content.QuoteBlock = QuoteBlock;
   QuoteBlock.prototype = Object.create(BeginEndBlock.prototype);
@@ -937,6 +963,7 @@ Org.getContent = function(org, params){
   var CenterBlock = function(parent, line){
     ContentMarkupBlock.call(this, parent);
     BeginEndBlock.call(this, parent, line, "CENTER");
+    this.nodeType = "CenterBlock";
   };
   LineDef.CENTER.constr = Content.CenterBlock = CenterBlock;
   CenterBlock.prototype = Object.create(BeginEndBlock.prototype);
@@ -946,6 +973,7 @@ Org.getContent = function(org, params){
   //  EXAMPLEBLOCK
   var ExampleBlock = function(parent, line){
     BeginEndBlock.call(this, parent, line, "EXAMPLE");
+    this.nodeType = "ExampleBlock";
     this.verbatim = true;
   };
   LineDef.EXAMPLE.constr = Content.ExampleBlock = ExampleBlock;
@@ -955,6 +983,7 @@ Org.getContent = function(org, params){
   //  SRCBLOCK
   var SrcBlock = function(parent, line){
     BeginEndBlock.call(this, parent, line, "SRC");
+    this.nodeType = "SrcBlock";
     this.verbatim = true;
     var match = /BEGIN_SRC\s+([a-z-]+)(?:\s*|$)/i.exec(line);
     this.language = match ? match[1] : null;
@@ -966,6 +995,7 @@ Org.getContent = function(org, params){
   //  HTMLBLOCK
   var HtmlBlock = function(parent, line){
     BeginEndBlock.call(this, parent, line, "HTML");
+    this.nodeType = "HtmlBlock";
     this.verbatim = true;
   };
   LineDef.HTML.constr = Content.HtmlBlock = HtmlBlock;
@@ -975,6 +1005,7 @@ Org.getContent = function(org, params){
   //  COMMENTBLOCK
   var CommentBlock = function(parent, line){
     BeginEndBlock.call(this, parent, line, "COMMENT");
+    this.nodeType = "CommentBlock";
     this.verbatim = true;
   };
   LineDef.COMMENT.constr = Content.CommentBlock = CommentBlock;
@@ -985,6 +1016,7 @@ Org.getContent = function(org, params){
   //  ULISTBLOCK
   var UlistBlock = function(parent, line){
     ContainerBlock.call(this, parent);
+    this.nodeType = "UlistBlock";
     this.indent = getLineIndent(line);
   };
   LineDef.ULITEM.constr = Content.UlistBlock = UlistBlock;
@@ -1005,6 +1037,7 @@ Org.getContent = function(org, params){
   //  OLISTBLOCK
   var OlistBlock = function(parent, line){
     ContainerBlock.call(this, parent);
+    this.nodeType = "OlistBlock";
     this.indent = getLineIndent(line);
     var match = /^\s*\d+[.)]\s+\[@(\d+)\]/.exec(line);
     this.start = match ? +(match[1]) : 1;
@@ -1027,6 +1060,7 @@ Org.getContent = function(org, params){
   //  DLISTBLOCK
   var DlistBlock = function(parent, line){
     ContainerBlock.call(this, parent);
+    this.nodeType = "DlistBlock";
     this.indent = getLineIndent(line);
   };
   LineDef.DLITEM.constr = Content.DlistBlock = DlistBlock;
@@ -1047,6 +1081,7 @@ Org.getContent = function(org, params){
   //  LISTITEMBLOCK
   var ListItemBlock = function(parent, line){
     ContainerBlock.call(this, parent);
+    this.nodeType = "ListItemBlock";
     this.indent = parent.indent;
   };
   ListItemBlock.prototype = Object.create(ContainerBlock.prototype);
@@ -1070,6 +1105,7 @@ Org.getContent = function(org, params){
   //  ULISTITEMBLOCK
   var UlistItemBlock = function(parent, line){
     ListItemBlock.call(this, parent, line);
+    this.nodeType = "UlistItemBlock";
   };
   Content.UlistItemBlock = UlistItemBlock;
 
@@ -1083,6 +1119,7 @@ Org.getContent = function(org, params){
   //  OLISTITEMBLOCK
   var OlistItemBlock = function(parent, line){
     ListItemBlock.call(this, parent, line);
+    this.nodeType = "OlistItemBlock";
     var match = /^\s*(\d+)[.)] /.exec(line);
     this.number = match ? +(match[1]) : 1;
   };
@@ -1097,7 +1134,8 @@ Org.getContent = function(org, params){
   //  DLISTITEMBLOCK
   var DlistItemBlock = function(parent, line){
     ListItemBlock.call(this, parent,line);
-    var title = /^\s*[+*-] (.*) ::/.exec(line)[1]
+    this.nodeType = "DlistItemBlock";
+    var title = (/^\s*[+*-] (.*) ::/).exec(line)[1];
     this.titleInline = OM.tokenize(this, title);
   };
   Content.DlistItemBlock = DlistItemBlock;
@@ -1128,7 +1166,7 @@ Org.getContent = function(org, params){
         }
       }
       line = lines.shift();
-    };
+    }
     if(current){current.finalize();}
     return root;
   };
@@ -1153,22 +1191,25 @@ Org.getOutline = function(org, params){
 
   /////////////////////////////////////////////////////////////////////////////
   // NODE : corresponds to a line starting with stars "*** ..."
-  
+
   var Node = function(whole, params){
-    params = params || {};
-    this.docid = params.docid;
-    this.parent = params.parent;
-    this.children = params.children || [];
+    params          = params || {};
     
-    this.whole = whole;
-    this.parser = new NodeParser(this.whole);
-    this.heading = this.parser.getHeading();
-    this.level = params.level || (this.heading.getStars() || "").length;
+    this.nodeType = "Node";
+
+    this.docid      = params.docid;
+    this.parent     = params.parent;
+    this.children   = params.children || [];
+    
+    this.whole      = whole;
+    this.parser     = new NodeParser(this.whole);
+    this.heading    = this.parser.getHeading();
+    this.level      = params.level || (this.heading.getStars() || "").length;
     
     this.properties = this.parser.getProperties();
-    this.meta = this.parser.getMeta();
-    this.content = this.parser.getContent();
-    
+    this.meta       = this.parser.getMeta();
+    this.content    = this.parser.getContent();
+
   };
 
   Node.prototype = {
@@ -1178,26 +1219,22 @@ Org.getOutline = function(org, params){
     },
 
     siblings: function(){
-      return this.parent 
-              ? this.parent.children
-              : [];
+      return this.parent ? this.parent.children : [];
     },
 
     // Computes the ID of this node
     id: function(){
       if (!this.parent){
-        return this.docid 
-                ? this.docid
-                : "doc#" + (Node.tocnum++) + "/";
+        return this.docid || "doc#" + (Node.tocnum++) + "/";
       }
       return this.parent.id() + "" + this.siblings().indexOf(this) + "/";
-    }, 
+    },
 
     addFootnoteDef: function(inline, name){
       if(this.fnByName === void(0)){
-        this.fnByName = {};
+        this.fnByName    = {};
         this.fnNameByNum = [];
-        this.fnNextNum = 1;
+        this.fnNextNum   = 1;
       }
       if(!name){name = "" + this.fnNextNum;}
       if(this.fnByName[name]){
@@ -1215,18 +1252,19 @@ Org.getOutline = function(org, params){
 
   /**
    * Counting the documents generated in this page.
-   * Helps to generate an ID for the nodes 
+   * Helps to generate an ID for the nodes
    * when no docid is given in the root node.
    */
   Node.tocnum = 0;
-  
+
   /////////////////////////////////////////////////////////////////////////////
   // PARSING
-  
+
   /**
    * Headline embeds the parsing of a heading line.
    */
   var Headline = function(txt){
+    this.nodeType = "Headline";
     this.repr = _U.trim(txt);
     this.match = RGX.headingLine.exec(this.repr) || [];
   };
@@ -1249,7 +1287,7 @@ Org.getOutline = function(org, params){
       return tags ? tags.split(":") : [];
     }
   };
-  
+
   /**
    * Parsing a whole section
    */
@@ -1264,7 +1302,7 @@ Org.getOutline = function(org, params){
     getHeading: function(){
       if(this.heading){return this.heading;}
       var firstLine = _U.firstLine(this.content);
-      this.heading = new Headline(firstLine);
+      this.heading  = new Headline(firstLine);
       return this.heading;
     },
 
@@ -1315,7 +1353,7 @@ Org.getOutline = function(org, params){
       content = content.split(subHeadingStars)[0];
       this.item = content;
       return content;
-    }, 
+    },
 
     /**
      * Returns the content only : no heading, no properties, no subitems, no clock, etc.
@@ -1342,11 +1380,15 @@ Org.getOutline = function(org, params){
       var result = {};
       var lines = txt.split(RGX.newline);
       _U.each(lines, function(line, idx){
-        if(_U.trim(line).length == 0){return true;}
+        if(_U.blank(line)){return true;}
         if(!line.match(RGX.metaDeclaration)){return false;} // we went ahead the headers : break the loop
         var match = RGX.metaLine.exec(line);
         if (match){
-          result[match[1]] = match[2];
+          if(result[match[1]]){
+            result[match[1]] = result[match[1]] + "\n" + match[2];
+          } else {
+            result[match[1]] = match[2];
+          }
         }
         return true;
       });
@@ -1358,10 +1400,10 @@ Org.getOutline = function(org, params){
      */
     removeHeaders: function(txt){
       var result = "";
-      var lines = txt.split(RGX.newline);
+      var lines  = txt.split(RGX.newline);
       var header = true;
       _U.each(lines, function(line, idx){
-        if(header && _U.trim(line).length == 0){return;}
+        if(header && _U.blank(line)){return;}
         if(header && line.match(RGX.metaDeclaration)){return;}
         header = false;
         result += "\n" + line;
@@ -1369,7 +1411,7 @@ Org.getOutline = function(org, params){
       return result;
     }
   };
-  
+
   /**
    * General purpose parser.
    */
@@ -1383,9 +1425,9 @@ Org.getOutline = function(org, params){
     nodeTextList: function(text){
       var content = text;
       return _U.map(
-        content.split(/^\*/m), 
+        content.split(/^\*/m),
         function(t, idx){
-          return idx == 0 ? "\n" + t : "*" + t;
+          return idx === 0 ? "\n" + t : "*" + t;
         }
       );
     },
@@ -1400,14 +1442,14 @@ Org.getOutline = function(org, params){
     },
 
     buildTree: function(){
-      var nodes = this.nodeList(this.txt);
-      var root = nodes[0];
+      var nodes  = this.nodeList(this.txt);
+      var root   = nodes[0];
       var length = nodes.length;
       var done, i, j, level;
       for(i = 1; i < length ; i++){
         level = nodes[i].level;
-        done = false;
-        j = i;
+        done  = false;
+        j     = i;
         while(!done){
           j = j - 1;
           if(j < 0){break;}
@@ -1453,6 +1495,7 @@ Org.getOutline = function(org, params){
     =Org.Outline=.
 
 */
+
 Org.getRender = function(org, params){
 
   var OC = org.Content;
@@ -1495,6 +1538,16 @@ Org.getRender = function(org, params){
     return unBackslash(escapeHtml(str));
   }
 
+  function typo(str){
+    str = "" + str;
+    str = str.replace(/\s*(,|\.|\)|\])\s*/g, "$1 ");
+    str = str.replace(/\s*(\(|\[)\s*/g, " $1");
+    str = str.replace(/\s*(;|!|\?|:)\s+/g, "&nbsp;$1 ");
+    str = str.replace(/\s*(«)\s*/g, " $1&nbsp;");
+    str = str.replace(/\s*(»)\s*/g, "&nbsp;$1 ");
+    return str;
+  }
+
 /***orgdoc***
 *** renderMarkup                                                   :function:
      + Purpose :: this function converts the wiki-style markup of
@@ -1507,9 +1560,9 @@ Org.getRender = function(org, params){
   function renderMarkup(str){
     str = "" + str;
     str = escapeHtml(str);
-    str = str.replace(/\/([^\s/][^/]*?[^\s/]|[^/])\//g, "<em>$1</em>");
+    str = str.replace(/\/([^\s\/][^\/]*?[^\s\/]|[^\/])\//g, "<em>$1</em>");
     str = str.replace(/_([^\s_][^_]*?[^\s_]|[^_])_/g,   "<u>$1</u>");
-    str = str.replace(/=([^\s=][^=]*?[^\s=]|[^=])=/g,   "<code>$1</code>");
+    str = str.replace(/\=([^\s=][^=]*?[^\s=]|[^=])=/g,   "<code>$1</code>");
     str = str.replace(/~([^\s~][^~]*?[^\s~]|[^~])~/g,   "<samp>$1</samp>");
     str = str.replace(/\*([^*\s][^*]*?[^*\s]|[^*])\*/g, "<strong>$1</strong>");
     str = str.replace(/\+([^\s+][^+]*?[^\s+]|[^+])\+/g, "<s>$1</s>");
@@ -1550,35 +1603,35 @@ Org.getRender = function(org, params){
     if(this.children.length){
       return renderChildren.call(this);
     }
-    return "<span class='org-inline-raw'>" + 
-            htmlize(this.content) + "</span>";
+    return "<span class='org-inline-raw'>" +
+            typo(htmlize(this.content)) + "</span>";
   };
   OM.EmphCode.prototype.render = function(){
-    return "<code class='org-inline-code'>" + 
+    return "<code class='org-inline-code'>" +
             htmlize(this.content) + "</code>";
   };
   OM.EmphVerbatim.prototype.render = function(){
-    return "<samp class='org-inline-samp'>" + 
+    return "<samp class='org-inline-samp'>" +
             htmlize(this.content) + "</samp>";
   };
   OM.EmphItalic.prototype.render = function(){
-    return "<em class='org-inline-italic'>" + 
+    return "<em class='org-inline-italic'>" +
             renderChildren.call(this) + "</em>";
   };
   OM.EmphBold.prototype.render = function(){
-    return "<strong class='org-inline-bold'>" + 
+    return "<strong class='org-inline-bold'>" +
             renderChildren.call(this) + "</strong>";
   };
   OM.EmphUnderline.prototype.render = function(){
-    return "<u class='org-inline-underline'>" + 
+    return "<u class='org-inline-underline'>" +
             renderChildren.call(this) + "</u>";
   };
   OM.EmphStrike.prototype.render = function(){
-    return "<del class='org-inline-strike'>" + 
+    return "<del class='org-inline-strike'>" +
             renderChildren.call(this) + "</del>";
   };
   OM.Link.prototype.render = function(){
-    return "<a class='org-inline-link' href='" + this.url + "'>" + 
+    return "<a class='org-inline-link' href='" + this.url + "'>" +
             htmlize(this.desc) + "</a>";
   };
   OM.FootNoteRef.prototype.render = function(){
@@ -1587,8 +1640,8 @@ Org.getRender = function(org, params){
     console.log(this);
     console.log(root.fnByName[this.name]);
     var num = root.fnByName[this.name].num;
-    return "<a name='fnref_" + this.name + "'/>" + 
-            "<a class='org-inline-fnref' href='#fndef_" + this.name + "'><sup>" + 
+    return "<a name='fnref_" + this.name + "'/>" +
+            "<a class='org-inline-fnref' href='#fndef_" + this.name + "'><sup>" +
             num + "</sup></a>";
   };
 
@@ -1720,7 +1773,7 @@ Org.getRender = function(org, params){
 */
 
   OC.ParaBlock.prototype.render = function(){
-    return "<p>\n" + renderChildren.call(this); + "</p>\n";
+    return "<p>\n" + renderChildren.call(this) + "</p>\n";
   };
 
 /***orgdoc***
@@ -1736,7 +1789,7 @@ Org.getRender = function(org, params){
 */
 
   OC.VerseBlock.prototype.render = function(){
-    var out = "<p class='verse'>\n" + renderChildren.call(this); + "</p>\n";
+    var out = "<p class='verse'>\n" + renderChildren.call(this) + "</p>\n";
     out = out.replace(/ /g, "&nbsp;");
     return out;
   };
@@ -1752,7 +1805,7 @@ Org.getRender = function(org, params){
 */
 
   OC.QuoteBlock.prototype.render = function(){
-    var out = "<blockquote>\n" + renderChildren.call(this); + "</blockquote>\n";
+    var out = "<blockquote>\n" + renderChildren.call(this) + "</blockquote>\n";
     return out;
   };
 
@@ -1764,7 +1817,7 @@ Org.getRender = function(org, params){
 */
 
   OC.CenterBlock.prototype.render = function(){
-    return "<center>\n" + renderChildren.call(this); + "</center>\n";
+    return "<center>\n" + renderChildren.call(this) + "</center>\n";
   };
 
 /***orgdoc***
@@ -1790,7 +1843,7 @@ Org.getRender = function(org, params){
 *** Rendering =SrcBlock=
      =SrcBlock=s are rendered with a =pre.src= tag with a =code= tag within.
      The =code= tag may have a class attribute if the language of the
-     block is known. In case there is, the class would take the language 
+     block is known. In case there is, the class would take the language
      identifier.
 
      The content is not processed with the =renderMarkup= function, only
@@ -1803,7 +1856,7 @@ Org.getRender = function(org, params){
     var markup = escapeHtml(content);
     var l = this.language;
     var out = "<pre class='src'><code" +
-              ( l ? " class='" + l + "'>":">") + 
+              ( l ? " class='" + l + "'>":">") +
               "\n" + markup + "</code></pre>\n";
     return out;
   };
@@ -1828,7 +1881,7 @@ Org.getRender = function(org, params){
 
 */
 
-  OC.FndefBlock.prototype.render = 
+  OC.FndefBlock.prototype.render =
   OC.CommentBlock.prototype.render = function(){
     return "";
   };
@@ -1887,9 +1940,9 @@ Org.getRender = function(org, params){
         var fn = root.fnByName[name];
         var inline = fn.inline;
         var num = fn.num;
-        html += "<p class='org-footnote'><a name='fndef_" + name + "'/>" + 
-            "<a class='org-inline-fnref' href='#fnref_" + name + "'><sup>" + 
-            num + "</sup></a>&nbsp;:&nbsp;<span id='fndef_" + name+ "'>" + 
+        html += "<p class='org-footnote'><a name='fndef_" + name + "'/>" +
+            "<a class='org-inline-fnref' href='#fnref_" + name + "'><sup>" +
+            num + "</sup></a>&nbsp;:&nbsp;<span id='fndef_" + name+ "'>" +
             inline.render() + "</span></p>";
       });
       html += "</section>";
@@ -1909,7 +1962,276 @@ Org.getRender = function(org, params){
 
 };
 
-/***orgdoc***
+
+
+Org.getRenderers = function(org){
+  var OC = org.Content;
+  var OM = org.Markup;
+  var OO = org.Outline;
+  var _U = org.Utils;
+
+  var DefaultHTMLRenderer = function(){
+    return {
+
+      renderChildren: function(n){
+        var i, out = "";
+        for(i in n.children){
+          out += this.render(n.children[i]);
+        }
+        return out;
+      },
+
+      render: function(n){
+        var type = n.nodeType;
+        var renderFn = this[type];
+        if(!renderFn){
+          _U.log("Not found render fn:");
+          _U.log(n);
+          renderFn = _U.noop;
+        }
+        return renderFn(n, this);
+      },
+
+      escapeHtml: function(str){
+        str = "" + str;
+        str = str.replace(/&/g, "&amp;");
+        str = str.replace(/>/g, "&gt;");
+        str = str.replace(/</g, "&lt;");
+        str = str.replace(/'/g, "&apos;");
+        str = str.replace(/"/g, "&quot;");
+        return str;
+      },
+
+      unBackslash: function(str){
+        str = "" + str;
+        str = str.replace(/\\\\/g, "<br/>");
+        str = str.replace(/\\ /g, "&nbsp;");
+        str = str.replace(/\\(.)/g, "$1");
+        str = str.replace(/\s--\s/g, " &#151; ");
+        return str;
+      },
+
+      htmlize: function(str, r){
+        return r.unBackslash(r.escapeHtml(str));
+      },
+
+      typo: function(str){
+        str = "" + str;
+        str = str.replace(/\s*(,|\.|\)|\])\s*/g, "$1 ");
+        str = str.replace(/\s*(\(|\[)\s*/g, " $1");
+        str = str.replace(/\s*(;|!|\?|:)\s+/g, "&nbsp;$1 ");
+        str = str.replace(/\s*(«)\s*/g, " $1&nbsp;");
+        str = str.replace(/\s*(»)\s*/g, "&nbsp;$1 ");
+        return str;
+      },
+
+      EmphInline: function(n, r){
+        return r.renderChildren(n);
+      },
+
+      EmphRaw: function(n, r){
+        if(n.children.length){
+          return r.renderChildren(n);
+        }
+        return "<span class='org-inline-raw'>" +
+                r.typo(r.htmlize(n.content, r)) + "</span>";
+      },
+
+      EmphCode: function(n, r){
+        return "<code class='org-inline-code'>" +
+                r.htmlize(n.content, r) + "</code>";
+      },
+      
+      EmphVerbatim: function(n, r){
+        return "<samp class='org-inline-samp'>" +
+                r.htmlize(n.content, r) + "</samp>";
+      },
+
+      EmphItalic: function(n, r){
+        return "<em class='org-inline-italic'>" +
+                r.renderChildren(n) + "</em>";
+      },
+
+      EmphBold: function(n, r){
+        return "<strong class='org-inline-bold'>" +
+                r.renderChildren(n) + "</strong>";
+      },
+
+      EmphUnderline: function(n, r){
+        return "<u class='org-inline-underline'>" +
+                r.renderChildren(n) + "</u>";
+      },
+
+      EmphStrike: function(n, r){
+        return "<del class='org-inline-strike'>" +
+                r.renderChildren(n) + "</del>";
+      },
+
+      Link: function(n, r){
+        return "<a class='org-inline-link' href='" + n.url + "'>" +
+                r.htmlize(n.desc, r) + "</a>";
+      },
+
+      FootNoteRef: function(n, r){
+        var root = _U.root(n);
+        var num = root.fnByName[n.name].num;
+        return "<a name='fnref_" + n.name + "'/>" +
+                "<a class='org-inline-fnref' href='#fndef_" + n.name + "'><sup>" +
+                num + "</sup></a>";
+      },
+
+      RootBlock: function(n, r){
+        var out = "<div class='org_content'>\n";
+        out += r.renderChildren(n);
+        out += "</div>\n";
+        return out;
+      },
+
+      UlistBlock: function(n, r){
+        var out = "<ul>\n";
+        out += r.renderChildren(n);
+        out += "</ul>\n";
+        return out;
+      },
+
+      OlistBlock: function(n, r){
+        var s = n.start;
+        var out = "<ol" + (s === 1 ? ">\n" : " start='" + r.escapeHtml(s) + "'>\n");
+        out += r.renderChildren(n);
+        out += "</ol>\n";
+        return out;
+      },
+
+      DlistBlock: function(n, r){
+        var out = "<dl>\n";
+        out += r.renderChildren(n);
+        out += "</dl>\n";
+        return out;
+      },
+
+      UlistItemBlock: function(n, r){
+        var out = "<li>\n";
+        out += r.renderChildren(n);
+        out += "</li>\n";
+        return out;
+      },
+
+      OlistItemBlock: function(n, r){
+        var out = "<li>\n";
+        out += r.renderChildren(n);
+        out += "</li>\n";
+        return out;
+      },
+
+      DlistItemBlock: function(n, r){
+        var out = "<dt>" + r.render(n.titleInline) + "</dt>\n<dd>\n";
+        out += r.renderChildren(n);
+        out += "</dd>\n";
+        return out;
+      },
+
+      ParaBlock: function(n, r){
+        return "<p>\n" + r.renderChildren(n) + "</p>\n";
+      },
+
+      VerseBlock: function(n, r){
+        var out = "<p class='verse'>\n" + r.renderChildren(n) + "</p>\n";
+        out = out.replace(/ /g, "&nbsp;");
+        return out;
+      },
+
+      QuoteBlock: function(n, r){
+        var out = "<blockquote>\n" + r.renderChildren(n) + "</blockquote>\n";
+        return out;
+      },
+
+      CenterBlock: function(n, r){
+        return "<center>\n" + r.renderChildren(n) + "</center>\n";
+      },
+
+      ExampleBlock: function(n, r){
+        var content = n.lines.join("\n") + "\n";
+        var markup = r.escapeHtml(content);
+        var out = "<pre>\n" + markup + "</pre>\n";
+        return out;
+      },
+
+      SrcBlock: function(n, r){
+        var content = n.lines.join("\n") + "\n";
+        var markup = r.escapeHtml(content);
+        var l = n.language;
+        var out = "<pre class='src'><code" +
+                  ( l ? " class='" + l + "'>":">") +
+                  "\n" + markup + "</code></pre>\n";
+        return out;
+      },
+
+      HtmlBlock: function(n, r){
+        var out = n.lines.join("\n") + "\n";
+        return out;
+      },
+
+      FndefBlock: function(n, r){
+        return "";
+      },
+
+      CommentBlock : function(n, r){
+        return "";
+      },
+
+      Node: function(n, r){
+        var headline = n.level === 0 ? n.meta["TITLE"] : n.heading.getTitle();
+        var headInline = r.render(OM.tokenize(n, headline));
+
+        var html = "<section id='%ID%' class='orgnode level-%LEVEL%'>";
+        html = html.replace(/%ID%/, n.id());
+        html = html.replace(/%LEVEL%/, n.level);
+
+        var title = "<div class='title'>%HEADLINE%%TAGS%</div>";
+        title = title.replace(/%HEADLINE%/, headInline);
+        var tags = "";
+        _U.each(n.heading.getTags(), function(tag, idx){
+          if(tag.length){
+            tags += " <span class='tag'>" + tag + "</span>";
+          }
+        });
+        title = title.replace(/%TAGS%/, tags);
+
+        html += title;
+
+        var contentHtml = r.render(n.contentNode);
+        html += contentHtml;
+
+        var childrenHtml = r.renderChildren(n);
+        html += childrenHtml;
+
+        if(_U.notEmpty(n.fnNameByNum)){
+          var root = n;
+          html += "<section class='org-footnotes'><title>Notes</title>";
+          _U.each(root.fnNameByNum, function(name, idx){
+            if(!name){return;}
+            var fn = root.fnByName[name];
+            var inline = fn.inline;
+            var num = fn.num;
+            html += "<p class='org-footnote'><a name='fndef_" + name + "'/>" +
+                "<a class='org-inline-fnref' href='#fnref_" + name + "'><sup>" +
+                num + "</sup></a>&nbsp;:&nbsp;<span id='fndef_" + name+ "'>" +
+                r.render(inline) + "</span></p>";
+          });
+          html += "</section>";
+        }
+
+        html += "</section>";
+        return html;
+      }
+    };
+  };
+
+
+  return {
+    html: DefaultHTMLRenderer
+  };
+};/***orgdoc***
 * TODO =Org.API= : API
 
 */
