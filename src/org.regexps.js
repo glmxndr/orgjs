@@ -3,14 +3,14 @@
 * =Org.Regexps= : the regexp bank
 
   The parser needs a lot of regular expressions.
-  Non trivial regexps will be found in the file =org.regexps.js=, 
+  Non trivial regexps will be found in the file =org.regexps.js=,
   and accessible under the object =Org.Regexps=.
 
    #+BEGIN_SRC js
 /-orgdoc*/
 
 Org.getRegexps = function(org, params){
-  
+
   var RGX = {
 
     /**
@@ -25,14 +25,14 @@ Org.getRegexps = function(org, params){
 
     /**
      * Selects anything in the given string until the next heading, or the end.
-     * Example : 
+     * Example :
      * ----
      * some content
-     * 
+     *
      * * next heading
      * ----
      * would match "some content\n\n*"
-     * 
+     *
      * Captures everything except the star of the following heading.
      */
     beforeNextHeading: /^([\s\S]*?)(?:\n\*|$)/,
@@ -56,30 +56,30 @@ Org.getRegexps = function(org, params){
      * A meta information line, capturing:
      * - the meta key,
      * - the meta value
-     * 
+     *
      * Example:
      * ----
      *    #+TITLE: The title
      * ----
-     * captures "TITLE", "The title" 
-     */ 
+     * captures "TITLE", "The title"
+     */
     metaLine: /(?:^|\s*)#\+([A-Z0-9_]+):\s*(.*)(\n|$)/m,
-  
+
     /**
      * The property section. Captures the content of the section.
      */
     propertySection: /:PROPERTIES:\s*\n([\s\S]+?)\n\s*:END:/,
-  
+
     /**
      * Property line. Captures the KEY and the value.
      */
     propertyLine: /^\s*:([A-Z0-9_-]+):\s*(\S[\s\S]*)\s*$/im,
-  
+
     /**
      * Clock section when several clock lines are defined.
      */
     clockSection: /:CLOCK:\s*\n([\s\S]+?)\n?\s*:END:/,
- 
+
     /**
      * Matches a clock line, either started only, or finished.
      * Captures:
@@ -97,20 +97,20 @@ Org.getRegexps = function(org, params){
 
     _bBlk: {},
     beginBlock: function(type){
-      return this._bBlk[k] || 
-        (this._bBlk[k] = new RegExp("^\\s*#\\+BEGIN_" + type + "|\\s\n]", "i"));
+      return this._bBlk[type] ||
+        (this._bBlk[type] = new RegExp("^\\s*#\\+BEGIN_" + type + "|\\s\n]", "i"));
     },
 
     _eBlk: {},
     endBlock: function(type){
-      return this._eBlk[k] || 
-        (this._eBlk[k] = new RegExp("^\\s*#\\+END_" + type + "|\\s\n]", "i"));
+      return this._eBlk[type] ||
+        (this._eBlk[type] = new RegExp("^\\s*#\\+END_" + type + "|\\s\n]", "i"));
     }
 
   };
 
   return RGX;
-  
+
 };
 
 /*orgdoc+/

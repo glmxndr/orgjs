@@ -55,7 +55,7 @@ Org.getContent = function(org, params){
     if(/^\s*[a-z]/i.exec(line)){
       return LineType.PARA;
     }
-    if(line == 0){
+    if(_U.blank(line)){
       return LineType.BLANK;
     }
     if(/^#/.exec(line)){
@@ -78,6 +78,7 @@ Org.getContent = function(org, params){
     //if(/^\s*$/.exec(line)){
     //  return LineType.BLANK;
     //}
+    var k;
     for(k in BeginEndBlocks){
       if(RGX.beginBlock(k).exec(line)){
         return LineType[k];
@@ -102,6 +103,7 @@ Org.getContent = function(org, params){
   //  CONTAINERBLOCK
   var ContainerBlock = function(parent){
     this.parent = parent;
+    this.nodeType = "ContainerBlock";
     this.isContainer = true;
     this.children = [];
   };
@@ -111,6 +113,7 @@ Org.getContent = function(org, params){
   //  ROOTBLOCK
   var RootBlock = function(parent){
     ContainerBlock.call(this, parent);
+    this.nodeType = "RootBlock";
   };
   Content.RootBlock = RootBlock;
   RootBlock.prototype = Object.create(ContainerBlock.prototype);
@@ -126,6 +129,7 @@ Org.getContent = function(org, params){
   //  CONTENTBLOCK
   var ContentBlock = function(parent){
     this.parent = parent;
+    this.nodeType = "ContentBlock";
     this.isContent = true;
     this.lines = [];
   };
@@ -135,6 +139,7 @@ Org.getContent = function(org, params){
   //  CONTENTMARKUPBLOCK
   var ContentMarkupBlock = function(parent){
     ContentBlock.call(this, parent);
+    this.nodeType = "ContentMarkupBlock";
     this.hasMarkup = true;
     this.children = [];
   };
@@ -148,6 +153,7 @@ Org.getContent = function(org, params){
   //  PARABLOCK
   var ParaBlock = function(parent){
     ContentMarkupBlock.call(this, parent);
+    this.nodeType = "ParaBlock";
     this.indent = parent.indent || 0;
   };
   LineDef.PARA.constr = Content.ParaBlock = ParaBlock;
@@ -165,7 +171,7 @@ Org.getContent = function(org, params){
     if(this.indent === 0){return true;}
     indent = getLineIndent(line);
     if(indent <= this.indent){
-      return false;    
+      return false;
     }
     return true;
   };
@@ -183,6 +189,7 @@ Org.getContent = function(org, params){
   //  FNDEFBLOCK
   var FndefBlock = function(parent){
     ContentMarkupBlock.call(this, parent);
+    this.nodeType = "FndefBlock";
     this.indent = parent.indent || 0;
     this.firstline = true;
   };
@@ -228,6 +235,7 @@ Org.getContent = function(org, params){
   //  BEGINENDBLOCK
   var BeginEndBlock = function(parent, line, type){
     ContentBlock.call(this, parent);
+    this.nodeType = "BeginEndBlock";
     this.indent = getLineIndent(line);
     this.ended = false;
     this.beginre = RGX.beginBlock(type);
@@ -239,7 +247,7 @@ Org.getContent = function(org, params){
   BeginEndBlock.prototype.consume     = function(line){
     if(this.beginre.exec(line)){ this.treatBegin(line); }
     else if(this.endre.exec(line)){ this.ended = true; }
-    else { 
+    else {
       if(this.verbatim){
         this.lines.push(line);
       } else {
@@ -247,7 +255,7 @@ Org.getContent = function(org, params){
         if(type !== LineType.IGNORED){
           this.lines.push(line);
         }
-      }  
+      }
     }
     return this;
   };
@@ -257,6 +265,7 @@ Org.getContent = function(org, params){
   var VerseBlock = function(parent, line){
     ContentMarkupBlock.call(this, parent);
     BeginEndBlock.call(this, parent, line, "VERSE");
+    this.nodeType = "VerseBlock";
   };
   LineDef.VERSE.constr = Content.VerseBlock = VerseBlock;
   VerseBlock.prototype = Object.create(BeginEndBlock.prototype);
@@ -267,6 +276,7 @@ Org.getContent = function(org, params){
   var QuoteBlock = function(parent, line){
     ContentMarkupBlock.call(this, parent);
     BeginEndBlock.call(this, parent, line, "QUOTE");
+    this.nodeType = "QuoteBlock";
   };
   LineDef.QUOTE.constr = Content.QuoteBlock = QuoteBlock;
   QuoteBlock.prototype = Object.create(BeginEndBlock.prototype);
@@ -277,6 +287,7 @@ Org.getContent = function(org, params){
   var CenterBlock = function(parent, line){
     ContentMarkupBlock.call(this, parent);
     BeginEndBlock.call(this, parent, line, "CENTER");
+    this.nodeType = "CenterBlock";
   };
   LineDef.CENTER.constr = Content.CenterBlock = CenterBlock;
   CenterBlock.prototype = Object.create(BeginEndBlock.prototype);
@@ -286,6 +297,7 @@ Org.getContent = function(org, params){
   //  EXAMPLEBLOCK
   var ExampleBlock = function(parent, line){
     BeginEndBlock.call(this, parent, line, "EXAMPLE");
+    this.nodeType = "ExampleBlock";
     this.verbatim = true;
   };
   LineDef.EXAMPLE.constr = Content.ExampleBlock = ExampleBlock;
@@ -295,6 +307,7 @@ Org.getContent = function(org, params){
   //  SRCBLOCK
   var SrcBlock = function(parent, line){
     BeginEndBlock.call(this, parent, line, "SRC");
+    this.nodeType = "SrcBlock";
     this.verbatim = true;
     var match = /BEGIN_SRC\s+([a-z-]+)(?:\s*|$)/i.exec(line);
     this.language = match ? match[1] : null;
@@ -306,6 +319,7 @@ Org.getContent = function(org, params){
   //  HTMLBLOCK
   var HtmlBlock = function(parent, line){
     BeginEndBlock.call(this, parent, line, "HTML");
+    this.nodeType = "HtmlBlock";
     this.verbatim = true;
   };
   LineDef.HTML.constr = Content.HtmlBlock = HtmlBlock;
@@ -315,6 +329,7 @@ Org.getContent = function(org, params){
   //  COMMENTBLOCK
   var CommentBlock = function(parent, line){
     BeginEndBlock.call(this, parent, line, "COMMENT");
+    this.nodeType = "CommentBlock";
     this.verbatim = true;
   };
   LineDef.COMMENT.constr = Content.CommentBlock = CommentBlock;
@@ -325,6 +340,7 @@ Org.getContent = function(org, params){
   //  ULISTBLOCK
   var UlistBlock = function(parent, line){
     ContainerBlock.call(this, parent);
+    this.nodeType = "UlistBlock";
     this.indent = getLineIndent(line);
   };
   LineDef.ULITEM.constr = Content.UlistBlock = UlistBlock;
@@ -345,6 +361,7 @@ Org.getContent = function(org, params){
   //  OLISTBLOCK
   var OlistBlock = function(parent, line){
     ContainerBlock.call(this, parent);
+    this.nodeType = "OlistBlock";
     this.indent = getLineIndent(line);
     var match = /^\s*\d+[.)]\s+\[@(\d+)\]/.exec(line);
     this.start = match ? +(match[1]) : 1;
@@ -367,6 +384,7 @@ Org.getContent = function(org, params){
   //  DLISTBLOCK
   var DlistBlock = function(parent, line){
     ContainerBlock.call(this, parent);
+    this.nodeType = "DlistBlock";
     this.indent = getLineIndent(line);
   };
   LineDef.DLITEM.constr = Content.DlistBlock = DlistBlock;
@@ -387,6 +405,7 @@ Org.getContent = function(org, params){
   //  LISTITEMBLOCK
   var ListItemBlock = function(parent, line){
     ContainerBlock.call(this, parent);
+    this.nodeType = "ListItemBlock";
     this.indent = parent.indent;
   };
   ListItemBlock.prototype = Object.create(ContainerBlock.prototype);
@@ -410,6 +429,7 @@ Org.getContent = function(org, params){
   //  ULISTITEMBLOCK
   var UlistItemBlock = function(parent, line){
     ListItemBlock.call(this, parent, line);
+    this.nodeType = "UlistItemBlock";
   };
   Content.UlistItemBlock = UlistItemBlock;
 
@@ -423,6 +443,7 @@ Org.getContent = function(org, params){
   //  OLISTITEMBLOCK
   var OlistItemBlock = function(parent, line){
     ListItemBlock.call(this, parent, line);
+    this.nodeType = "OlistItemBlock";
     var match = /^\s*(\d+)[.)] /.exec(line);
     this.number = match ? +(match[1]) : 1;
   };
@@ -437,7 +458,8 @@ Org.getContent = function(org, params){
   //  DLISTITEMBLOCK
   var DlistItemBlock = function(parent, line){
     ListItemBlock.call(this, parent,line);
-    var title = /^\s*[+*-] (.*) ::/.exec(line)[1]
+    this.nodeType = "DlistItemBlock";
+    var title = (/^\s*[+*-] (.*) ::/).exec(line)[1];
     this.titleInline = OM.tokenize(this, title);
   };
   Content.DlistItemBlock = DlistItemBlock;
@@ -468,7 +490,7 @@ Org.getContent = function(org, params){
         }
       }
       line = lines.shift();
-    };
+    }
     if(current){current.finalize();}
     return root;
   };

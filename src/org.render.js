@@ -14,6 +14,7 @@
 
     #+BEGIN_SRC js
 /-orgdoc*/
+
 Org.getRender = function(org, params){
 
   var OC = org.Content;
@@ -58,6 +59,16 @@ Org.getRender = function(org, params){
     return unBackslash(escapeHtml(str));
   }
 
+  function typo(str){
+    str = "" + str;
+    str = str.replace(/\s*(,|\.|\)|\])\s*/g, "$1 ");
+    str = str.replace(/\s*(\(|\[)\s*/g, " $1");
+    str = str.replace(/\s*(;|!|\?|:)\s+/g, "&nbsp;$1 ");
+    str = str.replace(/\s*(«)\s*/g, " $1&nbsp;");
+    str = str.replace(/\s*(»)\s*/g, "&nbsp;$1 ");
+    return str;
+  }
+
 /*orgdoc+/
      #+END_SRC
 *** renderMarkup                                                   :function:
@@ -72,9 +83,9 @@ Org.getRender = function(org, params){
   function renderMarkup(str){
     str = "" + str;
     str = escapeHtml(str);
-    str = str.replace(/\/([^\s/][^/]*?[^\s/]|[^/])\//g, "<em>$1</em>");
+    str = str.replace(/\/([^\s\/][^\/]*?[^\s\/]|[^\/])\//g, "<em>$1</em>");
     str = str.replace(/_([^\s_][^_]*?[^\s_]|[^_])_/g,   "<u>$1</u>");
-    str = str.replace(/=([^\s=][^=]*?[^\s=]|[^=])=/g,   "<code>$1</code>");
+    str = str.replace(/\=([^\s=][^=]*?[^\s=]|[^=])=/g,   "<code>$1</code>");
     str = str.replace(/~([^\s~][^~]*?[^\s~]|[^~])~/g,   "<samp>$1</samp>");
     str = str.replace(/\*([^*\s][^*]*?[^*\s]|[^*])\*/g, "<strong>$1</strong>");
     str = str.replace(/\+([^\s+][^+]*?[^\s+]|[^+])\+/g, "<s>$1</s>");
@@ -117,35 +128,35 @@ Org.getRender = function(org, params){
     if(this.children.length){
       return renderChildren.call(this);
     }
-    return "<span class='org-inline-raw'>" + 
-            htmlize(this.content) + "</span>";
+    return "<span class='org-inline-raw'>" +
+            typo(htmlize(this.content)) + "</span>";
   };
   OM.EmphCode.prototype.render = function(){
-    return "<code class='org-inline-code'>" + 
+    return "<code class='org-inline-code'>" +
             htmlize(this.content) + "</code>";
   };
   OM.EmphVerbatim.prototype.render = function(){
-    return "<samp class='org-inline-samp'>" + 
+    return "<samp class='org-inline-samp'>" +
             htmlize(this.content) + "</samp>";
   };
   OM.EmphItalic.prototype.render = function(){
-    return "<em class='org-inline-italic'>" + 
+    return "<em class='org-inline-italic'>" +
             renderChildren.call(this) + "</em>";
   };
   OM.EmphBold.prototype.render = function(){
-    return "<strong class='org-inline-bold'>" + 
+    return "<strong class='org-inline-bold'>" +
             renderChildren.call(this) + "</strong>";
   };
   OM.EmphUnderline.prototype.render = function(){
-    return "<u class='org-inline-underline'>" + 
+    return "<u class='org-inline-underline'>" +
             renderChildren.call(this) + "</u>";
   };
   OM.EmphStrike.prototype.render = function(){
-    return "<del class='org-inline-strike'>" + 
+    return "<del class='org-inline-strike'>" +
             renderChildren.call(this) + "</del>";
   };
   OM.Link.prototype.render = function(){
-    return "<a class='org-inline-link' href='" + this.url + "'>" + 
+    return "<a class='org-inline-link' href='" + this.url + "'>" +
             htmlize(this.desc) + "</a>";
   };
   OM.FootNoteRef.prototype.render = function(){
@@ -154,8 +165,8 @@ Org.getRender = function(org, params){
     console.log(this);
     console.log(root.fnByName[this.name]);
     var num = root.fnByName[this.name].num;
-    return "<a name='fnref_" + this.name + "'/>" + 
-            "<a class='org-inline-fnref' href='#fndef_" + this.name + "'><sup>" + 
+    return "<a name='fnref_" + this.name + "'/>" +
+            "<a class='org-inline-fnref' href='#fndef_" + this.name + "'><sup>" +
             num + "</sup></a>";
   };
 
@@ -301,7 +312,7 @@ Org.getRender = function(org, params){
 /-orgdoc*/
 
   OC.ParaBlock.prototype.render = function(){
-    return "<p>\n" + renderChildren.call(this); + "</p>\n";
+    return "<p>\n" + renderChildren.call(this) + "</p>\n";
   };
 
 /*orgdoc+/
@@ -319,7 +330,7 @@ Org.getRender = function(org, params){
 /-orgdoc*/
 
   OC.VerseBlock.prototype.render = function(){
-    var out = "<p class='verse'>\n" + renderChildren.call(this); + "</p>\n";
+    var out = "<p class='verse'>\n" + renderChildren.call(this) + "</p>\n";
     out = out.replace(/ /g, "&nbsp;");
     return out;
   };
@@ -337,7 +348,7 @@ Org.getRender = function(org, params){
 /-orgdoc*/
 
   OC.QuoteBlock.prototype.render = function(){
-    var out = "<blockquote>\n" + renderChildren.call(this); + "</blockquote>\n";
+    var out = "<blockquote>\n" + renderChildren.call(this) + "</blockquote>\n";
     return out;
   };
 
@@ -351,7 +362,7 @@ Org.getRender = function(org, params){
 /-orgdoc*/
 
   OC.CenterBlock.prototype.render = function(){
-    return "<center>\n" + renderChildren.call(this); + "</center>\n";
+    return "<center>\n" + renderChildren.call(this) + "</center>\n";
   };
 
 /*orgdoc+/
@@ -380,7 +391,7 @@ Org.getRender = function(org, params){
 *** Rendering =SrcBlock=
      =SrcBlock=s are rendered with a =pre.src= tag with a =code= tag within.
      The =code= tag may have a class attribute if the language of the
-     block is known. In case there is, the class would take the language 
+     block is known. In case there is, the class would take the language
      identifier.
 
      The content is not processed with the =renderMarkup= function, only
@@ -394,7 +405,7 @@ Org.getRender = function(org, params){
     var markup = escapeHtml(content);
     var l = this.language;
     var out = "<pre class='src'><code" +
-              ( l ? " class='" + l + "'>":">") + 
+              ( l ? " class='" + l + "'>":">") +
               "\n" + markup + "</code></pre>\n";
     return out;
   };
@@ -423,7 +434,7 @@ Org.getRender = function(org, params){
     #+BEGIN_SRC js
 /-orgdoc*/
 
-  OC.FndefBlock.prototype.render = 
+  OC.FndefBlock.prototype.render =
   OC.CommentBlock.prototype.render = function(){
     return "";
   };
@@ -484,9 +495,9 @@ Org.getRender = function(org, params){
         var fn = root.fnByName[name];
         var inline = fn.inline;
         var num = fn.num;
-        html += "<p class='org-footnote'><a name='fndef_" + name + "'/>" + 
-            "<a class='org-inline-fnref' href='#fnref_" + name + "'><sup>" + 
-            num + "</sup></a>&nbsp;:&nbsp;<span id='fndef_" + name+ "'>" + 
+        html += "<p class='org-footnote'><a name='fndef_" + name + "'/>" +
+            "<a class='org-inline-fnref' href='#fnref_" + name + "'><sup>" +
+            num + "</sup></a>&nbsp;:&nbsp;<span id='fndef_" + name+ "'>" +
             inline.render() + "</span></p>";
       });
       html += "</section>";
@@ -511,3 +522,274 @@ Org.getRender = function(org, params){
 /*orgdoc+/
     #+END_SRC
 /---orgdoc*/
+
+
+
+Org.getRenderers = function(org){
+  var OC = org.Content;
+  var OM = org.Markup;
+  var OO = org.Outline;
+  var _U = org.Utils;
+
+  var DefaultHTMLRenderer = function(){
+    return {
+
+      renderChildren: function(n){
+        var i, out = "";
+        for(i in n.children){
+          out += this.render(n.children[i]);
+        }
+        return out;
+      },
+
+      render: function(n){
+        var type = n.nodeType;
+        var renderFn = this[type];
+        if(!renderFn){
+          _U.log("Not found render fn:");
+          _U.log(n);
+          renderFn = _U.noop;
+        }
+        return renderFn(n, this);
+      },
+
+      escapeHtml: function(str){
+        str = "" + str;
+        str = str.replace(/&/g, "&amp;");
+        str = str.replace(/>/g, "&gt;");
+        str = str.replace(/</g, "&lt;");
+        str = str.replace(/'/g, "&apos;");
+        str = str.replace(/"/g, "&quot;");
+        return str;
+      },
+
+      unBackslash: function(str){
+        str = "" + str;
+        str = str.replace(/\\\\/g, "<br/>");
+        str = str.replace(/\\ /g, "&nbsp;");
+        str = str.replace(/\\(.)/g, "$1");
+        str = str.replace(/\s--\s/g, " &#151; ");
+        return str;
+      },
+
+      htmlize: function(str, r){
+        return r.unBackslash(r.escapeHtml(str));
+      },
+
+      typo: function(str){
+        str = "" + str;
+        str = str.replace(/\s*(,|\.|\)|\])\s*/g, "$1 ");
+        str = str.replace(/\s*(\(|\[)\s*/g, " $1");
+        str = str.replace(/\s*(;|!|\?|:)\s+/g, "&nbsp;$1 ");
+        str = str.replace(/\s*(«)\s*/g, " $1&nbsp;");
+        str = str.replace(/\s*(»)\s*/g, "&nbsp;$1 ");
+        return str;
+      },
+
+      EmphInline: function(n, r){
+        return r.renderChildren(n);
+      },
+
+      EmphRaw: function(n, r){
+        if(n.children.length){
+          return r.renderChildren(n);
+        }
+        return "<span class='org-inline-raw'>" +
+                r.typo(r.htmlize(n.content, r)) + "</span>";
+      },
+
+      EmphCode: function(n, r){
+        return "<code class='org-inline-code'>" +
+                r.htmlize(n.content, r) + "</code>";
+      },
+      
+      EmphVerbatim: function(n, r){
+        return "<samp class='org-inline-samp'>" +
+                r.htmlize(n.content, r) + "</samp>";
+      },
+
+      EmphItalic: function(n, r){
+        return "<em class='org-inline-italic'>" +
+                r.renderChildren(n) + "</em>";
+      },
+
+      EmphBold: function(n, r){
+        return "<strong class='org-inline-bold'>" +
+                r.renderChildren(n) + "</strong>";
+      },
+
+      EmphUnderline: function(n, r){
+        return "<u class='org-inline-underline'>" +
+                r.renderChildren(n) + "</u>";
+      },
+
+      EmphStrike: function(n, r){
+        return "<del class='org-inline-strike'>" +
+                r.renderChildren(n) + "</del>";
+      },
+
+      Link: function(n, r){
+        return "<a class='org-inline-link' href='" + n.url + "'>" +
+                r.htmlize(n.desc, r) + "</a>";
+      },
+
+      FootNoteRef: function(n, r){
+        var root = _U.root(n);
+        var num = root.fnByName[n.name].num;
+        return "<a name='fnref_" + n.name + "'/>" +
+                "<a class='org-inline-fnref' href='#fndef_" + n.name + "'><sup>" +
+                num + "</sup></a>";
+      },
+
+      RootBlock: function(n, r){
+        var out = "<div class='org_content'>\n";
+        out += r.renderChildren(n);
+        out += "</div>\n";
+        return out;
+      },
+
+      UlistBlock: function(n, r){
+        var out = "<ul>\n";
+        out += r.renderChildren(n);
+        out += "</ul>\n";
+        return out;
+      },
+
+      OlistBlock: function(n, r){
+        var s = n.start;
+        var out = "<ol" + (s === 1 ? ">\n" : " start='" + r.escapeHtml(s) + "'>\n");
+        out += r.renderChildren(n);
+        out += "</ol>\n";
+        return out;
+      },
+
+      DlistBlock: function(n, r){
+        var out = "<dl>\n";
+        out += r.renderChildren(n);
+        out += "</dl>\n";
+        return out;
+      },
+
+      UlistItemBlock: function(n, r){
+        var out = "<li>\n";
+        out += r.renderChildren(n);
+        out += "</li>\n";
+        return out;
+      },
+
+      OlistItemBlock: function(n, r){
+        var out = "<li>\n";
+        out += r.renderChildren(n);
+        out += "</li>\n";
+        return out;
+      },
+
+      DlistItemBlock: function(n, r){
+        var out = "<dt>" + r.render(n.titleInline) + "</dt>\n<dd>\n";
+        out += r.renderChildren(n);
+        out += "</dd>\n";
+        return out;
+      },
+
+      ParaBlock: function(n, r){
+        return "<p>\n" + r.renderChildren(n) + "</p>\n";
+      },
+
+      VerseBlock: function(n, r){
+        var out = "<p class='verse'>\n" + r.renderChildren(n) + "</p>\n";
+        out = out.replace(/ /g, "&nbsp;");
+        return out;
+      },
+
+      QuoteBlock: function(n, r){
+        var out = "<blockquote>\n" + r.renderChildren(n) + "</blockquote>\n";
+        return out;
+      },
+
+      CenterBlock: function(n, r){
+        return "<center>\n" + r.renderChildren(n) + "</center>\n";
+      },
+
+      ExampleBlock: function(n, r){
+        var content = n.lines.join("\n") + "\n";
+        var markup = r.escapeHtml(content);
+        var out = "<pre>\n" + markup + "</pre>\n";
+        return out;
+      },
+
+      SrcBlock: function(n, r){
+        var content = n.lines.join("\n") + "\n";
+        var markup = r.escapeHtml(content);
+        var l = n.language;
+        var out = "<pre class='src'><code" +
+                  ( l ? " class='" + l + "'>":">") +
+                  "\n" + markup + "</code></pre>\n";
+        return out;
+      },
+
+      HtmlBlock: function(n, r){
+        var out = n.lines.join("\n") + "\n";
+        return out;
+      },
+
+      FndefBlock: function(n, r){
+        return "";
+      },
+
+      CommentBlock : function(n, r){
+        return "";
+      },
+
+      Node: function(n, r){
+        var headline = n.level === 0 ? n.meta["TITLE"] : n.heading.getTitle();
+        var headInline = r.render(OM.tokenize(n, headline));
+
+        var html = "<section id='%ID%' class='orgnode level-%LEVEL%'>";
+        html = html.replace(/%ID%/, n.id());
+        html = html.replace(/%LEVEL%/, n.level);
+
+        var title = "<div class='title'>%HEADLINE%%TAGS%</div>";
+        title = title.replace(/%HEADLINE%/, headInline);
+        var tags = "";
+        _U.each(n.heading.getTags(), function(tag, idx){
+          if(tag.length){
+            tags += " <span class='tag'>" + tag + "</span>";
+          }
+        });
+        title = title.replace(/%TAGS%/, tags);
+
+        html += title;
+
+        var contentHtml = r.render(n.contentNode);
+        html += contentHtml;
+
+        var childrenHtml = r.renderChildren(n);
+        html += childrenHtml;
+
+        if(_U.notEmpty(n.fnNameByNum)){
+          var root = n;
+          html += "<section class='org-footnotes'><title>Notes</title>";
+          _U.each(root.fnNameByNum, function(name, idx){
+            if(!name){return;}
+            var fn = root.fnByName[name];
+            var inline = fn.inline;
+            var num = fn.num;
+            html += "<p class='org-footnote'><a name='fndef_" + name + "'/>" +
+                "<a class='org-inline-fnref' href='#fnref_" + name + "'><sup>" +
+                num + "</sup></a>&nbsp;:&nbsp;<span id='fndef_" + name+ "'>" +
+                r.render(inline) + "</span></p>";
+          });
+          html += "</section>";
+        }
+
+        html += "</section>";
+        return html;
+      }
+    };
+  };
+
+
+  return {
+    html: DefaultHTMLRenderer
+  };
+};

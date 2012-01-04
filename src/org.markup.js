@@ -29,15 +29,17 @@ Org.getMarkup = function(org, params){
   }());
 
   var LinkType={};  _U.map(LinkDefs, function(v,k){LinkType[k] = v.id;});
-  var LinkTypeArr = _U.map(LinkType, function(v,k){LinkType[k];});
+  var LinkTypeArr = _U.map(LinkType, function(v,k){return LinkDefs[k];});
 
   function getLinkType(link){
+    var k;
     for(k in LinkTypeArr){
       if(link.url.match(LinkTypeArr[k].re)){return LinkType[k];}
     }
   }
 
   var Link = function(parent, raw, url, desc, token){
+    this.nodeType = "Link";
     this.raw = raw;
     this.parent = parent;
     this.url = url;
@@ -48,6 +50,7 @@ Org.getMarkup = function(org, params){
   Markup.Link = Link;
 
   var FootNoteRef = function(parent, raw, name, token){
+    this.nodeType = "FootNoteRef";
     this.raw = raw;
     this.parent = parent;
     this.name = name;
@@ -57,7 +60,7 @@ Org.getMarkup = function(org, params){
 
 ///////////////////////////////////////////////////////////////////////////////
 // TYPO
-  
+
 //   + Allowed pre:      " \t('\"{"
 //   + Allowed post:     "- \t.,:!?;'\")}\\"
 //   + Forbidden border: " \t\r\n,\"'"
@@ -95,9 +98,9 @@ Org.getMarkup = function(org, params){
     return new constr(parent);
   };
   EmphMarkers.getRegexpAll = function(){
-    // TODO : refactor to : 
+    // TODO : refactor to :
     //    - take the real pre/post/border char sets in config
-    return /(^(?:.|\n)*?)(([\/*~=+_])([^\s].*?[^\s\\]|[^\s\\])\3)/;        //*/
+    return (/(^(?:.|\n)*?)(([\/*~=+_])([^\s].*?[^\s\\]|[^\s\\])\3)/);        //*/
   };
   Markup.EmphMarkers = EmphMarkers;
 
@@ -109,6 +112,7 @@ Org.getMarkup = function(org, params){
   }
 
   var EmphInline = function(parent){
+    this.nodeType = "EmphInline";
     this.parent = parent;
     this.children = [];
   };
@@ -123,15 +127,17 @@ Org.getMarkup = function(org, params){
     if(this.content && this.content.length){
       var content = this.content;
       var pipedKeys =  _U.joinKeys("|", tokens);
-      if(pipedKeys == 0){return;}
+      if(_U.blank(pipedKeys)){return;}
       var rgx = new RegExp('^((?:.|\n)*?)(' + pipedKeys + ')((?:.|\n)*)$');
       var match, pre, token, rest;
       var inline = new EmphInline(this);
-      while(match = rgx.exec(content)){
+      match = rgx.exec(content);
+      while(match){
         pre = match[1]; token = match[2]; rest = match[3];
         if(_U.notBlank(pre)){ makeInline(EmphRaw, inline, pre); }
         inline.adopt(tokens[token]);
         content = rest;
+        match = rgx.exec(content);
       }
       if(inline.children.length){
         if(_U.notBlank(rest)){ makeInline(EmphRaw, inline, rest); }
@@ -147,15 +153,15 @@ Org.getMarkup = function(org, params){
     var pre, hasEmph, type, inner, length;
     var raw, sub;
     while((_U.trim(rest).length > 0) && (match = regexp.exec(rest))){
-      pre = match[1]; 
-      hasEmph = match[2]; 
-      token = match[3] || ""; 
+      pre = match[1];
+      hasEmph = match[2];
+      token = match[3] || "";
       inner = match[4] || "";
       length = pre.length + inner.length + (hasEmph ? 2 : 0);
       if(length === 0){break;}
       rest = rest.substr(length);
       if(_U.notBlank(pre)){ makeInline(EmphRaw, this, pre); }
-      if(hasEmph !== void(0)){ 
+      if(hasEmph !== void(0)){
         makeInline(EmphMarkers[token].constr, this, inner);
       }
     }
@@ -165,6 +171,7 @@ Org.getMarkup = function(org, params){
 
   var EmphRaw = function(parent){
     EmphInline.call(this, parent);
+    this.nodeType = "EmphRaw";
     this.recurse = false;
   };
   EmphRaw.prototype = Object.create(EmphInline.prototype);
@@ -176,6 +183,7 @@ Org.getMarkup = function(org, params){
 
   var EmphItalic = function(parent){
     EmphInline.call(this, parent);
+    this.nodeType = "EmphItalic";
     this.recurse = true;
   };
   EmphItalic.prototype = Object.create(EmphInline.prototype);
@@ -185,6 +193,7 @@ Org.getMarkup = function(org, params){
 
   var EmphBold = function(parent){
     EmphInline.call(this, parent);
+    this.nodeType = "EmphBold";
     this.recurse = true;
   };
   EmphBold.prototype = Object.create(EmphInline.prototype);
@@ -194,6 +203,7 @@ Org.getMarkup = function(org, params){
 
   var EmphUnderline = function(parent){
     EmphInline.call(this, parent);
+    this.nodeType = "EmphUnderline";
     this.recurse = true;
   };
   EmphUnderline.prototype = Object.create(EmphInline.prototype);
@@ -203,6 +213,7 @@ Org.getMarkup = function(org, params){
 
   var EmphStrike = function(parent){
     EmphInline.call(this, parent);
+    this.nodeType = "EmphStrike";
     this.recurse = true;
   };
   EmphStrike.prototype = Object.create(EmphInline.prototype);
@@ -212,6 +223,7 @@ Org.getMarkup = function(org, params){
 
   var EmphCode = function(parent){
     EmphRaw.call(this, parent);
+    this.nodeType = "EmphCode";
   };
   EmphCode.prototype = Object.create(EmphRaw.prototype);
   EmphMarkers["="].constr = EmphCode;
@@ -220,6 +232,7 @@ Org.getMarkup = function(org, params){
 
   var EmphVerbatim = function(parent){
     EmphRaw.call(this, parent);
+    this.nodeType = "EmphVerbatim";
   };
   EmphVerbatim.prototype = Object.create(EmphRaw.prototype);
   EmphMarkers["~"].constr = EmphVerbatim;
@@ -236,7 +249,7 @@ Org.getMarkup = function(org, params){
     var initStr = str;
 
     var links = {};
-    var linkTokenPrefix = uniqToken("LINK");  
+    var linkTokenPrefix = uniqToken("LINK");
 
     function uniqToken(p){return _U.getAbsentToken(initStr, p);}
 
@@ -256,14 +269,14 @@ Org.getMarkup = function(org, params){
     // Whole links with URL and description : [[url:...][Desc of the link]]
     var descLinkRegex = /\[\[((?:.|\s)*?)\]\[((?:.|\s)*?)\]\]/gm;
     str = str.replace(descLinkRegex, linkReplacer(1, 2));
-    
+
     // Single links with URL only : [[url:...]]
     var singleLinkRegex = /\[\[((?:.|\s)*?)\]\]/gm;
     str = str.replace(descLinkRegex, linkReplacer(1, 1));
-    
+
     // Treating bare URLs, or URLs without a description attached.
-    var urlRegex = new RegExp("(?:" + 
-                      _C.urlProtocols.join("|") + 
+    var urlRegex = new RegExp("(?:" +
+                      _C.urlProtocols.join("|") +
                       '):[^\\s),;]+', "gi");
     str = str.replace(urlRegex, linkReplacer(0, 0));
 

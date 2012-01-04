@@ -23,15 +23,16 @@
    #+BEGIN_SRC js
 /-orgdoc*/
 var Org = function(params){
-  this.version = "0.1";
+  this.version    = "0.1";
   this.apiversion = "7.6";
-  this.Config  = Org.getConfig( this, params);
-  this.Regexps = Org.getRegexps(this, params);
-  this.Utils   = Org.getUtils(  this, params);
-  this.Markup  = Org.getMarkup( this, params);
-  this.Content = Org.getContent(this, params);
-  this.Outline = Org.getOutline(this, params);
-  this.Render  = Org.getRender( this, params);
+  this.Config     = Org.getConfig(this, params);
+  this.Regexps    = Org.getRegexps(this, params);
+  this.Utils      = Org.getUtils(this, params);
+  this.Markup     = Org.getMarkup(this, params);
+  this.Content    = Org.getContent(this, params);
+  this.Outline    = Org.getOutline(this, params);
+  this.Render     = Org.getRender(this, params);
+  this.Renderers  = Org.getRenderers(this, params);
 };
 /*orgdoc+/
    #+END_SRC

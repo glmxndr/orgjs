@@ -15,22 +15,25 @@ Org.getOutline = function(org, params){
 
   /////////////////////////////////////////////////////////////////////////////
   // NODE : corresponds to a line starting with stars "*** ..."
-  
+
   var Node = function(whole, params){
-    params = params || {};
-    this.docid = params.docid;
-    this.parent = params.parent;
-    this.children = params.children || [];
+    params          = params || {};
     
-    this.whole = whole;
-    this.parser = new NodeParser(this.whole);
-    this.heading = this.parser.getHeading();
-    this.level = params.level || (this.heading.getStars() || "").length;
+    this.nodeType = "Node";
+
+    this.docid      = params.docid;
+    this.parent     = params.parent;
+    this.children   = params.children || [];
+    
+    this.whole      = whole;
+    this.parser     = new NodeParser(this.whole);
+    this.heading    = this.parser.getHeading();
+    this.level      = params.level || (this.heading.getStars() || "").length;
     
     this.properties = this.parser.getProperties();
-    this.meta = this.parser.getMeta();
-    this.content = this.parser.getContent();
-    
+    this.meta       = this.parser.getMeta();
+    this.content    = this.parser.getContent();
+
   };
 
   Node.prototype = {
@@ -40,26 +43,22 @@ Org.getOutline = function(org, params){
     },
 
     siblings: function(){
-      return this.parent 
-              ? this.parent.children
-              : [];
+      return this.parent ? this.parent.children : [];
     },
 
     // Computes the ID of this node
     id: function(){
       if (!this.parent){
-        return this.docid 
-                ? this.docid
-                : "doc#" + (Node.tocnum++) + "/";
+        return this.docid || "doc#" + (Node.tocnum++) + "/";
       }
       return this.parent.id() + "" + this.siblings().indexOf(this) + "/";
-    }, 
+    },
 
     addFootnoteDef: function(inline, name){
       if(this.fnByName === void(0)){
-        this.fnByName = {};
+        this.fnByName    = {};
         this.fnNameByNum = [];
-        this.fnNextNum = 1;
+        this.fnNextNum   = 1;
       }
       if(!name){name = "" + this.fnNextNum;}
       if(this.fnByName[name]){
@@ -77,18 +76,19 @@ Org.getOutline = function(org, params){
 
   /**
    * Counting the documents generated in this page.
-   * Helps to generate an ID for the nodes 
+   * Helps to generate an ID for the nodes
    * when no docid is given in the root node.
    */
   Node.tocnum = 0;
-  
+
   /////////////////////////////////////////////////////////////////////////////
   // PARSING
-  
+
   /**
    * Headline embeds the parsing of a heading line.
    */
   var Headline = function(txt){
+    this.nodeType = "Headline";
     this.repr = _U.trim(txt);
     this.match = RGX.headingLine.exec(this.repr) || [];
   };
@@ -111,7 +111,7 @@ Org.getOutline = function(org, params){
       return tags ? tags.split(":") : [];
     }
   };
-  
+
   /**
    * Parsing a whole section
    */
@@ -126,7 +126,7 @@ Org.getOutline = function(org, params){
     getHeading: function(){
       if(this.heading){return this.heading;}
       var firstLine = _U.firstLine(this.content);
-      this.heading = new Headline(firstLine);
+      this.heading  = new Headline(firstLine);
       return this.heading;
     },
 
@@ -177,7 +177,7 @@ Org.getOutline = function(org, params){
       content = content.split(subHeadingStars)[0];
       this.item = content;
       return content;
-    }, 
+    },
 
     /**
      * Returns the content only : no heading, no properties, no subitems, no clock, etc.
@@ -204,11 +204,15 @@ Org.getOutline = function(org, params){
       var result = {};
       var lines = txt.split(RGX.newline);
       _U.each(lines, function(line, idx){
-        if(_U.trim(line).length == 0){return true;}
+        if(_U.blank(line)){return true;}
         if(!line.match(RGX.metaDeclaration)){return false;} // we went ahead the headers : break the loop
         var match = RGX.metaLine.exec(line);
         if (match){
-          result[match[1]] = match[2];
+          if(result[match[1]]){
+            result[match[1]] = result[match[1]] + "\n" + match[2];
+          } else {
+            result[match[1]] = match[2];
+          }
         }
         return true;
       });
@@ -220,10 +224,10 @@ Org.getOutline = function(org, params){
      */
     removeHeaders: function(txt){
       var result = "";
-      var lines = txt.split(RGX.newline);
+      var lines  = txt.split(RGX.newline);
       var header = true;
       _U.each(lines, function(line, idx){
-        if(header && _U.trim(line).length == 0){return;}
+        if(header && _U.blank(line)){return;}
         if(header && line.match(RGX.metaDeclaration)){return;}
         header = false;
         result += "\n" + line;
@@ -231,7 +235,7 @@ Org.getOutline = function(org, params){
       return result;
     }
   };
-  
+
   /**
    * General purpose parser.
    */
@@ -245,9 +249,9 @@ Org.getOutline = function(org, params){
     nodeTextList: function(text){
       var content = text;
       return _U.map(
-        content.split(/^\*/m), 
+        content.split(/^\*/m),
         function(t, idx){
-          return idx == 0 ? "\n" + t : "*" + t;
+          return idx === 0 ? "\n" + t : "*" + t;
         }
       );
     },
@@ -262,14 +266,14 @@ Org.getOutline = function(org, params){
     },
 
     buildTree: function(){
-      var nodes = this.nodeList(this.txt);
-      var root = nodes[0];
+      var nodes  = this.nodeList(this.txt);
+      var root   = nodes[0];
       var length = nodes.length;
       var done, i, j, level;
       for(i = 1; i < length ; i++){
         level = nodes[i].level;
-        done = false;
-        j = i;
+        done  = false;
+        j     = i;
         while(!done){
           j = j - 1;
           if(j < 0){break;}
