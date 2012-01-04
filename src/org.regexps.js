@@ -6,7 +6,7 @@
   Non trivial regexps will be found in the file =org.regexps.js=,
   and accessible under the object =Org.Regexps=.
 
-   #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/
 
 Org.getRegexps = function(org, params){
@@ -114,5 +114,5 @@ Org.getRegexps = function(org, params){
 };
 
 /*orgdoc+/
-   #+END_SRC
+#+END_SRC
 /---orgdoc*/

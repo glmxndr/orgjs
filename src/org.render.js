@@ -12,7 +12,7 @@
     usual, some shortcuts to the =Utils=, and to =Org.Content= and
     =Org.Outline=.
 
-    #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/
 
 Org.getRenderers = function(org){
@@ -25,7 +25,7 @@ Org.getRenderers = function(org){
     return {
 
 /*orgdoc+/
-     #+END_SRC
+#+END_SRC
 
 *** renderChildren                                                 :function:
      + Purpose :: provides a utility function to render all the
@@ -35,7 +35,7 @@ Org.getRenderers = function(org){
                 for =this=. =this= must have an enumerable =children=
                 property.
 
-     #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/
       renderChildren: function(n){
         var i, out = "";
@@ -57,7 +57,7 @@ Org.getRenderers = function(org){
       },
 
 /*orgdoc+/
-    #+END_SRC
+#+END_SRC
 ** Utility functions
 *** escapeHtml(str)                                                :function:
      + Purpose :: The =escapeHtml= function escapes the forbidden
@@ -67,7 +67,7 @@ Org.getRenderers = function(org){
      + Arguments ::
        + =str= :: any value, converted into a string at the beginning
                   of the function.
-     #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/
       escapeHtml: function(str){
         str = "" + str;
@@ -158,7 +158,7 @@ Org.getRenderers = function(org){
       },
 
 /*orgdoc+/
-     #+END_SRC
+#+END_SRC
 
 ** Rendering blocks
    This sections contains the code for the different types of
@@ -181,7 +181,7 @@ Org.getRenderers = function(org){
      =RootBlock=s are rendered with a =div= tag, with class
      =org_content=.
 
-     #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/
       RootBlock: function(n, r){
         var out = "<div class='org_content'>\n";
@@ -191,12 +191,12 @@ Org.getRenderers = function(org){
       },
 
 /*orgdoc+/
-     #+END_SRC
+#+END_SRC
 
 *** Rendering =UlistBlock=
      =UlistBlock=s are rendered with a simple =ul= tag.
 
-     #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/
       UlistBlock: function(n, r){
         var out = "<ul>\n";
@@ -206,7 +206,7 @@ Org.getRenderers = function(org){
       },
 
 /*orgdoc+/
-     #+END_SRC
+#+END_SRC
 
 *** Rendering =OlistBlock=
      =OlistBlock=s are rendered with a simple =ol= tag.
@@ -214,7 +214,7 @@ Org.getRenderers = function(org){
      If the block has a =start= property different from =1=, it is
      inserted in the =start= attribute of the tag.
 
-    #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/
       OlistBlock: function(n, r){
         var s = n.start;
@@ -225,7 +225,7 @@ Org.getRenderers = function(org){
       },
 
 /*orgdoc+/
-    #+END_SRC
+#+END_SRC
 
 *** Rendering =DlistBlock=
      =DlistBlock=s are rendered with a =dl= tag.
@@ -233,7 +233,7 @@ Org.getRenderers = function(org){
      =DlistItemBlock=s will have to use =dt=/=dd= structure
      accordingly.
 
-     #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/
       DlistBlock: function(n, r){
         var out = "<dl>\n";
@@ -243,13 +243,13 @@ Org.getRenderers = function(org){
       },
 
 /*orgdoc+/
-     #+END_SRC
+#+END_SRC
 
 *** Rendering =UlistItemBlock= and =OlistItemBlocks=
      =UlistItemBlock=s and =0listItemBlocks= are rendered with a
      #simple =li= tag.
 
-     #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/
       UlistItemBlock: function(n, r){
         var out = "<li>\n";
@@ -266,7 +266,7 @@ Org.getRenderers = function(org){
       },
 
 /*orgdoc+/
-     #+END_SRC
+#+END_SRC
 
 *** Rendering =DlistItemBlock=
      =DlistItemBlock=s are rendered with a =dt=/=dl= tag structure.
@@ -275,7 +275,7 @@ Org.getRenderers = function(org){
 
      The content of the =dd= is the rendering of this block's children.
 
-    #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/
       DlistItemBlock: function(n, r){
         var out = "<dt>" + r.render(n.titleInline) + "</dt>\n<dd>\n";
@@ -285,7 +285,7 @@ Org.getRenderers = function(org){
       },
 
 /*orgdoc+/
-    #+END_SRC
+#+END_SRC
 
 *** Rendering =ParaBlock=
      =ParaBlock=s are rendered with a =p= tag.
@@ -293,14 +293,14 @@ Org.getRenderers = function(org){
      The content of the tag is the concatenation of this block's
      =this.lines=, passed to the =renderMarkup= function.
 
-    #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/
       ParaBlock: function(n, r){
         return "<p>\n" + r.renderChildren(n) + "</p>\n";
       },
 
 /*orgdoc+/
-    #+END_SRC
+#+END_SRC
 
 *** Rendering =VerseBlock=
      =VerseBlock=s are rendered with a =p= tag, with class
@@ -310,7 +310,7 @@ Org.getRenderers = function(org){
 
      All new lines are replaced by a =br= tag.
 
-    #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/
       VerseBlock: function(n, r){
         var out = "<p class='verse'>\n" + r.renderChildren(n) + "</p>\n";
@@ -319,7 +319,7 @@ Org.getRenderers = function(org){
       },
 
 /*orgdoc+/
-    #+END_SRC
+#+END_SRC
 
 *** Rendering =QuoteBlock=
      =QuoteBlock=s are rendered with a =blockquote= tag.
@@ -327,7 +327,7 @@ Org.getRenderers = function(org){
      If the quote contains an author declaration (after a double dash),
      this declaration is put on a new line.
 
-    #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/
       QuoteBlock: function(n, r){
         var out = "<blockquote>\n" + r.renderChildren(n) + "</blockquote>\n";
@@ -335,19 +335,19 @@ Org.getRenderers = function(org){
       },
 
 /*orgdoc+/
-    #+END_SRC
+#+END_SRC
 
 *** Rendering =CenterBlock=
      =CenterBlock=s are rendered with a simple =center= tag.
 
-    #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/
       CenterBlock: function(n, r){
         return "<center>\n" + r.renderChildren(n) + "</center>\n";
       },
 
 /*orgdoc+/
-    #+END_SRC
+#+END_SRC
 
 *** Rendering =ExampleBlock=
      =ExampleBlock=s are rendered with a simple =pre= tag.
@@ -355,7 +355,7 @@ Org.getRenderers = function(org){
      The content is not processed with the =renderMarkup= function, only
      with the =escapeHtml= function.
 
-    #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/
       ExampleBlock: function(n, r){
         var content = n.lines.join("\n") + "\n";
@@ -365,7 +365,7 @@ Org.getRenderers = function(org){
       },
 
 /*orgdoc+/
-    #+END_SRC
+#+END_SRC
 
 *** Rendering =SrcBlock=
      =SrcBlock=s are rendered with a =pre.src= tag with a =code= tag within.
@@ -376,7 +376,7 @@ Org.getRenderers = function(org){
      The content is not processed with the =renderMarkup= function, only
      with the =escapeHtml= function.
 
-    #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/
       SrcBlock: function(n, r){
         var content = n.lines.join("\n") + "\n";
@@ -389,13 +389,13 @@ Org.getRenderers = function(org){
       },
 
 /*orgdoc+/
-    #+END_SRC
+#+END_SRC
 
 *** Rendering =HtmlBlock=
      =HtmlBlock=s are rendered by simply outputting the HTML content
      verbatim, with no modification whatsoever.
 
-    #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/
       HtmlBlock: function(n, r){
         var out = n.lines.join("\n") + "\n";
@@ -403,12 +403,12 @@ Org.getRenderers = function(org){
       },
 
 /*orgdoc+/
-    #+END_SRC
+#+END_SRC
 
 *** Rendering =CommentBlock=
      =CommentBlock=s are ignored.
 
-    #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/
       FndefBlock: function(n, r){
         return "";
@@ -420,7 +420,7 @@ Org.getRenderers = function(org){
 
 
 /*orgdoc+/
-    #+END_SRC
+#+END_SRC
 
 ** Rendering headlines
 
@@ -438,7 +438,7 @@ Org.getRenderers = function(org){
 
     Then the subheadlines are rendered using the =renderChildren= function.
 
-    #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/
       Node: function(n, r){
         var headline = n.level === 0 ? n.meta["TITLE"] : n.heading.getTitle();
@@ -495,10 +495,10 @@ Org.getRenderers = function(org){
 };
 
 /*orgdoc+/
-    #+END_SRC
+#+END_SRC
 ** Conclusion
 
     This is the end of the function creating the default renderer.
 
-    #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/

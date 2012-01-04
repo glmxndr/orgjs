@@ -20,7 +20,7 @@
   + A tilde: ~\~~
 
 
-   #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/
 var Org = function(params){
   this.version    = "0.1";
@@ -34,5 +34,5 @@ var Org = function(params){
   this.Renderers  = Org.getRenderers(this, params);
 };
 /*orgdoc+/
-   #+END_SRC
+#+END_SRC
 /---orgdoc*/

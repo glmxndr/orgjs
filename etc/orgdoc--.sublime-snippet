@@ -1,0 +1,10 @@
+<snippet>
+    <content><![CDATA[
+/*orgdoc+/
+#+END_SRC
+/---orgdoc*/
+]]></content>
+    <tabTrigger>orgdoc--</tabTrigger>
+    <scope>source.js</scope>
+    <description>orgdoc</description>
+</snippet>

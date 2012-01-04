@@ -5,7 +5,7 @@
   This section describes the parser for the actual content within the sections
   of the =org= file.
 
-   #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/
 
 Org.getContent = function(org, params){
@@ -500,5 +500,5 @@ Org.getContent = function(org, params){
 };
 
 /*orgdoc+/
-   #+END_SRC
+#+END_SRC
 /---orgdoc*/

@@ -3,7 +3,7 @@
 
   This file contains the code for the Org-Mode wiki-style markup.
 
-    #+BEGIN_SRC js
+#+BEGIN_SRC js
 /-orgdoc*/
 Org.getMarkup = function(org, params){
 
@@ -11,6 +11,7 @@ Org.getMarkup = function(org, params){
   var _C = org.Config;
 
   var Markup = {};
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // LINKS
@@ -316,5 +317,5 @@ Org.getMarkup = function(org, params){
 
 };
 /*orgdoc+/
-    #+END_SRC
+#+END_SRC
 /---orgdoc*/

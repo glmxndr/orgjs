@@ -1,0 +1,14 @@
+<snippet>
+    <content><![CDATA[
+/*orgdoc+++/
+* ${1:File Headline}
+
+  ${2:Introduction}
+
+#+BEGIN_SRC js
+/-orgdoc*/
+]]></content>
+    <tabTrigger>orgdoc++</tabTrigger>
+    <scope>source.js</scope>
+    <description>orgdoc</description>
+</snippet>
