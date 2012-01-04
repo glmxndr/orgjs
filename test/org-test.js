@@ -13,6 +13,10 @@ $(function(){
     var root = org.Outline.parse(data);
     org.Utils.log(root);
     $('#doc').html(root.render());
+
+    var renderer = org.Renderers.html();
+    $('#doc2').html(renderer.render(root));
+
   });
 
 });
