@@ -11,12 +11,8 @@ $(function(){
   $.get("doc/org-js.org", function(data){
     var org = new Org();
     var root = org.Outline.parse(data);
-    org.Utils.log(root);
-    $('#doc').html(root.render());
-
     var renderer = org.Renderers.html();
-    $('#doc2').html(renderer.render(root));
-
+    $('#doc').html(renderer.render(root));
   });
 
 });
