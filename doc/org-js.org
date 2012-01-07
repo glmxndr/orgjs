@@ -18,7 +18,7 @@
   + A *\*bold\** word
   + A tilde: ~\~~
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 var Org = function(params){
   this.version    = "0.1";
   this.apiversion = "7.6";
@@ -30,12 +30,12 @@ var Org = function(params){
   this.Outline    = Org.getOutline(this, params);
   this.Renderers  = Org.getRenderers(this, params);
 };
-#+END_SRC
+  #+END_SRC
 
 
 * TODO =Org.Config= : configuration
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 Org.getConfig = function(org, params){
 
   var _C = {};
@@ -54,7 +54,7 @@ Org.getConfig = function(org, params){
   return _C;
 
 };
-#+END_SRC
+  #+END_SRC
 
 ** Tab width
 ** URL protocols
@@ -66,7 +66,7 @@ Org.getConfig = function(org, params){
   Non trivial regexps will be found in the file =org.regexps.js=,
   and accessible under the object =Org.Regexps=.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 Org.getRegexps = function(org, params){
 
   var RGX = {
@@ -170,7 +170,7 @@ Org.getRegexps = function(org, params){
   return RGX;
 
 };
-#+END_SRC
+  #+END_SRC
 
 
 * =Org.Utils= : useful functions
@@ -178,7 +178,7 @@ Org.getRegexps = function(org, params){
   Many functionalities are used throughout the parser, mainly to process
   strings. The =Org.Utils= object contains these functions.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 Org.getUtils = function(org, params){
 
   if (typeof Object.create !== 'function') {
@@ -352,14 +352,14 @@ Org.getUtils = function(org, params){
   };
 
 };
-#+END_SRC
+  #+END_SRC
 
 
 * Markup parser
 
   This file contains the code for the Org-Mode wiki-style markup.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 Org.getMarkup = function(org, params){
 
   var _U = org.Utils;
@@ -670,7 +670,7 @@ Org.getMarkup = function(org, params){
   return Markup;
 
 };
-#+END_SRC
+  #+END_SRC
 
 
 * =Org.Content= : the content parser
@@ -678,7 +678,7 @@ Org.getMarkup = function(org, params){
   This section describes the parser for the actual content within the sections
   of the =org= file.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 Org.getContent = function(org, params){
 
   var _U  = org.Utils;
@@ -719,31 +719,42 @@ Org.getContent = function(org, params){
   var BeginEndBlocks = {};
   _U.each(LineDef, function(v, k){if(v.beginEnd) BeginEndBlocks[k] = 1;});
 
+
+  var lineTypeCache = {line: "", type: LineType.BLANK};
   function getLineType(line){
+    
+    // Caching result...
+    if(lineTypeCache.line === line){return lineTypeCache.type;}
+    lineTypeCache.line = line;
+    function cache(type){
+      lineTypeCache.type = type;
+      return type;
+    }
+
     // First test on a line beginning with a letter,
     // the most common case, to avoid making all the
     // other tests before returning the default.
     if(/^\s*[a-z]/i.exec(line)){
-      return LineType.PARA;
+      return cache(LineType.PARA);
     }
     if(_U.blank(line)){
-      return LineType.BLANK;
+      return cache(LineType.BLANK);
     }
     if(/^#(?:[^+]|$)/.exec(line)){
-      return LineType.IGNORED;
+      return cache(LineType.IGNORED);
     }
     // Then test all the other cases
     if(/^\s+[+*-] /.exec(line)){
       if(/ ::/.exec(line)){
-        return LineType.DLITEM;
+        return cache(LineType.DLITEM);
       }
-      return LineType.ULITEM;
+      return cache(LineType.ULITEM);
     }
     if(/^\s*\d+[.)] /.exec(line)){
-      return LineType.OLITEM;
+      return cache(LineType.OLITEM);
     }
     if(/^\s*\[(\d+|fn:.+?)\]/.exec(line)){
-      return LineType.FNDEF;
+      return cache(LineType.FNDEF);
     }
 
     //if(/^\s*$/.exec(line)){
@@ -752,10 +763,10 @@ Org.getContent = function(org, params){
     var k;
     for(k in BeginEndBlocks){
       if(RGX.beginBlock(k).exec(line)){
-        return LineType[k];
+        return cache(LineType[k]);
       }
     }
-    return LineType.PARA;
+    return cache(LineType.PARA);
   }
 
   function getLineIndent(line){
@@ -1169,14 +1180,14 @@ Org.getContent = function(org, params){
   return Content;
 
 };
-#+END_SRC
+  #+END_SRC
 
 
 * =Org.Outline= : the outline/headlines parser
 
   This section describes the outline parser.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 Org.getOutline = function(org, params){
 
   var RGX = org.Regexps;
@@ -1473,7 +1484,7 @@ Org.getOutline = function(org, params){
   };
 
 };
-#+END_SRC
+  #+END_SRC
 
 
 * Default Rendering
@@ -1489,7 +1500,7 @@ Org.getOutline = function(org, params){
     usual, some shortcuts to the =Utils=, and to =Org.Content= and
     =Org.Outline=.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 Org.getRenderers = function(org){
   var OC = org.Content;
   var OM = org.Markup;
@@ -1498,7 +1509,7 @@ Org.getRenderers = function(org){
 
   var DefaultHTMLRenderer = function(){
     return {
-#+END_SRC
+  #+END_SRC
 
 *** renderChildren                                                 :function:
      + Purpose :: provides a utility function to render all the
@@ -1508,7 +1519,7 @@ Org.getRenderers = function(org){
                 for =this=. =this= must have an enumerable =children=
                 property.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 renderChildren: function(n){
         var i, out = "";
         for(i in n.children){
@@ -1527,7 +1538,7 @@ renderChildren: function(n){
         }
         return renderFn(n, this);
       },
-#+END_SRC
+  #+END_SRC
 
 ** Utility functions
 *** escapeHtml(str)                                                :function:
@@ -1539,7 +1550,7 @@ renderChildren: function(n){
        + =str= :: any value, converted into a string at the beginning
                   of the function.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 escapeHtml: function(str){
         str = "" + str;
         str = str.replace(/&/g, "&amp;");
@@ -1629,7 +1640,7 @@ escapeHtml: function(str){
                 "<a class='org-inline-fnref' href='#fndef_" + n.name + "'><sup>" +
                 num + "</sup></a>";
       },
-#+END_SRC
+  #+END_SRC
 
 ** Rendering blocks
    This sections contains the code for the different types of
@@ -1652,26 +1663,26 @@ escapeHtml: function(str){
      =RootBlock=s are rendered with a =div= tag, with class
      =org_content=.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 RootBlock: function(n, r){
         var out = "<div class='org_content'>\n";
         out += r.renderChildren(n);
         out += "</div>\n";
         return out;
       },
-#+END_SRC
+  #+END_SRC
 
 *** Rendering =UlistBlock=
      =UlistBlock=s are rendered with a simple =ul= tag.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 UlistBlock: function(n, r){
         var out = "<ul>\n";
         out += r.renderChildren(n);
         out += "</ul>\n";
         return out;
       },
-#+END_SRC
+  #+END_SRC
 
 *** Rendering =OlistBlock=
      =OlistBlock=s are rendered with a simple =ol= tag.
@@ -1679,7 +1690,7 @@ UlistBlock: function(n, r){
      If the block has a =start= property different from =1=, it is
      inserted in the =start= attribute of the tag.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 OlistBlock: function(n, r){
         var s = n.start;
         var out = "<ol" + (s === 1 ? ">\n" : " start='" + r.escapeHtml(s) + "'>\n");
@@ -1687,7 +1698,7 @@ OlistBlock: function(n, r){
         out += "</ol>\n";
         return out;
       },
-#+END_SRC
+  #+END_SRC
 
 *** Rendering =DlistBlock=
      =DlistBlock=s are rendered with a =dl= tag.
@@ -1695,20 +1706,20 @@ OlistBlock: function(n, r){
      =DlistItemBlock=s will have to use =dt=/=dd= structure
      accordingly.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 DlistBlock: function(n, r){
         var out = "<dl>\n";
         out += r.renderChildren(n);
         out += "</dl>\n";
         return out;
       },
-#+END_SRC
+  #+END_SRC
 
 *** Rendering =UlistItemBlock= and =OlistItemBlocks=
      =UlistItemBlock=s and =0listItemBlocks= are rendered with a
      #simple =li= tag.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 UlistItemBlock: function(n, r){
         var out = "<li>\n";
         out += r.renderChildren(n);
@@ -1722,7 +1733,7 @@ UlistItemBlock: function(n, r){
         out += "</li>\n";
         return out;
       },
-#+END_SRC
+  #+END_SRC
 
 *** Rendering =DlistItemBlock=
      =DlistItemBlock=s are rendered with a =dt=/=dl= tag structure.
@@ -1731,14 +1742,14 @@ UlistItemBlock: function(n, r){
 
      The content of the =dd= is the rendering of this block's children.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 DlistItemBlock: function(n, r){
         var out = "<dt>" + r.render(n.titleInline) + "</dt>\n<dd>\n";
         out += r.renderChildren(n);
         out += "</dd>\n";
         return out;
       },
-#+END_SRC
+  #+END_SRC
 
 *** Rendering =ParaBlock=
      =ParaBlock=s are rendered with a =p= tag.
@@ -1746,11 +1757,11 @@ DlistItemBlock: function(n, r){
      The content of the tag is the concatenation of this block's
      =this.lines=, passed to the =renderMarkup= function.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 ParaBlock: function(n, r){
         return "<p>\n" + r.renderChildren(n) + "</p>\n";
       },
-#+END_SRC
+  #+END_SRC
 
 *** Rendering =VerseBlock=
      =VerseBlock=s are rendered with a =p= tag, with class
@@ -1760,13 +1771,13 @@ ParaBlock: function(n, r){
 
      All new lines are replaced by a =br= tag.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 VerseBlock: function(n, r){
         var out = "<p class='verse'>\n" + r.renderChildren(n) + "</p>\n";
         out = out.replace(/ /g, "&nbsp;");
         return out;
       },
-#+END_SRC
+  #+END_SRC
 
 *** Rendering =QuoteBlock=
      =QuoteBlock=s are rendered with a =blockquote= tag.
@@ -1774,21 +1785,21 @@ VerseBlock: function(n, r){
      If the quote contains an author declaration (after a double dash),
      this declaration is put on a new line.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 QuoteBlock: function(n, r){
         var out = "<blockquote>\n" + r.renderChildren(n) + "</blockquote>\n";
         return out;
       },
-#+END_SRC
+  #+END_SRC
 
 *** Rendering =CenterBlock=
      =CenterBlock=s are rendered with a simple =center= tag.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 CenterBlock: function(n, r){
         return "<center>\n" + r.renderChildren(n) + "</center>\n";
       },
-#+END_SRC
+  #+END_SRC
 
 *** Rendering =ExampleBlock=
      =ExampleBlock=s are rendered with a simple =pre= tag.
@@ -1796,14 +1807,14 @@ CenterBlock: function(n, r){
      The content is not processed with the =renderMarkup= function, only
      with the =escapeHtml= function.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 ExampleBlock: function(n, r){
         var content = n.lines.join("\n") + "\n";
         var markup = r.escapeHtml(content);
         var out = "<pre>\n" + markup + "</pre>\n";
         return out;
       },
-#+END_SRC
+  #+END_SRC
 
 *** Rendering =SrcBlock=
      =SrcBlock=s are rendered with a =pre.src= tag with a =code= tag within.
@@ -1814,7 +1825,7 @@ ExampleBlock: function(n, r){
      The content is not processed with the =renderMarkup= function, only
      with the =escapeHtml= function.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 SrcBlock: function(n, r){
         var content = n.lines.join("\n") + "\n";
         var markup = r.escapeHtml(content);
@@ -1824,23 +1835,23 @@ SrcBlock: function(n, r){
                   "\n" + markup + "</code></pre>\n";
         return out;
       },
-#+END_SRC
+  #+END_SRC
 
 *** Rendering =HtmlBlock=
      =HtmlBlock=s are rendered by simply outputting the HTML content
      verbatim, with no modification whatsoever.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 HtmlBlock: function(n, r){
         var out = n.lines.join("\n") + "\n";
         return out;
       },
-#+END_SRC
+  #+END_SRC
 
 *** Rendering =CommentBlock=
      =CommentBlock=s are ignored.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 FndefBlock: function(n, r){
         return "";
       },
@@ -1848,7 +1859,7 @@ FndefBlock: function(n, r){
       CommentBlock : function(n, r){
         return "";
       },
-#+END_SRC
+  #+END_SRC
 
 ** Rendering headlines
 
@@ -1866,7 +1877,7 @@ FndefBlock: function(n, r){
 
     Then the subheadlines are rendered using the =renderChildren= function.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 Node: function(n, r){
         var headline = n.level === 0 ? n.meta["TITLE"] : n.heading.getTitle();
         var headInline = r.render(OM.tokenize(n, headline));
@@ -1920,13 +1931,13 @@ Node: function(n, r){
     html: DefaultHTMLRenderer
   };
 };
-#+END_SRC
+  #+END_SRC
 
 ** Conclusion
 
     This is the end of the function creating the default renderer.
 
-#+BEGIN_SRC js
+  #+BEGIN_SRC js
 
 
 * TODO =Org.API= : API

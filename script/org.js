@@ -719,31 +719,42 @@ Org.getContent = function(org, params){
   var BeginEndBlocks = {};
   _U.each(LineDef, function(v, k){if(v.beginEnd) BeginEndBlocks[k] = 1;});
 
+
+  var lineTypeCache = {line: "", type: LineType.BLANK};
   function getLineType(line){
+    
+    // Caching result...
+    if(lineTypeCache.line === line){return lineTypeCache.type;}
+    lineTypeCache.line = line;
+    function cache(type){
+      lineTypeCache.type = type;
+      return type;
+    }
+
     // First test on a line beginning with a letter,
     // the most common case, to avoid making all the
     // other tests before returning the default.
     if(/^\s*[a-z]/i.exec(line)){
-      return LineType.PARA;
+      return cache(LineType.PARA);
     }
     if(_U.blank(line)){
-      return LineType.BLANK;
+      return cache(LineType.BLANK);
     }
     if(/^#(?:[^+]|$)/.exec(line)){
-      return LineType.IGNORED;
+      return cache(LineType.IGNORED);
     }
     // Then test all the other cases
     if(/^\s+[+*-] /.exec(line)){
       if(/ ::/.exec(line)){
-        return LineType.DLITEM;
+        return cache(LineType.DLITEM);
       }
-      return LineType.ULITEM;
+      return cache(LineType.ULITEM);
     }
     if(/^\s*\d+[.)] /.exec(line)){
-      return LineType.OLITEM;
+      return cache(LineType.OLITEM);
     }
     if(/^\s*\[(\d+|fn:.+?)\]/.exec(line)){
-      return LineType.FNDEF;
+      return cache(LineType.FNDEF);
     }
 
     //if(/^\s*$/.exec(line)){
@@ -752,10 +763,10 @@ Org.getContent = function(org, params){
     var k;
     for(k in BeginEndBlocks){
       if(RGX.beginBlock(k).exec(line)){
-        return LineType[k];
+        return cache(LineType[k]);
       }
     }
-    return LineType.PARA;
+    return cache(LineType.PARA);
   }
 
   function getLineIndent(line){
