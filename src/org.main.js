@@ -18,9 +18,6 @@
   This is a /sample _paragraph_/. With some formatting (see http://google.com/).
   + A *\*bold\** word
   + A tilde: ~\~~
-
-
-   #+BEGIN_SRC js
 /-orgdoc*/
 var Org = function(params){
   this.version    = "0.1";
@@ -34,5 +31,4 @@ var Org = function(params){
   this.Renderers  = Org.getRenderers(this, params);
 };
 /*orgdoc+/
-   #+END_SRC
 /---orgdoc*/

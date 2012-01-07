@@ -5,8 +5,6 @@
   The parser needs a lot of regular expressions.
   Non trivial regexps will be found in the file =org.regexps.js=,
   and accessible under the object =Org.Regexps=.
-
-   #+BEGIN_SRC js
 /-orgdoc*/
 
 Org.getRegexps = function(org, params){
@@ -98,13 +96,13 @@ Org.getRegexps = function(org, params){
     _bBlk: {},
     beginBlock: function(type){
       return this._bBlk[type] ||
-        (this._bBlk[type] = new RegExp("^\\s*#\\+BEGIN_" + type + "|\\s\n]", "i"));
+        (this._bBlk[type] = new RegExp("^\\s*#\\+BEGIN_" + type + "\\s", "i"));
     },
 
     _eBlk: {},
     endBlock: function(type){
       return this._eBlk[type] ||
-        (this._eBlk[type] = new RegExp("^\\s*#\\+END_" + type + "|\\s\n]", "i"));
+        (this._eBlk[type] = new RegExp("^\\s*#\\+END_" + type + "(\\s|$)", "i"));
     }
 
   };
@@ -114,5 +112,4 @@ Org.getRegexps = function(org, params){
 };
 
 /*orgdoc+/
-   #+END_SRC
 /---orgdoc*/

@@ -4,8 +4,6 @@
 
   This section describes the parser for the actual content within the sections
   of the =org= file.
-
-   #+BEGIN_SRC js
 /-orgdoc*/
 
 Org.getContent = function(org, params){
@@ -58,7 +56,7 @@ Org.getContent = function(org, params){
     if(_U.blank(line)){
       return LineType.BLANK;
     }
-    if(/^#/.exec(line)){
+    if(/^#(?:[^+]|$)/.exec(line)){
       return LineType.IGNORED;
     }
     // Then test all the other cases
@@ -500,5 +498,4 @@ Org.getContent = function(org, params){
 };
 
 /*orgdoc+/
-   #+END_SRC
 /---orgdoc*/

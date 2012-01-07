@@ -2,8 +2,6 @@
 * Markup parser
 
   This file contains the code for the Org-Mode wiki-style markup.
-
-    #+BEGIN_SRC js
 /-orgdoc*/
 Org.getMarkup = function(org, params){
 
@@ -316,5 +314,4 @@ Org.getMarkup = function(org, params){
 
 };
 /*orgdoc+/
-    #+END_SRC
 /---orgdoc*/

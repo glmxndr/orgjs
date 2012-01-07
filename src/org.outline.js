@@ -3,8 +3,6 @@
 * =Org.Outline= : the outline/headlines parser
 
   This section describes the outline parser.
-
-   #+BEGIN_SRC js
 /-orgdoc*/
 
 Org.getOutline = function(org, params){
@@ -305,5 +303,4 @@ Org.getOutline = function(org, params){
 };
 
 /*orgdoc+/
-   #+END_SRC
 /---orgdoc*/

@@ -74,8 +74,8 @@ function buildSrc(){
   }
   function concat(err, data){
     data = "" + data;
-    data = data.replace(/ *\/\*orgdoc\++\/ */ig, "/***orgdoc***");
-    data = data.replace(/ *\/-+orgdoc\*\/ */ig, "*/");
+    //data = data.replace(/ *\/\*orgdoc\++\/ */ig, "/***orgdoc***");
+    //data = data.replace(/ *\/-+orgdoc\*\/ */ig, "*/");
     out += data.replace(/\n *#\+(BEGIN|END)_SRC( +js)?.*?\n/ig, "\n");
     readFile();
   }
@@ -109,8 +109,11 @@ function buildDoc(){
   }
   function concat(err, data){
     data = "" + data;
-    data = data.replace(/\s*\/\*orgdoc\++\/[\s\n]*/g, "\n");
-    data = data.replace(/\s*\/-+orgdoc\*\/[\s\n]*/g, "\n");
+    data = data.replace(/\s*\/\*orgdoc\+\/[\s\n]*/g, "\n  #+END_SRC\n\n");
+    data = data.replace(/\s*\/-orgdoc\*\/[\s\n]*/g, "\n\n  #+BEGIN_SRC js\n");
+    data = data.replace(/\s*\/\*orgdoc\+{3}\/[\s\n]*/g, "\n");
+    data = data.replace(/\s*\/-{3}orgdoc\*\/[\s\n]*/g, "\n");
+    data = data.replace(/\s*#\+BEGIN_SRC js\s+#\+END_SRC\s*/g, "\n");
     data = data.replace(/^\n+/, "");
     out += data + "\n\n";
     readFile();
