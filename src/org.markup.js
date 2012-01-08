@@ -1,8 +1,8 @@
-/*orgdoc+++/
+/*orgdoc
 * Markup parser
 
   This file contains the code for the Org-Mode wiki-style markup.
-/-orgdoc*/
+*/
 Org.getMarkup = function(org, params){
 
   var _U = org.Utils;
@@ -313,5 +313,5 @@ Org.getMarkup = function(org, params){
   return Markup;
 
 };
-/*orgdoc+/
-/---orgdoc*/
+/*orgdoc
+*/

@@ -1,9 +1,9 @@
-/*orgdoc+++/
+/*orgdoc
 * =Org.Utils= : useful functions
 
   Many functionalities are used throughout the parser, mainly to process
   strings. The =Org.Utils= object contains these functions.
-/-orgdoc*/
+*/
 
 Org.getUtils = function(org, params){
 
@@ -178,6 +178,3 @@ Org.getUtils = function(org, params){
   };
 
 };
-
-/*orgdoc+/
-/---orgdoc*/

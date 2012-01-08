@@ -1,15 +1,15 @@
-/*orgdoc+++/
+/*orgdoc
 
 * =Org.Regexps= : the regexp bank
 
   The parser needs a lot of regular expressions.
   Non trivial regexps will be found in the file =org.regexps.js=,
   and accessible under the object =Org.Regexps=.
-/-orgdoc*/
+*/
 
 Org.getRegexps = function(org, params){
 
-  var RGX = {
+  var _R = {
 
     /**
      * A new line declaration, either windows or unix-like
@@ -93,23 +93,32 @@ Org.getRegexps = function(org, params){
 
     deadline: /DEADLINE: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>/,
 
-    _bBlk: {},
-    beginBlock: function(type){
-      return this._bBlk[type] ||
-        (this._bBlk[type] = new RegExp("^\\s*#\\+BEGIN_" + type + "\\s", "i"));
-    },
+    lineTypes: {
+        letter:  /^\s*[a-z]/i,
+        ignored: /^#(?:[^+]|$)/,
+        litem:   /^\s+[+*-] /,
+        dlitem:  / ::/,
+        olitem:  /^\s*\d+[.)] /,
+        fndef:   /^\s*\[(\d+|fn:.+?)\]/,
 
-    _eBlk: {},
-    endBlock: function(type){
-      return this._eBlk[type] ||
-        (this._eBlk[type] = new RegExp("^\\s*#\\+END_" + type + "(\\s|$)", "i"));
+        _bBlk: {},
+        beginBlock: function(type){
+          return this._bBlk[type] ||
+            (this._bBlk[type] = new RegExp("^\\s*#\\+BEGIN_" + type + "\\s", "i"));
+        },
+
+        _eBlk: {},
+        endBlock: function(type){
+          return this._eBlk[type] ||
+            (this._eBlk[type] = new RegExp("^\\s*#\\+END_" + type + "(\\s|$)", "i"));
+        }
     }
 
   };
 
-  return RGX;
+  return _R;
 
 };
 
-/*orgdoc+/
-/---orgdoc*/
+/*orgdoc
+*/

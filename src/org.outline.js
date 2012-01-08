@@ -1,9 +1,9 @@
-/*orgdoc+++/
+/*orgdoc
 
 * =Org.Outline= : the outline/headlines parser
 
   This section describes the outline parser.
-/-orgdoc*/
+*/
 
 Org.getOutline = function(org, params){
 
@@ -302,5 +302,5 @@ Org.getOutline = function(org, params){
 
 };
 
-/*orgdoc+/
-/---orgdoc*/
+/*orgdoc
+*/

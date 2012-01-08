@@ -1,4 +1,4 @@
-/*orgdoc+++/
+/*orgdoc
 #+TITLE:     Org-Mode Javascript Parser
 
   Some para here !
@@ -18,7 +18,7 @@
   This is a /sample _paragraph_/. With some formatting (see http://google.com/).
   + A *\*bold\** word
   + A tilde: ~\~~
-/-orgdoc*/
+*/
 var Org = function(params){
   this.version    = "0.1";
   this.apiversion = "7.6";
@@ -30,5 +30,5 @@ var Org = function(params){
   this.Outline    = Org.getOutline(this, params);
   this.Renderers  = Org.getRenderers(this, params);
 };
-/*orgdoc+/
-/---orgdoc*/
+/*orgdoc
+*/

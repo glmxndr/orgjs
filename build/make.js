@@ -75,15 +75,15 @@ function buildSrc(){
 
   function concat(err, data){
     data = "" + data;
-    out += data.replace(/\n *#\+(BEGIN|END)_SRC( +js)?.*?\n/ig, "\n");
+    out += data;
     readFile();
   }
 
   function writeFile(){
     // Remove opening comments right after closing them
-    out = out.replace(/\s*\*\/\s*\/\*{3}orgdoc\*{3}/gi, "");
+    out = out.replace(/\s*\*\/\s*\/\*orgdoc/gi, "");
     // Remove empty comments
-    out = out.replace(/\s*\/\*{3}orgdoc\*{3}\s*\*\//gi, "");
+    out = out.replace(/\s*\/\*orgdoc\s*\*\//gi, "");
     fs.writeFile(filename, out, function(){
       log("SRC Wrote " + filename);
       release("src");
@@ -92,6 +92,7 @@ function buildSrc(){
 }
 
 function buildDoc(){
+
   var out = "", fileContent;
   var filename = 'doc/org-js.org';
   var files = srcFiles.slice(0);
@@ -107,17 +108,93 @@ function buildDoc(){
       return;
     }
   }
+
   function concat(err, data){
     data = "" + data;
-    data = data.replace(/\s*\/\*orgdoc\+\/\s*/g, "\n  #+END_SRC\n\n");
-    data = data.replace(/\s*\/-orgdoc\*\/\s*/g, "\n\n  #+BEGIN_SRC js\n");
-    data = data.replace(/\s*\/\*orgdoc\+{3}\/\s*/g, "\n");
-    data = data.replace(/\s*\/-{3}orgdoc\*\/\s*/g, "\n");
-    data = data.replace(/\s*#\+BEGIN_SRC js\s+#\+END_SRC\s*/g, "\n");
     data = data.replace(/^\n+/, "");
-    out += data + "\n\n";
+
+    var STATE = function(prev, line, rgx, next){
+      this.prev = prev;
+      this.lines = [];
+      this.indent = /^\s*/.exec(line)[0];
+      
+      this.accept = function(line){
+        if(rgx.exec(line)){
+          return false;
+        }
+        return true;
+      };
+      
+      this.consume = function(line){
+        if(!this.accept(line)){
+          this.next = new next(this, line);
+          return this.next;
+        }
+        this.lines.push(line);
+        return this;
+      };
+      
+    };
+
+    var DOC = function(prev, line){
+      STATE.call(this, prev, line, (/^\s*\*\/\s*$/), SRC);
+      this.type = "DOC";
+      
+      this.render = function(){
+        var lines = this.lines;
+        if(lines.join("").match(/^\s*$/)){return "";}
+        if(lines.length === 0){return "";}
+        var indent = this.indent;
+        var result = "";
+        var idx, line;
+        for (idx in lines){
+          line = lines[idx];
+          result += line.replace(new RegExp("^" + indent), "") + "\n";
+        }//*/
+        return result;
+      };
+    };
+
+    var SRC = function(prev, line){
+      STATE.call(this, prev, line, (/^\s*\/\*orgdoc\s*$/), DOC);
+      this.type = "SRC";
+
+      this.render = function(){
+        var lines = this.lines;
+        if(lines.join("").match(/^\s*$/)){return "";}
+        if(lines.length === 0){return "";}
+        var indent = "  ";
+        if(this.prev && this.prev.lines.length > 0){
+          indent += /^\s*/.exec(this.prev.lines[this.prev.lines.length - 1]);
+        }
+        var result = indent + "#+BEGIN_SRC js\n";
+        var idx, line;
+        for (idx in lines){
+          line = lines[idx];
+          result += indent + line + "\n";
+        }
+        result += indent + "#+END_SRC\n";
+        return result;
+      };
+    };
+
+    var lines = data.split(/\n/g);
+    var first = new SRC();
+    var state = first;
+    var idx, line;
+    for(idx in lines){
+      line = lines[idx];
+      state = state.consume(line);
+    }
+    state = first;
+    while(state){
+      out += state.render();
+      state = state.next;
+    }
+    out += "\n";
     readFile();
   }
+
   function writeFile(){
     fs.writeFile(filename, out, function(){
       log("DOC Wrote " + filename);

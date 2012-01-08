@@ -1,20 +1,30 @@
-/*orgdoc+++/
+/*orgdoc
 
 * =Org.Content= : the content parser
 
   This section describes the parser for the actual content within the sections
   of the =org= file.
-/-orgdoc*/
+*/
 
 Org.getContent = function(org, params){
 
   var _U  = org.Utils;
+  var _C  = org.Config;
   var OM = org.Markup;
-  var RGX = org.Regexps;
+  var _R = org.Regexps;
 
-  // The object that will be returned, and filled throughout this function.
+  /*orgdoc
+    =Content= is the object returned by this function.
+  */
   var Content = {};
 
+  /*orgdoc
+  ** Types of lines
+    =LineDef= is the object containing line definitions. All lines of the =Org= file
+    will be treated sequencially, and their type will determine what to do with it.
+
+    Line types are given an =id= property: a number identifying them.
+  */
   var LineDef = (function(){
     var l = -1;
     return {
@@ -25,6 +35,11 @@ Org.getContent = function(org, params){
       "ULITEM":   {id: ++l},
       "OLITEM":   {id: ++l},
       "DLITEM":   {id: ++l},
+
+      /*orgdoc
+        Some lines start a =BEGIN_/END_= block, their line definition have a =beginEnd=
+        property set to =1=.
+      */
       "VERSE":    {id: ++l, beginEnd:1},
       "QUOTE":    {id: ++l, beginEnd:1},
       "CENTER":   {id: ++l, beginEnd:1},
@@ -35,21 +50,40 @@ Org.getContent = function(org, params){
     };
   }());
 
-  // Defining some other arrangements of the line definitions :
-  //  + Simple index : type name => number
+  /*orgdoc
+    Now defining different ways to access the line types.
+    Defining some other arrangements of the line definitions :
+    
+    + Simple index : type name => number
+  */
   var LineType = {};
   _U.each(LineDef, function(v, k){LineType[k] = v.id;});
-  //  + Reversed type index : number => type name
+
+  /*orgdoc
+    + Reversed type index : number => type name
+  */
   var LineTypeArr = [];
   _U.each(LineDef, function(v, k){LineTypeArr[v.id] = k;});
-  //  + List of names of the blocks in #+BEGIN_... / #+END_... form
+
+
+  /*orgdoc
+    + List of names of the blocks in =BEGIN_... / END_...= form
+  */
   var BeginEndBlocks = {};
   _U.each(LineDef, function(v, k){if(v.beginEnd) BeginEndBlocks[k] = 1;});
 
 
+  /*orgdoc
+    + Function which determines the type from the given line. A minimal caching system is
+      provided, since the function will be called several times for the same line, so
+      we keep the result of the last call for a given input.
+
+      The function will only compare the line with regexps.
+  */
   var lineTypeCache = {line: "", type: LineType.BLANK};
+
   function getLineType(line){
-    
+
     // Caching result...
     if(lineTypeCache.line === line){return lineTypeCache.type;}
     lineTypeCache.line = line;
@@ -58,58 +92,72 @@ Org.getContent = function(org, params){
       return type;
     }
 
+    var RLT = _R.lineTypes;
+
     // First test on a line beginning with a letter,
     // the most common case, to avoid making all the
     // other tests before returning the default.
-    if(/^\s*[a-z]/i.exec(line)){
+    if(RLT.letter.exec(line)){
       return cache(LineType.PARA);
     }
     if(_U.blank(line)){
       return cache(LineType.BLANK);
     }
-    if(/^#(?:[^+]|$)/.exec(line)){
+    if(RLT.ignored.exec(line)){
       return cache(LineType.IGNORED);
     }
     // Then test all the other cases
-    if(/^\s+[+*-] /.exec(line)){
-      if(/ ::/.exec(line)){
+    if(RLT.litem.exec(line)){
+      if(RLT.dlitem.exec(line)){
         return cache(LineType.DLITEM);
       }
       return cache(LineType.ULITEM);
     }
-    if(/^\s*\d+[.)] /.exec(line)){
+    if(RLT.olitem.exec(line)){
       return cache(LineType.OLITEM);
     }
-    if(/^\s*\[(\d+|fn:.+?)\]/.exec(line)){
+    if(RLT.fndef.exec(line)){
       return cache(LineType.FNDEF);
     }
 
-    //if(/^\s*$/.exec(line)){
-    //  return LineType.BLANK;
-    //}
     var k;
     for(k in BeginEndBlocks){
-      if(RGX.beginBlock(k).exec(line)){
+      if(RLT.beginBlock(k).exec(line)){
         return cache(LineType[k]);
       }
     }
     return cache(LineType.PARA);
   }
 
+  /*orgdoc
+    + Function which determines the level of indentation of a line.
+  */
   function getLineIndent(line){
     line = line || "";
-    var indent = /^\s*/.exec(line)[0].length;
-    return indent;
+    var indent = /^\s*/.exec(line)[0];
+    var spaces4tabs = _U.repeat(" ", _C.tabWidth);
+    indent = indent.replace(/\r/g, spaces4tabs);
+    return indent.length;
   }
 
+  /*orgdoc
+  ** Blocks
+  */
   function getNewBlock(line, parent){
     var type = getLineType(line, line);
     var constr = LineDef[LineTypeArr[type]].constr || LineDef.PARA.constr;
     return new constr(parent, line);
   }
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  CONTAINERBLOCK
+/*orgdoc
+*** Container block
+    This kind of block is abstract: many other blocks inherit from it, and it will not be used as is.
+
+    It provides functionality for blocks which contain other sub-blocks.
+
+    It contains an array of =children=, containing the children blocks.
+
+*/
   var ContainerBlock = function(parent){
     this.parent = parent;
     this.nodeType = "ContainerBlock";
@@ -118,8 +166,12 @@ Org.getContent = function(org, params){
   };
   ContainerBlock.prototype.finalize = function(){};
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  ROOTBLOCK
+/*orgdoc
+
+*** Root block
+    This block represents the root content under a headline of the document.
+    It is the highest container directly under the headline node.
+*/
   var RootBlock = function(parent){
     ContainerBlock.call(this, parent);
     this.nodeType = "RootBlock";
@@ -247,8 +299,8 @@ Org.getContent = function(org, params){
     this.nodeType = "BeginEndBlock";
     this.indent = getLineIndent(line);
     this.ended = false;
-    this.beginre = RGX.beginBlock(type);
-    this.endre   = RGX.endBlock(type);
+    this.beginre = _R.lineTypes.beginBlock(type);
+    this.endre   = _R.lineTypes.endBlock(type);
   };
   BeginEndBlock.prototype = Object.create(ContentBlock.prototype);
   BeginEndBlock.prototype.accept      = function(line){return !this.ended;};
@@ -508,5 +560,5 @@ Org.getContent = function(org, params){
 
 };
 
-/*orgdoc+/
-/---orgdoc*/
+/*orgdoc
+*/

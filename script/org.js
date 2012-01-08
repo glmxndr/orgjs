@@ -1,4 +1,4 @@
-/*orgdoc+++/
+/*orgdoc
 #+TITLE:     Org-Mode Javascript Parser
 
   Some para here !
@@ -18,7 +18,7 @@
   This is a /sample _paragraph_/. With some formatting (see http://google.com/).
   + A *\*bold\** word
   + A tilde: ~\~~
-/-orgdoc*/
+*/
 var Org = function(params){
   this.version    = "0.1";
   this.apiversion = "7.6";
@@ -30,12 +30,13 @@ var Org = function(params){
   this.Outline    = Org.getOutline(this, params);
   this.Renderers  = Org.getRenderers(this, params);
 };
-/*orgdoc+/
-/---orgdoc*//*orgdoc+++/
+/*orgdoc
 * TODO =Org.Config= : configuration
-/-orgdoc*/
+*/
 
 Org.getConfig = function(org, params){
+
+  params = params || {};
 
   var _C = {};
 
@@ -50,26 +51,32 @@ Org.getConfig = function(org, params){
     "elisp"
   ];
 
+/*orgdoc
+
+** Tab width
+    Specifies how much single spaces for each tabulation character. 4 by default.
+*/
+  _C.tabWidth = params.tabWidth || 4;
+
+
   return _C;
 
 };
 
-/*orgdoc+/
+/*orgdoc
 ** Tab width
 ** URL protocols
-
-/---orgdoc*//*orgdoc+++/
 
 * =Org.Regexps= : the regexp bank
 
   The parser needs a lot of regular expressions.
   Non trivial regexps will be found in the file =org.regexps.js=,
   and accessible under the object =Org.Regexps=.
-/-orgdoc*/
+*/
 
 Org.getRegexps = function(org, params){
 
-  var RGX = {
+  var _R = {
 
     /**
      * A new line declaration, either windows or unix-like
@@ -153,31 +160,39 @@ Org.getRegexps = function(org, params){
 
     deadline: /DEADLINE: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>/,
 
-    _bBlk: {},
-    beginBlock: function(type){
-      return this._bBlk[type] ||
-        (this._bBlk[type] = new RegExp("^\\s*#\\+BEGIN_" + type + "\\s", "i"));
-    },
+    lineTypes: {
+        letter:  /^\s*[a-z]/i,
+        ignored: /^#(?:[^+]|$)/,
+        litem:   /^\s+[+*-] /,
+        dlitem:  / ::/,
+        olitem:  /^\s*\d+[.)] /,
+        fndef:   /^\s*\[(\d+|fn:.+?)\]/,
 
-    _eBlk: {},
-    endBlock: function(type){
-      return this._eBlk[type] ||
-        (this._eBlk[type] = new RegExp("^\\s*#\\+END_" + type + "(\\s|$)", "i"));
+        _bBlk: {},
+        beginBlock: function(type){
+          return this._bBlk[type] ||
+            (this._bBlk[type] = new RegExp("^\\s*#\\+BEGIN_" + type + "\\s", "i"));
+        },
+
+        _eBlk: {},
+        endBlock: function(type){
+          return this._eBlk[type] ||
+            (this._eBlk[type] = new RegExp("^\\s*#\\+END_" + type + "(\\s|$)", "i"));
+        }
     }
 
   };
 
-  return RGX;
+  return _R;
 
 };
 
-/*orgdoc+/
-/---orgdoc*//*orgdoc+++/
+/*orgdoc
 * =Org.Utils= : useful functions
 
   Many functionalities are used throughout the parser, mainly to process
   strings. The =Org.Utils= object contains these functions.
-/-orgdoc*/
+*/
 
 Org.getUtils = function(org, params){
 
@@ -352,13 +367,11 @@ Org.getUtils = function(org, params){
   };
 
 };
-
-/*orgdoc+/
-/---orgdoc*//*orgdoc+++/
+/*orgdoc
 * Markup parser
 
   This file contains the code for the Org-Mode wiki-style markup.
-/-orgdoc*/
+*/
 Org.getMarkup = function(org, params){
 
   var _U = org.Utils;
@@ -669,25 +682,33 @@ Org.getMarkup = function(org, params){
   return Markup;
 
 };
-/*orgdoc+/
-/---orgdoc*/
-/*orgdoc+++/
+/*orgdoc
 
 * =Org.Content= : the content parser
 
   This section describes the parser for the actual content within the sections
   of the =org= file.
-/-orgdoc*/
+*/
 
 Org.getContent = function(org, params){
 
   var _U  = org.Utils;
+  var _C  = org.Config;
   var OM = org.Markup;
-  var RGX = org.Regexps;
+  var _R = org.Regexps;
 
-  // The object that will be returned, and filled throughout this function.
+  /*orgdoc
+    =Content= is the object returned by this function.
+  */
   var Content = {};
 
+  /*orgdoc
+  ** Types of lines
+    =LineDef= is the object containing line definitions. All lines of the =Org= file
+    will be treated sequencially, and their type will determine what to do with it.
+
+    Line types are given an =id= property: a number identifying them.
+  */
   var LineDef = (function(){
     var l = -1;
     return {
@@ -698,6 +719,11 @@ Org.getContent = function(org, params){
       "ULITEM":   {id: ++l},
       "OLITEM":   {id: ++l},
       "DLITEM":   {id: ++l},
+
+      /*orgdoc
+        Some lines start a =BEGIN_/END_= block, their line definition have a =beginEnd=
+        property set to =1=.
+      */
       "VERSE":    {id: ++l, beginEnd:1},
       "QUOTE":    {id: ++l, beginEnd:1},
       "CENTER":   {id: ++l, beginEnd:1},
@@ -708,21 +734,40 @@ Org.getContent = function(org, params){
     };
   }());
 
-  // Defining some other arrangements of the line definitions :
-  //  + Simple index : type name => number
+  /*orgdoc
+    Now defining different ways to access the line types.
+    Defining some other arrangements of the line definitions :
+    
+    + Simple index : type name => number
+  */
   var LineType = {};
   _U.each(LineDef, function(v, k){LineType[k] = v.id;});
-  //  + Reversed type index : number => type name
+
+  /*orgdoc
+    + Reversed type index : number => type name
+  */
   var LineTypeArr = [];
   _U.each(LineDef, function(v, k){LineTypeArr[v.id] = k;});
-  //  + List of names of the blocks in #+BEGIN_... / #+END_... form
+
+
+  /*orgdoc
+    + List of names of the blocks in =BEGIN_... / END_...= form
+  */
   var BeginEndBlocks = {};
   _U.each(LineDef, function(v, k){if(v.beginEnd) BeginEndBlocks[k] = 1;});
 
 
+  /*orgdoc
+    + Function which determines the type from the given line. A minimal caching system is
+      provided, since the function will be called several times for the same line, so
+      we keep the result of the last call for a given input.
+
+      The function will only compare the line with regexps.
+  */
   var lineTypeCache = {line: "", type: LineType.BLANK};
+
   function getLineType(line){
-    
+
     // Caching result...
     if(lineTypeCache.line === line){return lineTypeCache.type;}
     lineTypeCache.line = line;
@@ -731,58 +776,72 @@ Org.getContent = function(org, params){
       return type;
     }
 
+    var RLT = _R.lineTypes;
+
     // First test on a line beginning with a letter,
     // the most common case, to avoid making all the
     // other tests before returning the default.
-    if(/^\s*[a-z]/i.exec(line)){
+    if(RLT.letter.exec(line)){
       return cache(LineType.PARA);
     }
     if(_U.blank(line)){
       return cache(LineType.BLANK);
     }
-    if(/^#(?:[^+]|$)/.exec(line)){
+    if(RLT.ignored.exec(line)){
       return cache(LineType.IGNORED);
     }
     // Then test all the other cases
-    if(/^\s+[+*-] /.exec(line)){
-      if(/ ::/.exec(line)){
+    if(RLT.litem.exec(line)){
+      if(RLT.dlitem.exec(line)){
         return cache(LineType.DLITEM);
       }
       return cache(LineType.ULITEM);
     }
-    if(/^\s*\d+[.)] /.exec(line)){
+    if(RLT.olitem.exec(line)){
       return cache(LineType.OLITEM);
     }
-    if(/^\s*\[(\d+|fn:.+?)\]/.exec(line)){
+    if(RLT.fndef.exec(line)){
       return cache(LineType.FNDEF);
     }
 
-    //if(/^\s*$/.exec(line)){
-    //  return LineType.BLANK;
-    //}
     var k;
     for(k in BeginEndBlocks){
-      if(RGX.beginBlock(k).exec(line)){
+      if(RLT.beginBlock(k).exec(line)){
         return cache(LineType[k]);
       }
     }
     return cache(LineType.PARA);
   }
 
+  /*orgdoc
+    + Function which determines the level of indentation of a line.
+  */
   function getLineIndent(line){
     line = line || "";
-    var indent = /^\s*/.exec(line)[0].length;
-    return indent;
+    var indent = /^\s*/.exec(line)[0];
+    var spaces4tabs = _U.repeat(" ", _C.tabWidth);
+    indent = indent.replace(/\r/g, spaces4tabs);
+    return indent.length;
   }
 
+  /*orgdoc
+  ** Blocks
+  */
   function getNewBlock(line, parent){
     var type = getLineType(line, line);
     var constr = LineDef[LineTypeArr[type]].constr || LineDef.PARA.constr;
     return new constr(parent, line);
   }
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  CONTAINERBLOCK
+/*orgdoc
+*** Container block
+    This kind of block is abstract: many other blocks inherit from it, and it will not be used as is.
+
+    It provides functionality for blocks which contain other sub-blocks.
+
+    It contains an array of =children=, containing the children blocks.
+
+*/
   var ContainerBlock = function(parent){
     this.parent = parent;
     this.nodeType = "ContainerBlock";
@@ -791,8 +850,12 @@ Org.getContent = function(org, params){
   };
   ContainerBlock.prototype.finalize = function(){};
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  ROOTBLOCK
+/*orgdoc
+
+*** Root block
+    This block represents the root content under a headline of the document.
+    It is the highest container directly under the headline node.
+*/
   var RootBlock = function(parent){
     ContainerBlock.call(this, parent);
     this.nodeType = "RootBlock";
@@ -920,8 +983,8 @@ Org.getContent = function(org, params){
     this.nodeType = "BeginEndBlock";
     this.indent = getLineIndent(line);
     this.ended = false;
-    this.beginre = RGX.beginBlock(type);
-    this.endre   = RGX.endBlock(type);
+    this.beginre = _R.lineTypes.beginBlock(type);
+    this.endre   = _R.lineTypes.endBlock(type);
   };
   BeginEndBlock.prototype = Object.create(ContentBlock.prototype);
   BeginEndBlock.prototype.accept      = function(line){return !this.ended;};
@@ -1181,14 +1244,12 @@ Org.getContent = function(org, params){
 
 };
 
-/*orgdoc+/
-/---orgdoc*/
-/*orgdoc+++/
+/*orgdoc
 
 * =Org.Outline= : the outline/headlines parser
 
   This section describes the outline parser.
-/-orgdoc*/
+*/
 
 Org.getOutline = function(org, params){
 
@@ -1487,9 +1548,7 @@ Org.getOutline = function(org, params){
 
 };
 
-/*orgdoc+/
-/---orgdoc*/
-/*orgdoc+++/
+/*orgdoc
 * Default Rendering
 
   This section provides a default HTML renderer for the parsed tree.
@@ -1502,7 +1561,7 @@ Org.getOutline = function(org, params){
     Working in the context of the =Org= object. We will need, as
     usual, some shortcuts to the =Utils=, and to =Org.Content= and
     =Org.Outline=.
-/-orgdoc*/
+*/
 
 Org.getRenderers = function(org){
   var OC = org.Content;
@@ -1513,7 +1572,7 @@ Org.getRenderers = function(org){
   var DefaultHTMLRenderer = function(){
     return {
 
-/*orgdoc+/
+/*orgdoc
 *** renderChildren                                                 :function:
      + Purpose :: provides a utility function to render all the
                   children of a =Node= or a =Block=.
@@ -1521,7 +1580,7 @@ Org.getRenderers = function(org){
      + Usage :: must be called with =.call(obj)= to provide the value
                 for =this=. =this= must have an enumerable =children=
                 property.
-/-orgdoc*/
+*/
       renderChildren: function(n){
         var i, out = "";
         for(i in n.children){
@@ -1541,7 +1600,7 @@ Org.getRenderers = function(org){
         return renderFn(n, this);
       },
 
-/*orgdoc+/
+/*orgdoc
 ** Utility functions
 *** escapeHtml(str)                                                :function:
      + Purpose :: The =escapeHtml= function escapes the forbidden
@@ -1551,7 +1610,7 @@ Org.getRenderers = function(org){
      + Arguments ::
        + =str= :: any value, converted into a string at the beginning
                   of the function.
-/-orgdoc*/
+*/
       escapeHtml: function(str){
         str = "" + str;
         str = str.replace(/&/g, "&amp;");
@@ -1642,7 +1701,7 @@ Org.getRenderers = function(org){
                 num + "</sup></a>";
       },
 
-/*orgdoc+/
+/*orgdoc
 ** Rendering blocks
    This sections contains the code for the different types of
    instanciable blocks defined in
@@ -1663,7 +1722,7 @@ Org.getRenderers = function(org){
 *** Rendering =RootBlock=
      =RootBlock=s are rendered with a =div= tag, with class
      =org_content=.
-/-orgdoc*/
+*/
       RootBlock: function(n, r){
         var out = "<div class='org_content'>\n";
         out += r.renderChildren(n);
@@ -1671,10 +1730,10 @@ Org.getRenderers = function(org){
         return out;
       },
 
-/*orgdoc+/
+/*orgdoc
 *** Rendering =UlistBlock=
      =UlistBlock=s are rendered with a simple =ul= tag.
-/-orgdoc*/
+*/
       UlistBlock: function(n, r){
         var out = "<ul>\n";
         out += r.renderChildren(n);
@@ -1682,13 +1741,13 @@ Org.getRenderers = function(org){
         return out;
       },
 
-/*orgdoc+/
+/*orgdoc
 *** Rendering =OlistBlock=
      =OlistBlock=s are rendered with a simple =ol= tag.
 
      If the block has a =start= property different from =1=, it is
      inserted in the =start= attribute of the tag.
-/-orgdoc*/
+*/
       OlistBlock: function(n, r){
         var s = n.start;
         var out = "<ol" + (s === 1 ? ">\n" : " start='" + r.escapeHtml(s) + "'>\n");
@@ -1697,13 +1756,13 @@ Org.getRenderers = function(org){
         return out;
       },
 
-/*orgdoc+/
+/*orgdoc
 *** Rendering =DlistBlock=
      =DlistBlock=s are rendered with a =dl= tag.
 
      =DlistItemBlock=s will have to use =dt=/=dd= structure
      accordingly.
-/-orgdoc*/
+*/
       DlistBlock: function(n, r){
         var out = "<dl>\n";
         out += r.renderChildren(n);
@@ -1711,11 +1770,11 @@ Org.getRenderers = function(org){
         return out;
       },
 
-/*orgdoc+/
+/*orgdoc
 *** Rendering =UlistItemBlock= and =OlistItemBlocks=
      =UlistItemBlock=s and =0listItemBlocks= are rendered with a
      #simple =li= tag.
-/-orgdoc*/
+*/
       UlistItemBlock: function(n, r){
         var out = "<li>\n";
         out += r.renderChildren(n);
@@ -1730,14 +1789,14 @@ Org.getRenderers = function(org){
         return out;
       },
 
-/*orgdoc+/
+/*orgdoc
 *** Rendering =DlistItemBlock=
      =DlistItemBlock=s are rendered with a =dt=/=dl= tag structure.
 
      The content of the =dt= is the =title= attribute of the block.
 
      The content of the =dd= is the rendering of this block's children.
-/-orgdoc*/
+*/
       DlistItemBlock: function(n, r){
         var out = "<dt>" + r.render(n.titleInline) + "</dt>\n<dd>\n";
         out += r.renderChildren(n);
@@ -1745,18 +1804,18 @@ Org.getRenderers = function(org){
         return out;
       },
 
-/*orgdoc+/
+/*orgdoc
 *** Rendering =ParaBlock=
      =ParaBlock=s are rendered with a =p= tag.
 
      The content of the tag is the concatenation of this block's
      =this.lines=, passed to the =renderMarkup= function.
-/-orgdoc*/
+*/
       ParaBlock: function(n, r){
         return "<p>\n" + r.renderChildren(n) + "</p>\n";
       },
 
-/*orgdoc+/
+/*orgdoc
 *** Rendering =VerseBlock=
      =VerseBlock=s are rendered with a =p= tag, with class
      =verse=.
@@ -1764,40 +1823,40 @@ Org.getRenderers = function(org){
      All spaces are converted to unbreakable spaces.
 
      All new lines are replaced by a =br= tag.
-/-orgdoc*/
+*/
       VerseBlock: function(n, r){
         var out = "<p class='verse'>\n" + r.renderChildren(n) + "</p>\n";
         out = out.replace(/ /g, "&nbsp;");
         return out;
       },
 
-/*orgdoc+/
+/*orgdoc
 *** Rendering =QuoteBlock=
      =QuoteBlock=s are rendered with a =blockquote= tag.
 
      If the quote contains an author declaration (after a double dash),
      this declaration is put on a new line.
-/-orgdoc*/
+*/
       QuoteBlock: function(n, r){
         var out = "<blockquote>\n" + r.renderChildren(n) + "</blockquote>\n";
         return out;
       },
 
-/*orgdoc+/
+/*orgdoc
 *** Rendering =CenterBlock=
      =CenterBlock=s are rendered with a simple =center= tag.
-/-orgdoc*/
+*/
       CenterBlock: function(n, r){
         return "<center>\n" + r.renderChildren(n) + "</center>\n";
       },
 
-/*orgdoc+/
+/*orgdoc
 *** Rendering =ExampleBlock=
      =ExampleBlock=s are rendered with a simple =pre= tag.
 
      The content is not processed with the =renderMarkup= function, only
      with the =escapeHtml= function.
-/-orgdoc*/
+*/
       ExampleBlock: function(n, r){
         var content = n.lines.join("\n") + "\n";
         var markup = r.escapeHtml(content);
@@ -1805,7 +1864,7 @@ Org.getRenderers = function(org){
         return out;
       },
 
-/*orgdoc+/
+/*orgdoc
 *** Rendering =SrcBlock=
      =SrcBlock=s are rendered with a =pre.src= tag with a =code= tag within.
      The =code= tag may have a class attribute if the language of the
@@ -1814,31 +1873,31 @@ Org.getRenderers = function(org){
 
      The content is not processed with the =renderMarkup= function, only
      with the =escapeHtml= function.
-/-orgdoc*/
+*/
       SrcBlock: function(n, r){
         var content = n.lines.join("\n") + "\n";
         var markup = r.escapeHtml(content);
         var l = n.language;
         var out = "<pre class='src'><code" +
                   ( l ? " class='" + l + "'>":">") +
-                  "\n" + markup + "</code></pre>\n";
+                  markup + "</code></pre>\n";
         return out;
       },
 
-/*orgdoc+/
+/*orgdoc
 *** Rendering =HtmlBlock=
      =HtmlBlock=s are rendered by simply outputting the HTML content
      verbatim, with no modification whatsoever.
-/-orgdoc*/
+*/
       HtmlBlock: function(n, r){
         var out = n.lines.join("\n") + "\n";
         return out;
       },
 
-/*orgdoc+/
+/*orgdoc
 *** Rendering =CommentBlock=
      =CommentBlock=s are ignored.
-/-orgdoc*/
+*/
       FndefBlock: function(n, r){
         return "";
       },
@@ -1848,7 +1907,7 @@ Org.getRenderers = function(org){
       },
 
 
-/*orgdoc+/
+/*orgdoc
 ** Rendering headlines
 
     Here we render headlines, represented by =Outline.Node= objects.
@@ -1864,7 +1923,7 @@ Org.getRenderers = function(org){
     is rendered.
 
     Then the subheadlines are rendered using the =renderChildren= function.
-/-orgdoc*/
+*/
       Node: function(n, r){
         var headline = n.level === 0 ? n.meta["TITLE"] : n.heading.getTitle();
         var headInline = r.render(OM.tokenize(n, headline));
@@ -1919,12 +1978,10 @@ Org.getRenderers = function(org){
   };
 };
 
-/*orgdoc+/
+/*orgdoc
 ** Conclusion
 
     This is the end of the function creating the default renderer.
-/-orgdoc*/
-/*orgdoc+++/
 * TODO =Org.API= : API
 
-/---orgdoc*/
+*/
