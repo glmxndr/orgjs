@@ -136,7 +136,7 @@ Org.getContent = function(org, params){
     line = line || "";
     var indent = /^\s*/.exec(line)[0];
     var spaces4tabs = _U.repeat(" ", _C.tabWidth);
-    indent = indent.replace(/\r/g, spaces4tabs);
+    indent = indent.replace(/\t/g, spaces4tabs);
     return indent.length;
   }
 

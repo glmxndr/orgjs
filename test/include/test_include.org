@@ -1,0 +1,25 @@
+* Testing includes
+** Include plain
+*** Normal
+	Here it is, normal:
+	#+INCLUDE: "sub/plain.org" :minlevel 4
+
+*** As quoted text
+	Here it is, quoted:
+	#+INCLUDE: "sub/plain.org" quote
+
+*** As source code
+	Here it is, as =Org= code:
+	#+INCLUDE: "sub/plain.org" src org
+
+*** As an example
+	Here it is, as an example:
+	#+INCLUDE: "sub/plain.org" example
+
+** Include prefix
+	Here it is, as list items:
+	#+INCLUDE: "sub/prefix.org" :prefix "   + "
+
+** Include prefix 1
+	Here it is, as list items:
+	#+INCLUDE: "sub/prefix1.org" :prefix1 "   + " :prefix "     "

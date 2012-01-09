@@ -7,6 +7,12 @@
 
 Org.getUtils = function(org, params){
 
+  var _require = function(){return null;};
+  if(typeof require === "function"){
+    _require = require;
+  }
+  var fs = _require("fs");
+
   if (typeof Object.create !== 'function') {
     Object.create = function (o) {
       function F() {}
@@ -48,9 +54,9 @@ Org.getUtils = function(org, params){
     };
   }
 
-  var RGX = org.Regexps;
+  var _R = org.Regexps;
 
-  return {
+  var _U = {
     root: function(obj){
       var result = obj;
       while(result.parent){result = result.parent;}
@@ -74,6 +80,15 @@ Org.getUtils = function(org, params){
 
     trim: function(str){
       return str && str.length ? str.replace(/^\s*|\s*$/g, "") : "";
+    },
+
+    unquote: function(str){
+      str = str || "";
+      var result = /^(['"])(.*)\1$/.exec(str);
+      if(result){
+        return result[2];
+      }
+      return str;
     },
 
     empty: function(o){
@@ -132,22 +147,22 @@ Org.getUtils = function(org, params){
     },
 
     firstLine: function(str){
-      var match = RGX.firstLine.exec(str);
+      var match = _R.firstLine.exec(str);
       return match ? match[0] : "";
     },
 
     lines: function(str){
       if (!str && str !== ""){return [];}
-      return str.split(RGX.newline);
+      return str.split(_R.newline);
     },
 
     indentLevel: function(str){
       return (/^\s*/).exec(str)[0].length;
     },
 
-    randomStr: function(length){
+    randomStr: function(length, chars){
       var str = "";
-      var available = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+      var available = chars || "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
       for( var i=0; i < length; i++ )
           str += available.charAt(Math.floor(Math.random() * available.length));
       return str;
@@ -173,8 +188,49 @@ Org.getUtils = function(org, params){
       return token;
     },
     
+    path: {
+      parent: function(path){
+        path = this.trim("" + path);
+        var split = path.split(/\//);
+        if(this.blank(split.pop())){
+          split.pop();
+        }
+        return split.join("/") + "/";
+      },
+
+      concat: function(){
+        var idx;
+        var args = Array.prototype.slice.call(arguments);
+        var max = args.length;
+        var result = args.join("/").replace(/\/+/g, "/");
+        return result;
+      }
+    },
+
+    get: function(location){
+      var result = null;
+      if(jQuery){
+        // If we're in the browser, org.js requires jQuery...
+        // Maybe to refactor to using XHR / ActiveX ourselves
+        jQuery.ajax({
+          async: false,
+          url: location,
+          dataType: 'text',
+          success: function(data){
+            result = data;
+          }
+        });
+      } else if(fs) {
+        // Else pretend we're in node.js...
+        result = fs.readFileSync(location);
+      }
+      return result;
+    },
+
     noop: function(){}
 
   };
+
+  return _U;
 
 };

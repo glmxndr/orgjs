@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 
 var fs  = require('fs'),
-    sys = require('sys');
+    util = require('util');
 
 var srcFiles = [
   './src/org.main.js',
@@ -11,6 +11,7 @@ var srcFiles = [
   './src/org.markup.js',
   './src/org.content.js',
   './src/org.outline.js',
+  './src/org.parser.js',
   './src/org.render.js',
   './src/org.api.js'
 ];
@@ -28,7 +29,7 @@ var release = function(type){
 
 var noop = function(){};
 function date(){return new Date().toTimeString();}
-function log(str){sys.puts(date() + ' # ' + str);}
+function log(str){util.puts(date() + ' # ' + str);}
 
 
 var watchFiles = true;

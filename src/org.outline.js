@@ -7,7 +7,8 @@
 
 Org.getOutline = function(org, params){
 
-  var RGX = org.Regexps;
+  var _P = params;
+  var _R = org.Regexps;
   var OC = org.Content;
   var _U = org.Utils;
 
@@ -33,6 +34,13 @@ Org.getOutline = function(org, params){
     this.content    = this.parser.getContent();
 
   };
+
+  /**
+   * Counting the documents generated in this page.
+   * Helps to generate an ID for the nodes
+   * when no docid is given in the root node.
+   */
+  Node.tocnum = 0;
 
   Node.prototype = {
     parseContent: function(){
@@ -72,13 +80,6 @@ Org.getOutline = function(org, params){
     }
   };
 
-  /**
-   * Counting the documents generated in this page.
-   * Helps to generate an ID for the nodes
-   * when no docid is given in the root node.
-   */
-  Node.tocnum = 0;
-
   /////////////////////////////////////////////////////////////////////////////
   // PARSING
 
@@ -88,7 +89,7 @@ Org.getOutline = function(org, params){
   var Headline = function(txt){
     this.nodeType = "Headline";
     this.repr = _U.trim(txt);
-    this.match = RGX.headingLine.exec(this.repr) || [];
+    this.match = _R.headingLine.exec(this.repr) || [];
   };
 
   Headline.prototype = {
@@ -134,7 +135,7 @@ Org.getOutline = function(org, params){
     getMeta: function(){
       if(this.meta){return this.meta;}
       var content = this.content;
-      if(this.level > 0){content = content.replace(RGX.headingLine, "\n");}
+      if(this.level > 0){content = content.replace(_R.headingLine, "\n");}
       var meta = this.parseHeaders(content);
       this.meta = meta;
       return this.meta;
@@ -146,15 +147,15 @@ Org.getOutline = function(org, params){
     getProperties: function(){
       if(this.props){return this.props;}
       var content = this.content;
-      content = content.replace(RGX.headingLine, "\n");
+      content = content.replace(_R.headingLine, "\n");
       var subHeadingStars = "\n" + this.getHeading().getStars() + "*";
       content = content.split(subHeadingStars)[0];
       var props = this.props = {};
-      var propMatch = RGX.propertySection.exec(content);
+      var propMatch = _R.propertySection.exec(content);
       if(!propMatch){return this.props;}
       var propLines = _U.lines(propMatch[1]);
       _U.each(propLines, function(line, idx){
-        var match = RGX.propertyLine.exec(line);
+        var match = _R.propertyLine.exec(line);
         if(!match){return 1;} // continue
         // Properties may be defined on several lines ; concatenate the values if needed
         props[match[1]] = props[match[1]] ? props[match[1]] + " " + match[2] : match[2];
@@ -169,7 +170,7 @@ Org.getOutline = function(org, params){
     getItem: function(){
       if(this.item){return this.item;}
       var content = this.content;
-      content = content.replace(RGX.headingLine, "\n");
+      content = content.replace(_R.headingLine, "\n");
       var subHeadingStars = "\n" + this.getHeading().getStars() + "*";
       //_U.log(subHeadingStars);
       content = content.split(subHeadingStars)[0];
@@ -184,11 +185,11 @@ Org.getOutline = function(org, params){
       if(this.text){return this.text;}
       var content = this.getItem();
       content = this.removeHeaders(content);
-      content = content.replace(RGX.propertySection, "");
-      content = content.replace(RGX.scheduled, "");
-      content = content.replace(RGX.deadline, "");
-      content = content.replace(RGX.clockSection, "");
-      content = content.replace(RGX.clockLine, "");
+      content = content.replace(_R.propertySection, "");
+      content = content.replace(_R.scheduled, "");
+      content = content.replace(_R.deadline, "");
+      content = content.replace(_R.clockSection, "");
+      content = content.replace(_R.clockLine, "");
       this.text = content;
       return content;
     },
@@ -200,11 +201,11 @@ Org.getOutline = function(org, params){
      */
     parseHeaders: function(txt){
       var result = {};
-      var lines = txt.split(RGX.newline);
+      var lines = txt.split(_R.newline);
       _U.each(lines, function(line, idx){
         if(_U.blank(line)){return true;}
-        if(!line.match(RGX.metaDeclaration)){return false;} // we went ahead the headers : break the loop
-        var match = RGX.metaLine.exec(line);
+        if(!line.match(_R.metaDeclaration)){return false;} // we went ahead the headers : break the loop
+        var match = _R.metaLine.exec(line);
         if (match){
           if(result[match[1]]){
             result[match[1]] = result[match[1]] + "\n" + match[2];
@@ -214,19 +215,19 @@ Org.getOutline = function(org, params){
         }
         return true;
       });
-      // _U.log(result);
       return result;
     },
+
     /**
      * Returns the given text without the "#+HEADER: Content" lines at the beginning
      */
     removeHeaders: function(txt){
       var result = "";
-      var lines  = txt.split(RGX.newline);
+      var lines  = txt.split(_R.newline);
       var header = true;
       _U.each(lines, function(line, idx){
         if(header && _U.blank(line)){return;}
-        if(header && line.match(RGX.metaDeclaration)){return;}
+        if(header && line.match(_R.metaDeclaration)){return;}
         header = false;
         result += "\n" + line;
       });
@@ -234,73 +235,13 @@ Org.getOutline = function(org, params){
     }
   };
 
-  /**
-   * General purpose parser.
-   */
-  var Parser = function(txt){
-    this.txt = txt;
-  };
-  Parser.prototype = {
-    /**
-     * Creates a list of all the org-node contents
-     */
-    nodeTextList: function(text){
-      var content = text;
-      return _U.map(
-        content.split(/^\*/m),
-        function(t, idx){
-          return idx === 0 ? "\n" + t : "*" + t;
-        }
-      );
-    },
 
-    /**
-     * Creates a list of all the org-node contents
-     */
-    nodeList: function(text){
-      return _U.map( this.nodeTextList(text) ,
-        function(t, idx){ return new Node(t); }
-      );
-    },
-
-    buildTree: function(){
-      var nodes  = this.nodeList(this.txt);
-      var root   = nodes[0];
-      var length = nodes.length;
-      var done, i, j, level;
-      for(i = 1; i < length ; i++){
-        level = nodes[i].level;
-        done  = false;
-        j     = i;
-        while(!done){
-          j = j - 1;
-          if(j < 0){break;}
-          if(nodes[j].level < level){
-            nodes[i].parent = nodes[j];
-            nodes[j].children.push(nodes[i]);
-            done = true;
-          }
-        }
-      }
-      for(i = 0; i < length ; i++){
-        nodes[i].parseContent();
-      }
-      return root;
-    }
-  };
-
-  return {
+  var Outline = {
     Node:       Node,
     Headline:   Headline,
-    Parser:     Parser,
-    NodeParser: NodeParser,
-    parse:      function(txt){
-      var parser = new Parser(txt);
-      return parser.buildTree();
-    }
+    NodeParser: NodeParser
   };
 
-};
+  return Outline;
 
-/*orgdoc
-*/
+};

@@ -28,6 +28,7 @@ var Org = function(params){
   this.Markup     = Org.getMarkup(this, params);
   this.Content    = Org.getContent(this, params);
   this.Outline    = Org.getOutline(this, params);
+  this.Parser     = Org.getParser(this, params);
   this.Renderers  = Org.getRenderers(this, params);
 };
 /*orgdoc
@@ -196,6 +197,12 @@ Org.getRegexps = function(org, params){
 
 Org.getUtils = function(org, params){
 
+  var _require = function(){return null;};
+  if(typeof require === "function"){
+    _require = require;
+  }
+  var fs = _require("fs");
+
   if (typeof Object.create !== 'function') {
     Object.create = function (o) {
       function F() {}
@@ -237,9 +244,9 @@ Org.getUtils = function(org, params){
     };
   }
 
-  var RGX = org.Regexps;
+  var _R = org.Regexps;
 
-  return {
+  var _U = {
     root: function(obj){
       var result = obj;
       while(result.parent){result = result.parent;}
@@ -263,6 +270,15 @@ Org.getUtils = function(org, params){
 
     trim: function(str){
       return str && str.length ? str.replace(/^\s*|\s*$/g, "") : "";
+    },
+
+    unquote: function(str){
+      str = str || "";
+      var result = /^(['"])(.*)\1$/.exec(str);
+      if(result){
+        return result[2];
+      }
+      return str;
     },
 
     empty: function(o){
@@ -321,22 +337,22 @@ Org.getUtils = function(org, params){
     },
 
     firstLine: function(str){
-      var match = RGX.firstLine.exec(str);
+      var match = _R.firstLine.exec(str);
       return match ? match[0] : "";
     },
 
     lines: function(str){
       if (!str && str !== ""){return [];}
-      return str.split(RGX.newline);
+      return str.split(_R.newline);
     },
 
     indentLevel: function(str){
       return (/^\s*/).exec(str)[0].length;
     },
 
-    randomStr: function(length){
+    randomStr: function(length, chars){
       var str = "";
-      var available = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+      var available = chars || "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
       for( var i=0; i < length; i++ )
           str += available.charAt(Math.floor(Math.random() * available.length));
       return str;
@@ -362,9 +378,50 @@ Org.getUtils = function(org, params){
       return token;
     },
     
+    path: {
+      parent: function(path){
+        path = this.trim("" + path);
+        var split = path.split(/\//);
+        if(this.blank(split.pop())){
+          split.pop();
+        }
+        return split.join("/") + "/";
+      },
+
+      concat: function(){
+        var idx;
+        var args = Array.prototype.slice.call(arguments);
+        var max = args.length;
+        var result = args.join("/").replace(/\/+/g, "/");
+        return result;
+      }
+    },
+
+    get: function(location){
+      var result = null;
+      if(jQuery){
+        // If we're in the browser, org.js requires jQuery...
+        // Maybe to refactor to using XHR / ActiveX ourselves
+        jQuery.ajax({
+          async: false,
+          url: location,
+          dataType: 'text',
+          success: function(data){
+            result = data;
+          }
+        });
+      } else if(fs) {
+        // Else pretend we're in node.js...
+        result = fs.readFileSync(location);
+      }
+      return result;
+    },
+
     noop: function(){}
 
   };
+
+  return _U;
 
 };
 /*orgdoc
@@ -820,7 +877,7 @@ Org.getContent = function(org, params){
     line = line || "";
     var indent = /^\s*/.exec(line)[0];
     var spaces4tabs = _U.repeat(" ", _C.tabWidth);
-    indent = indent.replace(/\r/g, spaces4tabs);
+    indent = indent.replace(/\t/g, spaces4tabs);
     return indent.length;
   }
 
@@ -1253,7 +1310,8 @@ Org.getContent = function(org, params){
 
 Org.getOutline = function(org, params){
 
-  var RGX = org.Regexps;
+  var _P = params;
+  var _R = org.Regexps;
   var OC = org.Content;
   var _U = org.Utils;
 
@@ -1279,6 +1337,13 @@ Org.getOutline = function(org, params){
     this.content    = this.parser.getContent();
 
   };
+
+  /**
+   * Counting the documents generated in this page.
+   * Helps to generate an ID for the nodes
+   * when no docid is given in the root node.
+   */
+  Node.tocnum = 0;
 
   Node.prototype = {
     parseContent: function(){
@@ -1318,13 +1383,6 @@ Org.getOutline = function(org, params){
     }
   };
 
-  /**
-   * Counting the documents generated in this page.
-   * Helps to generate an ID for the nodes
-   * when no docid is given in the root node.
-   */
-  Node.tocnum = 0;
-
   /////////////////////////////////////////////////////////////////////////////
   // PARSING
 
@@ -1334,7 +1392,7 @@ Org.getOutline = function(org, params){
   var Headline = function(txt){
     this.nodeType = "Headline";
     this.repr = _U.trim(txt);
-    this.match = RGX.headingLine.exec(this.repr) || [];
+    this.match = _R.headingLine.exec(this.repr) || [];
   };
 
   Headline.prototype = {
@@ -1380,7 +1438,7 @@ Org.getOutline = function(org, params){
     getMeta: function(){
       if(this.meta){return this.meta;}
       var content = this.content;
-      if(this.level > 0){content = content.replace(RGX.headingLine, "\n");}
+      if(this.level > 0){content = content.replace(_R.headingLine, "\n");}
       var meta = this.parseHeaders(content);
       this.meta = meta;
       return this.meta;
@@ -1392,15 +1450,15 @@ Org.getOutline = function(org, params){
     getProperties: function(){
       if(this.props){return this.props;}
       var content = this.content;
-      content = content.replace(RGX.headingLine, "\n");
+      content = content.replace(_R.headingLine, "\n");
       var subHeadingStars = "\n" + this.getHeading().getStars() + "*";
       content = content.split(subHeadingStars)[0];
       var props = this.props = {};
-      var propMatch = RGX.propertySection.exec(content);
+      var propMatch = _R.propertySection.exec(content);
       if(!propMatch){return this.props;}
       var propLines = _U.lines(propMatch[1]);
       _U.each(propLines, function(line, idx){
-        var match = RGX.propertyLine.exec(line);
+        var match = _R.propertyLine.exec(line);
         if(!match){return 1;} // continue
         // Properties may be defined on several lines ; concatenate the values if needed
         props[match[1]] = props[match[1]] ? props[match[1]] + " " + match[2] : match[2];
@@ -1415,7 +1473,7 @@ Org.getOutline = function(org, params){
     getItem: function(){
       if(this.item){return this.item;}
       var content = this.content;
-      content = content.replace(RGX.headingLine, "\n");
+      content = content.replace(_R.headingLine, "\n");
       var subHeadingStars = "\n" + this.getHeading().getStars() + "*";
       //_U.log(subHeadingStars);
       content = content.split(subHeadingStars)[0];
@@ -1430,11 +1488,11 @@ Org.getOutline = function(org, params){
       if(this.text){return this.text;}
       var content = this.getItem();
       content = this.removeHeaders(content);
-      content = content.replace(RGX.propertySection, "");
-      content = content.replace(RGX.scheduled, "");
-      content = content.replace(RGX.deadline, "");
-      content = content.replace(RGX.clockSection, "");
-      content = content.replace(RGX.clockLine, "");
+      content = content.replace(_R.propertySection, "");
+      content = content.replace(_R.scheduled, "");
+      content = content.replace(_R.deadline, "");
+      content = content.replace(_R.clockSection, "");
+      content = content.replace(_R.clockLine, "");
       this.text = content;
       return content;
     },
@@ -1446,11 +1504,11 @@ Org.getOutline = function(org, params){
      */
     parseHeaders: function(txt){
       var result = {};
-      var lines = txt.split(RGX.newline);
+      var lines = txt.split(_R.newline);
       _U.each(lines, function(line, idx){
         if(_U.blank(line)){return true;}
-        if(!line.match(RGX.metaDeclaration)){return false;} // we went ahead the headers : break the loop
-        var match = RGX.metaLine.exec(line);
+        if(!line.match(_R.metaDeclaration)){return false;} // we went ahead the headers : break the loop
+        var match = _R.metaLine.exec(line);
         if (match){
           if(result[match[1]]){
             result[match[1]] = result[match[1]] + "\n" + match[2];
@@ -1460,19 +1518,19 @@ Org.getOutline = function(org, params){
         }
         return true;
       });
-      // _U.log(result);
       return result;
     },
+
     /**
      * Returns the given text without the "#+HEADER: Content" lines at the beginning
      */
     removeHeaders: function(txt){
       var result = "";
-      var lines  = txt.split(RGX.newline);
+      var lines  = txt.split(_R.newline);
       var header = true;
       _U.each(lines, function(line, idx){
         if(header && _U.blank(line)){return;}
-        if(header && line.match(RGX.metaDeclaration)){return;}
+        if(header && line.match(_R.metaDeclaration)){return;}
         header = false;
         result += "\n" + line;
       });
@@ -1480,11 +1538,83 @@ Org.getOutline = function(org, params){
     }
   };
 
+
+  var Outline = {
+    Node:       Node,
+    Headline:   Headline,
+    NodeParser: NodeParser
+  };
+
+  return Outline;
+
+};
+/*orgdoc
+
+* =Org.Parser= : the general parser
+
+  This section describes the general =Org= document parser.
+*/
+
+Org.getParser = function(org, params){
+
+  var _P = params;
+  var _R = org.Regexps;
+  var OC = org.Content;
+  var _U = org.Utils;
+  var OO = org.Outline;
+
+  var Include = function(line, basepath){
+    this.basepath = basepath;
+    this.line = line;
+    this.beginend = false;
+    var tokens = line.split(/\s*/);
+    var token = tokens.unshift();
+    var nexttoken;
+    while(token){
+      if(token.match(/#+INCLUDE:/)){
+        nexttoken = _U.unquote(tokens.unshift());
+        this.location = _U.path.concat(basepath, nexttoken);
+      }
+      else if(token.match(/src/)){
+        this.beginend = "SRC";
+        nexttoken = tokens[0] || "";
+        if(nexttoken.match(/[a-z]+/)){
+          this.srcType = tokens.unshift();
+        }
+      }
+      else if(token.match(/example/)){
+        this.beginend = "EXAMPLE";
+      }
+      else if(token.match(/quote/)){
+        this.beginend = "QUOTE";
+      }
+      else if(token.match(/:prefix/)){
+        this.prefix = _U.unquote(tokens.unshift());
+      }
+      else if(token.match(/:prefix1/)){
+        this.prefix1 = _U.unquote(tokens.unshift());
+      }
+      else if(token.match(/:minlevel/)){
+        this.minlevel = _U.unquote(tokens.unshift());
+      }
+      else if(token.match(/:lines/)){
+        this.minlevel = _U.unquote(tokens.unshift());
+      }
+      token = tokens.unshift();
+    }
+  };
+  Include.prototype.render = function(){
+    
+  };
+
+
   /**
    * General purpose parser.
    */
-  var Parser = function(txt){
+  var Parser = function(txt, location){
     this.txt = txt;
+    this.location = location || "";
+    this.includes = true;
   };
   Parser.prototype = {
     /**
@@ -1505,12 +1635,27 @@ Org.getOutline = function(org, params){
      */
     nodeList: function(text){
       return _U.map( this.nodeTextList(text) ,
-        function(t, idx){ return new Node(t); }
+        function(t, idx){ return new OO.Node(t); }
       );
     },
 
+    followIncludes: function(txt){
+      return txt;
+      /*
+      var rgx = /\n *#+INCLUDE:[^\n]+/;
+      var replacefn = function(){
+        
+      };
+      txt.replace(rgx, replacefn);
+      */
+    },
+
     buildTree: function(){
-      var nodes  = this.nodeList(this.txt);
+      var txt = this.txt;
+      if(this.includes){
+        txt = this.followIncludes(txt);
+      }
+      var nodes  = this.nodeList(txt);
       var root   = nodes[0];
       var length = nodes.length;
       var done, i, j, level;
@@ -1535,19 +1680,14 @@ Org.getOutline = function(org, params){
     }
   };
 
-  return {
-    Node:       Node,
-    Headline:   Headline,
-    Parser:     Parser,
-    NodeParser: NodeParser,
-    parse:      function(txt){
-      var parser = new Parser(txt);
-      return parser.buildTree();
-    }
+  Parser.parse = function(txt, location){
+    var parser = new Parser(txt, location);
+    return parser.buildTree();
   };
 
-};
+  return Parser;
 
+};
 /*orgdoc
 * Default Rendering
 

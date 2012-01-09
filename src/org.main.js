@@ -28,6 +28,7 @@ var Org = function(params){
   this.Markup     = Org.getMarkup(this, params);
   this.Content    = Org.getContent(this, params);
   this.Outline    = Org.getOutline(this, params);
+  this.Parser     = Org.getParser(this, params);
   this.Renderers  = Org.getRenderers(this, params);
 };
 /*orgdoc
