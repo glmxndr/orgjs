@@ -330,7 +330,7 @@ Org.getContent = function(org, params){
   };
   LineDef.VERSE.constr = Content.VerseBlock = VerseBlock;
   VerseBlock.prototype = Object.create(BeginEndBlock.prototype);
-  VerseBlock.prototype.finalize = ContentMarkupBlock.finalize;
+  VerseBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
 
   ////////////////////////////////////////////////////////////////////////////////
   //  QUOTEBLOCK
@@ -341,7 +341,7 @@ Org.getContent = function(org, params){
   };
   LineDef.QUOTE.constr = Content.QuoteBlock = QuoteBlock;
   QuoteBlock.prototype = Object.create(BeginEndBlock.prototype);
-  QuoteBlock.prototype.finalize = ContentMarkupBlock.finalize;
+  QuoteBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
 
   ////////////////////////////////////////////////////////////////////////////////
   //  CENTERBLOCK
@@ -352,7 +352,7 @@ Org.getContent = function(org, params){
   };
   LineDef.CENTER.constr = Content.CenterBlock = CenterBlock;
   CenterBlock.prototype = Object.create(BeginEndBlock.prototype);
-  CenterBlock.prototype.finalize = ContentMarkupBlock.finalize;
+  CenterBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
 
   ////////////////////////////////////////////////////////////////////////////////
   //  EXAMPLEBLOCK

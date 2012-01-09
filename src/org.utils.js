@@ -190,9 +190,9 @@ Org.getUtils = function(org, params){
     
     path: {
       parent: function(path){
-        path = this.trim("" + path);
+        path = _U.trim("" + path);
         var split = path.split(/\//);
-        if(this.blank(split.pop())){
+        if(_U.blank(split.pop())){
           split.pop();
         }
         return split.join("/") + "/";

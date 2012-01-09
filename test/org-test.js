@@ -6,7 +6,7 @@ $(function(){
     $('#sample').html(root.render());
     Org.Utils.log(root);
   });
-  //*/
+  //*
 
   $.get("doc/org-js.org", function(data){
     var org = new Org();
@@ -15,11 +15,12 @@ $(function(){
     $('#doc').html(renderer.render(root));
   });
   //*///
-
-  var org = new Org();
-  var path = org.Utils.path.concat("src/", "org.api.js");
-  console.log(path);
-  var api = org.Utils.get(path);
-  console.log(api);
+  var location = "test/include/test_include.org";
+  $.get(location, function(data){
+    var org = new Org();
+    var root = org.Parser.parse(data, location);
+    var renderer = org.Renderers.html();
+    $('#doc').html(renderer.render(root));
+  });
 
 });

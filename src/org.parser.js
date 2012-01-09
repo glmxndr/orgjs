@@ -17,44 +17,104 @@ Org.getParser = function(org, params){
     this.basepath = basepath;
     this.line = line;
     this.beginend = false;
-    var tokens = line.split(/\s*/);
-    var token = tokens.unshift();
-    var nexttoken;
+    this.prefix = "";
+    this.prefix1 = "";
+    this.limitMin = 0;
+    this.limitMax = Infinity;
+    this.indent = /^\s*/.exec(line)[0] || "";
+
+    var nexttoken, limitNum;
+    var tokens = line.split(/\s+/);
+    var token = tokens.shift();
+    if(tokens.length > 0 && _U.blank(token)){
+      token = tokens.shift();
+    }
     while(token){
-      if(token.match(/#+INCLUDE:/)){
-        nexttoken = _U.unquote(tokens.unshift());
+      if(token === "#+INCLUDE:"){
+        nexttoken = _U.unquote(tokens.shift());
         this.location = _U.path.concat(basepath, nexttoken);
       }
-      else if(token.match(/src/)){
-        this.beginend = "SRC";
+      else if(token === "src"){
+        this.beginend = token;
         nexttoken = tokens[0] || "";
-        if(nexttoken.match(/[a-z]+/)){
-          this.srcType = tokens.unshift();
+        if(nexttoken.match(/[a-z-]+/)){
+          this.srcType = tokens.shift();
         }
       }
-      else if(token.match(/example/)){
-        this.beginend = "EXAMPLE";
+      else if(token === "example"){
+        this.beginend = token;
       }
-      else if(token.match(/quote/)){
-        this.beginend = "QUOTE";
+      else if(token === "quote"){
+        this.beginend = token;
       }
-      else if(token.match(/:prefix/)){
-        this.prefix = _U.unquote(tokens.unshift());
+      else if(token === ":prefix"){
+        this.prefix   = _U.unquote(tokens.shift());
       }
-      else if(token.match(/:prefix1/)){
-        this.prefix1 = _U.unquote(tokens.unshift());
+      else if(token === ":prefix1"){
+        this.prefix1  = _U.unquote(tokens.shift());
       }
-      else if(token.match(/:minlevel/)){
-        this.minlevel = _U.unquote(tokens.unshift());
+      else if(token === ":minlevel"){
+        this.minlevel = _U.unquote(tokens.shift());
       }
-      else if(token.match(/:lines/)){
-        this.minlevel = _U.unquote(tokens.unshift());
+      else if(token === ":lines"){
+        this.limit = _U.unquote(tokens.shift());
+        if(this.limit.match(/^\d*-\d*$/)){
+          limitNum = this.limit.match(/^\d+/);
+          if(limitNum){
+            this.limitMin = +(limitNum[0]) - 1;
+          }
+          limitNum = this.limit.match(/\d+$/);
+          if(limitNum){
+            this.limitMax = +(limitNum[0]);
+          }
+        }
       }
-      token = tokens.unshift();
+      token = tokens.shift();
     }
   };
   Include.prototype.render = function(){
-    
+    var content = _U.get(this.location);
+
+    if(this.minlevel && !this.beginend){
+      var minfound = 1000;
+      var headlineRgx = /^\*+(?=\s)/mg;
+      var foundstars = content.match(headlineRgx);
+      _U.each(foundstars, function(v){
+        minfound = Math.min(minfound, v.length);
+      });
+      if(this.minlevel > minfound){
+        var starsToAppend = _U.repeat("*", this.minlevel - minfound);
+        content = content.replace(headlineRgx, function(m){
+          return starsToAppend + m;
+        });
+      }
+    }
+    var lines = content.split(/\n/);
+    var result = "";
+    var indent = this.indent;
+    var first = false;
+    var _this = this;
+    _U.each(lines, function(v, idx){
+      if(idx < _this.limitMin || idx > _this.limitMax + 1){return;}
+      result += (_this.beginend ? indent : "") +
+                (first ? _this.prefix1 : _this.prefix) +
+                v +
+                "\n";
+      if(first){first = false;}
+    });
+
+    if(this.beginend === "src"){
+      var begin = indent + "#+BEGIN_SRC ";
+      if(this.srcType){begin += this.srcType + " ";}
+      begin += "\n";
+      result = begin + result + indent+ "#+END_SRC\n";
+    } else if(this.beginend === "example"){
+      result = indent + "#+BEGIN_EXAMPLE \n" + result + indent + "#+END_EXAMPLE\n";
+    } else if(this.beginend === "quote"){
+      result = indent + "#+BEGIN_QUOTE \n" + result + indent + "#+END_QUOTE\n";
+    }
+
+    return result;
   };
 
 
@@ -90,14 +150,13 @@ Org.getParser = function(org, params){
     },
 
     followIncludes: function(txt){
-      return txt;
-      /*
-      var rgx = /\n *#+INCLUDE:[^\n]+/;
-      var replacefn = function(){
-        
+      var rgx = /[\t ]*#\+INCLUDE:[^\n]+/g;
+      var basepath = _U.path.parent(this.location);
+      var replacefn = function(m){
+        var inc = new Include(m, basepath);
+        return inc.render();
       };
-      txt.replace(rgx, replacefn);
-      */
+      return txt.replace(rgx, replacefn);
     },
 
     buildTree: function(){
@@ -105,6 +164,7 @@ Org.getParser = function(org, params){
       if(this.includes){
         txt = this.followIncludes(txt);
       }
+      console.log(txt);
       var nodes  = this.nodeList(txt);
       var root   = nodes[0];
       var length = nodes.length;
