@@ -1573,55 +1573,36 @@ Org.getParser = function(org, params){
     this.limitMax = Infinity;
     this.indent = /^\s*/.exec(line)[0] || "";
 
-    var nexttoken, limitNum;
-    var tokens = line.split(/\s+/);
-    var token = tokens.shift();
-    if(tokens.length > 0 && _U.blank(token)){
-      token = tokens.shift();
+    var match = /#\+INCLUDE:\s+"([^"]+)"(?:\s+(example|quote|src))?/.exec(line) || [];
+    this.relPath = match[1] || "";
+    this.location = _U.path.concat(basepath, this.relPath);
+    this.beginend = match[2];
+    if(this.beginend === "src"){
+      this.srcType = (/\ssrc\s+([^:\s]+)/.exec(line) || [])[1];
     }
-    while(token){
-      if(token === "#+INCLUDE:"){
-        nexttoken = _U.unquote(tokens.shift());
-        this.location = _U.path.concat(basepath, nexttoken);
-      }
-      else if(token === "src"){
-        this.beginend = token;
-        nexttoken = tokens[0] || "";
-        if(nexttoken.match(/[a-z-]+/)){
-          this.srcType = tokens.shift();
+
+    match = line.match(/:prefix\s+"([^"]+)"/);
+    if(match){this.prefix   = match[1];}
+    match = line.match(/:prefix1\s+"([^"]+)"/);
+    if(match){this.prefix1  = match[1];}
+    match = line.match(/:minlevel\s+("?)(\d+)\1/);
+    if(match){this.minlevel = match[2];}
+    match = line.match(/:lines\s+"(\d*-\d*)"/);
+    if(match){
+      this.limit = match[1];
+      if(this.limit.match(/^\d*-\d*$/)){
+        limitNum = this.limit.match(/^\d+/);
+        if(limitNum){
+          this.limitMin = +(limitNum[0]) - 1;
+        }
+        limitNum = this.limit.match(/\d+$/);
+        if(limitNum){
+          this.limitMax = +(limitNum[0]);
         }
       }
-      else if(token === "example"){
-        this.beginend = token;
-      }
-      else if(token === "quote"){
-        this.beginend = token;
-      }
-      else if(token === ":prefix"){
-        this.prefix   = _U.unquote(tokens.shift());
-      }
-      else if(token === ":prefix1"){
-        this.prefix1  = _U.unquote(tokens.shift());
-      }
-      else if(token === ":minlevel"){
-        this.minlevel = _U.unquote(tokens.shift());
-      }
-      else if(token === ":lines"){
-        this.limit = _U.unquote(tokens.shift());
-        if(this.limit.match(/^\d*-\d*$/)){
-          limitNum = this.limit.match(/^\d+/);
-          if(limitNum){
-            this.limitMin = +(limitNum[0]) - 1;
-          }
-          limitNum = this.limit.match(/\d+$/);
-          if(limitNum){
-            this.limitMax = +(limitNum[0]);
-          }
-        }
-      }
-      token = tokens.shift();
     }
   };
+
   Include.prototype.render = function(){
     var content = _U.get(this.location);
 
@@ -1639,15 +1620,16 @@ Org.getParser = function(org, params){
         });
       }
     }
+
     var lines = content.split(/\n/);
     var result = "";
     var indent = this.indent;
-    var first = false;
+    var first = true;
     var _this = this;
     _U.each(lines, function(v, idx){
       if(idx < _this.limitMin || idx > _this.limitMax + 1){return;}
       result += (_this.beginend ? indent : "") +
-                (first ? _this.prefix1 : _this.prefix) +
+                (first ? (_this.prefix1 ? _this.prefix1 : _this.prefix) : _this.prefix) +
                 v +
                 "\n";
       if(first){first = false;}
@@ -1740,6 +1722,7 @@ Org.getParser = function(org, params){
     }
   };
 
+  Parser.Include = Include;
   Parser.parse = function(txt, location){
     var parser = new Parser(txt, location);
     return parser.buildTree();
