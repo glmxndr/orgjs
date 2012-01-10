@@ -6,7 +6,7 @@ $(function(){
     $('#sample').html(root.render());
     Org.Utils.log(root);
   });
-  //*
+  //*/
 
   $.get("doc/org-js.org", function(data){
     var org = new Org();
@@ -14,7 +14,7 @@ $(function(){
     var renderer = org.Renderers.html();
     $('#doc').html(renderer.render(root));
   });
-  //*///
+  /*/
   var location = "test/include/test_include.org";
   $.get(location, function(data){
     var org = new Org();
@@ -22,5 +22,7 @@ $(function(){
     var renderer = org.Renderers.html();
     $('#doc').html(renderer.render(root));
   });
+
+  //*/
 
 });

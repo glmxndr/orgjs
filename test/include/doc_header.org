@@ -1,0 +1,8 @@
+
+* Test header
+
+  This is a /sample _paragraph_/. With some formatting (see http://google.com/).
+  + A *\*bold\** word
+  + A tilde: ~\~~
+    - A sublist
+    - [ ] with a... checkbox?

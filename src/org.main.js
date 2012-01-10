@@ -1,23 +1,19 @@
 /*orgdoc
 #+TITLE:     Org-Mode Javascript Parser
 
-  Some para here !
+This project aims to provide[fn:2] a parser and easily customizable renderer
+for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 
-  [fn:2] Oh, right!
+[fn:2] Oh, right!
 
-  [1] Oh, right again!
+[1] Oh, right again!
 
-
-  This project aims to provide[fn:2] a parser and easily customizable renderer
-  for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
+#+INCLUDE: "../test/include/doc_header.org"
 
 * =Org= : the Main object
 
   The global context[1] is extended with only one object, named =Org=.
 
-  This is a /sample _paragraph_/. With some formatting (see http://google.com/).
-  + A *\*bold\** word
-  + A tilde: ~\~~
 */
 var Org = function(params){
   this.version    = "0.1";

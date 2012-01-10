@@ -1,36 +1,32 @@
 #+TITLE:     Org-Mode Javascript Parser
 
-  Some para here !
+This project aims to provide[fn:2] a parser and easily customizable renderer
+for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 
-  [fn:2] Oh, right!
+[fn:2] Oh, right!
 
-  [1] Oh, right again!
+[1] Oh, right again!
 
-
-  This project aims to provide[fn:2] a parser and easily customizable renderer
-  for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
+#+INCLUDE: "../test/include/doc_header.org"
 
 * =Org= : the Main object
 
   The global context[1] is extended with only one object, named =Org=.
 
-  This is a /sample _paragraph_/. With some formatting (see http://google.com/).
-  + A *\*bold\** word
-  + A tilde: ~\~~
-    #+BEGIN_SRC js
-    var Org = function(params){
-      this.version    = "0.1";
-      this.apiversion = "7.6";
-      this.Config     = Org.getConfig(this, params);
-      this.Regexps    = Org.getRegexps(this, params);
-      this.Utils      = Org.getUtils(this, params);
-      this.Markup     = Org.getMarkup(this, params);
-      this.Content    = Org.getContent(this, params);
-      this.Outline    = Org.getOutline(this, params);
-      this.Parser     = Org.getParser(this, params);
-      this.Renderers  = Org.getRenderers(this, params);
-    };
-    #+END_SRC
+  #+BEGIN_SRC js
+  var Org = function(params){
+    this.version    = "0.1";
+    this.apiversion = "7.6";
+    this.Config     = Org.getConfig(this, params);
+    this.Regexps    = Org.getRegexps(this, params);
+    this.Utils      = Org.getUtils(this, params);
+    this.Markup     = Org.getMarkup(this, params);
+    this.Content    = Org.getContent(this, params);
+    this.Outline    = Org.getOutline(this, params);
+    this.Parser     = Org.getParser(this, params);
+    this.Renderers  = Org.getRenderers(this, params);
+  };
+  #+END_SRC
 
 * TODO =Org.Config= : configuration
   #+BEGIN_SRC js
@@ -1572,20 +1568,114 @@
       var _U = org.Utils;
       var OO = org.Outline;
     
+    #+END_SRC
+** =Parser= : the object to be returned by =Org.getParser=
+   The parser creates a tree of =Org= =Node=s. It includes
+   the referenced external files and generates a tree of nodes,
+   each of them recursively parsed with the =Content= parser.
+       #+BEGIN_SRC js
+         var Parser = function(txt, location){
+           this.txt = txt;
+           this.location = location || "";
+           this.includes = true;
+         };
+         Parser.prototype = {
+           /**
+            * Creates a list of all the org-node contents
+            */
+           nodeTextList: function(text){
+             var content = text;
+             return _U.map(
+               content.split(/^\*/m),
+               function(t, idx){
+                 return idx === 0 ? "\n" + t : "*" + t;
+               }
+             );
+           },
+       
+           /**
+            * Creates a list of all the org-node contents
+            */
+           nodeList: function(text){
+             return _U.map( this.nodeTextList(text) ,
+               function(t, idx){ return new OO.Node(t); }
+             );
+           },
+       
+           followIncludes: function(txt){
+             var rgx = /^[\t ]*#\+INCLUDE:[^\n]+$/mg;
+             var basepath = _U.path.parent(this.location);
+             var replacefn = function(m){
+               var inc = new Include(m, basepath);
+               return inc.render();
+             };
+             return txt.replace(rgx, replacefn);
+           },
+       
+           buildTree: function(){
+             var txt = this.txt;
+             if(this.includes){
+               txt = this.followIncludes(txt);
+             }
+             var nodes  = this.nodeList(txt);
+             var root   = nodes[0];
+             var length = nodes.length;
+             var done, i, j, level;
+             for(i = 1; i < length ; i++){
+               level = nodes[i].level;
+               done  = false;
+               j     = i;
+               while(!done){
+                 j = j - 1;
+                 if(j < 0){break;}
+                 if(nodes[j].level < level){
+                   nodes[i].parent = nodes[j];
+                   nodes[j].children.push(nodes[i]);
+                   done = true;
+                 }
+               }
+             }
+             for(i = 0; i < length ; i++){
+               nodes[i].parseContent();
+             }
+             return root;
+           }
+         };
+       
+         Parser.parse = function(txt, location){
+           var parser = new Parser(txt, location);
+           return parser.buildTree();
+         };
+       
+       #+END_SRC
+** Including external files
+   This section deals with the =#\+INCLUDE:= tags, which allow to load another
+   =Org= file into the current file.
+
+*** =Include= object
+    #+BEGIN_SRC js
       var Include = function(line, basepath){
         this.basepath = basepath;
-        this.line = line;
+        this.line     = line;
         this.beginend = false;
-        this.prefix = "";
-        this.prefix1 = "";
+        this.prefix   = "";
+        this.prefix1  = "";
         this.limitMin = 0;
         this.limitMax = Infinity;
-        this.indent = /^\s*/.exec(line)[0] || "";
+        this.parse(line, basepath);
+      };
     
-        var match = /#\+INCLUDE:\s+"([^"]+)"(?:\s+(example|quote|src))?/.exec(line) || [];
-        this.relPath = match[1] || "";
+    #+END_SRC
+*** Parsing the include lines
+    #+BEGIN_SRC js
+      Include.prototype.parse = function(line, basepath){
+        var match = /#\+INCLUDE:\s+"([^"]+)"(?:\s+(example|quote|src))?/m.exec(line) || [];
+    
+        this.indent   = /^\s*/.exec(line)[0] || "";
+        this.relPath  = match[1] || "";
         this.location = _U.path.concat(basepath, this.relPath);
         this.beginend = match[2];
+        
         if(this.beginend === "src"){
           this.srcType = (/\ssrc\s+([^:\s]+)/.exec(line) || [])[1];
         }
@@ -1612,136 +1702,73 @@
         }
       };
     
-      Include.prototype.render = function(){
-        var content = _U.get(this.location);
-    
-        if(this.minlevel && !this.beginend){
-          var minfound = 1000;
-          var headlineRgx = /^\*+(?=\s)/mg;
-          var foundstars = content.match(headlineRgx);
-          _U.each(foundstars, function(v){
-            minfound = Math.min(minfound, v.length);
-          });
-          if(this.minlevel > minfound){
-            var starsToAppend = _U.repeat("*", this.minlevel - minfound);
-            content = content.replace(headlineRgx, function(m){
-              return starsToAppend + m;
-            });
-          }
-        }
-    
-        var lines = content.split(/\n/);
-        var result = "";
-        var indent = this.indent;
-        var first = true;
-        var _this = this;
-        _U.each(lines, function(v, idx){
-          if(idx < _this.limitMin || idx > _this.limitMax + 1){return;}
-          result += (_this.beginend ? indent : "") +
-                    (first ? (_this.prefix1 ? _this.prefix1 : _this.prefix) : _this.prefix) +
-                    v +
-                    "\n";
-          if(first){first = false;}
-        });
-    
-        if(this.beginend === "src"){
-          var begin = indent + "#+BEGIN_SRC ";
-          if(this.srcType){begin += this.srcType + " ";}
-          begin += "\n";
-          result = begin + result + indent+ "#+END_SRC\n";
-        } else if(this.beginend === "example"){
-          result = indent + "#+BEGIN_EXAMPLE \n" + result + indent + "#+END_EXAMPLE\n";
-        } else if(this.beginend === "quote"){
-          result = indent + "#+BEGIN_QUOTE \n" + result + indent + "#+END_QUOTE\n";
-        }
-    
-        return result;
-      };
-    
-    
-      /**
-       * General purpose parser.
-       */
-      var Parser = function(txt, location){
-        this.txt = txt;
-        this.location = location || "";
-        this.includes = true;
-      };
-      Parser.prototype = {
-        /**
-         * Creates a list of all the org-node contents
-         */
-        nodeTextList: function(text){
-          var content = text;
-          return _U.map(
-            content.split(/^\*/m),
-            function(t, idx){
-              return idx === 0 ? "\n" + t : "*" + t;
-            }
-          );
-        },
-    
-        /**
-         * Creates a list of all the org-node contents
-         */
-        nodeList: function(text){
-          return _U.map( this.nodeTextList(text) ,
-            function(t, idx){ return new OO.Node(t); }
-          );
-        },
-    
-        followIncludes: function(txt){
-          var rgx = /[\t ]*#\+INCLUDE:[^\n]+/g;
-          var basepath = _U.path.parent(this.location);
-          var replacefn = function(m){
-            var inc = new Include(m, basepath);
-            return inc.render();
-          };
-          return txt.replace(rgx, replacefn);
-        },
-    
-        buildTree: function(){
-          var txt = this.txt;
-          if(this.includes){
-            txt = this.followIncludes(txt);
-          }
-          console.log(txt);
-          var nodes  = this.nodeList(txt);
-          var root   = nodes[0];
-          var length = nodes.length;
-          var done, i, j, level;
-          for(i = 1; i < length ; i++){
-            level = nodes[i].level;
-            done  = false;
-            j     = i;
-            while(!done){
-              j = j - 1;
-              if(j < 0){break;}
-              if(nodes[j].level < level){
-                nodes[i].parent = nodes[j];
-                nodes[j].children.push(nodes[i]);
-                done = true;
-              }
-            }
-          }
-          for(i = 0; i < length ; i++){
-            nodes[i].parseContent();
-          }
-          return root;
-        }
-      };
-    
-      Parser.Include = Include;
-      Parser.parse = function(txt, location){
-        var parser = new Parser(txt, location);
-        return parser.buildTree();
-      };
-    
-      return Parser;
-    
-    };
-    
     #+END_SRC
+*** Rendering the included content
+    #+BEGIN_SRC js
+      Include.prototype.render = function(){
+    #+END_SRC
+    + Loading the content from the location
+          #+BEGIN_SRC js
+              var content = _U.get(this.location);
+          
+          #+END_SRC
+    + Modifying the headlines levels (if =:minlevel= has been set)
+          #+BEGIN_SRC js
+              if(this.minlevel && !this.beginend){
+                var minfound = 1000;
+                var headlineRgx = /^\*+(?=\s)/mg;
+                var foundstars = content.match(headlineRgx);
+                _U.each(foundstars, function(v){
+                  minfound = Math.min(minfound, v.length);
+                });
+                if(this.minlevel > minfound){
+                  var starsToAppend = _U.repeat("*", this.minlevel - minfound);
+                  content = content.replace(headlineRgx, function(m){
+                    return starsToAppend + m;
+                  });
+                }
+              }
+          
+          #+END_SRC
+    + Generating the included content from the fetched lines
+          #+BEGIN_SRC js
+              var lines = content.split(/\n/);
+              var result = "";
+              var indent = this.indent;
+              var first = true;
+              var _this = this;
+              _U.each(lines, function(v, idx){
+                if(idx < _this.limitMin || idx > _this.limitMax + 1){return;}
+                result += (_this.beginend ? indent : "") +
+                          (first ? (_this.prefix1 ? _this.prefix1 : _this.prefix) : _this.prefix) +
+                          v +
+                          "\n";
+                if(first){first = false;}
+              });
+          
+          #+END_SRC
+    + Enclosing in a =BEGIN/END= block if needed
+          #+BEGIN_SRC js
+              if(this.beginend === "src"){
+                var begin = indent + "#+BEGIN_SRC ";
+                if(this.srcType){begin += this.srcType + " ";}
+                begin += "\n";
+                result = begin + result + indent+ "#+END_SRC\n";
+              } else if(this.beginend === "example"){
+                result = indent + "#+BEGIN_EXAMPLE \n" + result + indent + "#+END_EXAMPLE\n";
+              } else if(this.beginend === "quote"){
+                result = indent + "#+BEGIN_QUOTE \n" + result + indent + "#+END_QUOTE\n";
+              }
+          
+              return result;
+            };
+          
+          
+            return Parser;
+          
+          };
+          
+          #+END_SRC
 
 * Default Rendering
 
