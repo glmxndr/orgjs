@@ -7,12 +7,22 @@
 
 Org.getUtils = function(org, params){
 
+  /*orgdoc
+  ** Testing for presence of Node =fs= module
+  */
   var _require = function(){return null;};
   if(typeof require === "function"){
     _require = require;
   }
   var fs = _require("fs");
 
+  /*orgdoc
+  ** Built-in object modifications
+     We try to remain as light as possible, only adding functionalities
+     that may already be present in certain versions of Javascript.
+
+  *** =Object.create= implementation if not present
+  */
   if (typeof Object.create !== 'function') {
     Object.create = function (o) {
       function F() {}
@@ -21,6 +31,9 @@ Org.getUtils = function(org, params){
     };
   }
 
+  /*orgdoc
+  *** =Array.prototype.indexOf= implementation if not present
+  */
   if (!Array.prototype.indexOf) {
     Array.prototype.indexOf = function (searchElement /*, fromIndex */ ) {
       "use strict";
@@ -54,15 +67,27 @@ Org.getUtils = function(org, params){
     };
   }
 
+  /*orgdoc
+  ** =Utils= object to be returned
+  */
   var _R = org.Regexps;
 
   var _U = {
+    /*orgdoc
+         + =root= goes up the chain of =parent= properties, until no finding any parent.
+    */
     root: function(obj){
       var result = obj;
       while(result.parent){result = result.parent;}
       return result;
     },
 
+    /*orgdoc
+         + =range= returns an array of numbers, built depending on the arguments
+           - 1 argument : 0 to the argument, incrementing if positive, decrementing if negative
+           - 2 arguments : =arg[0]= to =arg[1]=, incrementing or decrementing,
+           - 3 arguments:  =arg[0]= to =arg[1]=, incrementing by =arg[3]=
+    */
     range: function(){
       var from, to, step, args = arguments, result = [], i;
       switch(args.length){
@@ -78,10 +103,17 @@ Org.getUtils = function(org, params){
       return result;
     },
 
+    /*orgdoc
+          + trimming a string, always returning a string (never return null or unusable output)
+    */
     trim: function(str){
       return str && str.length ? str.replace(/^\s*|\s*$/g, "") : "";
     },
 
+    /*orgdoc
+         + if the input is inserted in quotes (='=) or double quotes (="=), remove them ; return
+           input if enclosing quotes not found.
+    */
     unquote: function(str){
       str = str || "";
       var result = /^(['"])(.*)\1$/.exec(str);
@@ -91,26 +123,42 @@ Org.getUtils = function(org, params){
       return str;
     },
 
+    /*orgdoc
+         + tells if a given string or array is empty
+           (more exactly, tells if the length property of the argument is falsy)
+    */
     empty: function(o){
       // Valid only for strings and arrays
       return (!(o && o.length));
     },
 
+    /*orgdoc
+         + inverse of =empty=
+    */
     notEmpty: function(o){
       // Valid only for strings and arrays
       return !this.empty(o);
     },
 
+    /*orgdoc
+         + tells if the given string has only blank characters
+    */
     blank: function(str){
       // Valid only for strings and arrays
       return !str || str == 0;
     },
 
+    /*orgdoc
+         + inverse of =blank=
+    */
     notBlank: function(str){
       // Valid only for strings and arrays
       return !this.blank(str);
     },
 
+    /*orgdoc
+         + repeats the given string n times
+    */
     repeat: function(str, times){
       var result = [];
       for(var i=0; i<times; i++){
@@ -119,6 +167,9 @@ Org.getUtils = function(org, params){
       return result.join('');
     },
 
+    /*orgdoc
+         + applies a function for each element of the given array or object
+    */
     each: function(arr, fn){
       var name, length = arr.length, i = 0, isObj = length === undefined;
       if ( isObj ) {
@@ -133,6 +184,10 @@ Org.getUtils = function(org, params){
       }
     },
 
+    /*orgdoc
+         + applies the given function for each element of the given array or
+           object, and returns the array of results
+    */
     map: function(arr, fn){
       var result = [];
       this.each(arr, function(val, idx){
@@ -142,24 +197,34 @@ Org.getUtils = function(org, params){
       return result;
     },
 
+    /*orgdoc
+         + logs the given argument (relies on =console.log=, does nothing if
+           not present)
+    */
     log: function(o){
       if(console && console.log){console.log(o);}
     },
 
+    /*orgdoc
+         + returns the first line of the given string
+    */
     firstLine: function(str){
       var match = _R.firstLine.exec(str);
       return match ? match[0] : "";
     },
 
+    /*orgdoc
+         + splits the given string in lines, returns the array of lines
+           without the trailing line feed
+    */
     lines: function(str){
       if (!str && str !== ""){return [];}
       return str.split(_R.newline);
     },
 
-    indentLevel: function(str){
-      return (/^\s*/).exec(str)[0].length;
-    },
-
+    /*orgdoc
+         + returns a random string of given length
+    */
     randomStr: function(length, chars){
       var str = "";
       var available = chars || "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -168,17 +233,27 @@ Org.getUtils = function(org, params){
       return str;
     },
 
+    /*orgdoc
+         + returns an array of the keys of the given object
+    */
     keys: function(obj){
       var result = [];
       this.each(obj, function(v, k){result.push(k);});
       return result;
     },
 
-    joinKeys: function(str, obj){
-      return this.keys(obj).join(str);
+    /*orgdoc
+         + returns the keys of the given object joined with the given delimiter
+    */
+    joinKeys: function(obj, delim){
+      return this.keys(obj).join(delim);
     },
 
+    /*orgdoc
+         + returns a random token not present in the given string
+    */
     getAbsentToken: function(str, prefix){
+      prefix = prefix || "";
       var token, start = prefix + "_";
       if(str.indexOf(start) === -1){return start;}
       token = start + this.randomStr(5);
@@ -188,7 +263,14 @@ Org.getUtils = function(org, params){
       return token;
     },
     
+    /*orgdoc
+         + URI-style path utilities
+    */
     path: {
+
+      /*orgdoc
+             + gets the parent of the given path
+      */
       parent: function(path){
         path = _U.trim("" + path);
         var split = path.split(/\//);
@@ -198,6 +280,10 @@ Org.getUtils = function(org, params){
         return split.join("/") + "/";
       },
 
+      /*orgdoc
+             + concatenates path pieces into a valid path
+               (normalizing path separators)
+      */
       concat: function(){
         var idx;
         var args = Array.prototype.slice.call(arguments);
@@ -207,6 +293,12 @@ Org.getUtils = function(org, params){
       }
     },
 
+    /*orgdoc
+         + gets the content from a given location :
+           + through AJAX if jQuery is detected,
+           + through node.js filesystem if node.js is detected,
+           + returning null if nothing found
+    */
     get: function(location){
       var result = null;
       if(jQuery){
@@ -227,6 +319,9 @@ Org.getUtils = function(org, params){
       return result;
     },
 
+    /*orgdoc
+         + =_U.noop= is (slightly) shorter to write than =function(){}= ...
+    */
     noop: function(){}
 
   };

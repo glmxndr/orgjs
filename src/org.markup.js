@@ -124,7 +124,7 @@ Org.getMarkup = function(org, params){
     }
     if(this.content && this.content.length){
       var content = this.content;
-      var pipedKeys =  _U.joinKeys("|", tokens);
+      var pipedKeys =  _U.joinKeys(tokens, "|");
       if(_U.blank(pipedKeys)){return;}
       var rgx = new RegExp('^((?:.|\n)*?)(' + pipedKeys + ')((?:.|\n)*)$');
       var match, pre, token, rest;

@@ -17,11 +17,9 @@
 <ol id="qunit-tests"></ol>
 <div id="qunit-fixture">
 
-
-
 </div>
 <script type="text/javascript">
-var _U = OrgJS.Utils;
+var _U = new Org().Utils;
 $(function(){
   
   test("UTILS - each", function(){
@@ -34,11 +32,13 @@ $(function(){
     _U.each(obj, function(v, key){resultObj.push(v*v);});
     deepEqual(resultObj, [1,4,9], "Did not square the object!");
   });
+
   test("UTILS - map", function(){
     var arr = [1,2,3];
     var resultArr = _U.map(arr, function(val, idx){return "" + idx + val;});
     deepEqual(resultArr, ["01","12","23"], "Error mapping array to array");
   });
+
   test("UTILS - lines", function(){
     deepEqual(_U.lines(null),        [],             "null case");
     deepEqual(_U.lines("false"),     ["false"],      "false case");
@@ -49,7 +49,92 @@ $(function(){
     deepEqual(_U.lines("a\n\nb"),    ["a", "", "b"], "3 lines");
   });
 
+  test("UTILS - range", function(){
+    deepEqual(_U.range(3),        [0, 1, 2],    "1 argument positive");
+    deepEqual(_U.range(-3),       [0, -1, -2],  "1 argument negative");
+    deepEqual(_U.range(1, 4),     [1, 2, 3],    "2 args incr");
+    deepEqual(_U.range(0, 5, 2),  [0, 2, 4],    "3 args");
+    deepEqual(_U.range(2, 0),     [2, 1],       "2 args decr");
+    deepEqual(_U.range(0, 5, -2), [],           "3 args empty");
+  });
+
+  test("UTILS - trim", function(){
+    equal(_U.trim(" \r \t \n "), "", "only whitespaces");
+    equal(_U.trim("a b\n "), "a b", "after");
+    equal(_U.trim(" \ra b"), "a b", "before");
+    equal(_U.trim(" \r a b \n "), "a b", "both");
+    equal(_U.trim(null), "", "null case");
+  });
+
+  test("UTILS - unquote", function(){
+    equal(_U.unquote("'try'"), "try",   "single quotes");
+    equal(_U.unquote('"try"'), "try",   "double quotes");
+    equal(_U.unquote("'try"),  "'try",  "no ending quote");
+    equal(_U.unquote("'tr'y"), "'tr'y", "ending quote not at the end");
+    equal(_U.unquote(null),    "",      "null case");
+  });
+
+  test("UTILS - empty", function(){
+    equal(_U.empty([]),    true,  "0-element array");
+    equal(_U.empty(""),    true,  "0-size string");
+    equal(_U.empty(" "),   false, "blank string");
+    equal(_U.empty([1]),   false, "1-element array");
+  });
+
+  test("UTILS - blank", function(){
+    equal(_U.blank(" \t \n "),   true,  "blank string");
+    equal(_U.blank([]),          true,  "0-element array");
+    equal(_U.blank("aze"),       false, "not blank string");
+    equal(_U.blank([1]),         false, "1-element array");
+  });
+
+  test("UTILS - repeat", function(){
+    equal(_U.repeat(" ", 3),  "   ",   "repeat white space");
+    equal(_U.repeat("ab", 2), "abab",  "repeat string");
+  });
   
+  test("UTILS - firstlLine", function(){
+    equal(_U.firstLine(" a\t\nb\bc"), " a\t", "first line");
+    equal(_U.firstLine("\r\nb\bc"), "", "empty first line - windows format");
+    equal(_U.firstLine("\nb\bc"),   "", "empty first line - unix format");
+  });
+
+  test("UTILS - lines", function(){
+    deepEqual(_U.lines(" a\t\nb\nc"),     [" a\t", "b", "c"] , "lines - unix format");
+    deepEqual(_U.lines(" a\t\nb\r\nc"),   [" a\t", "b", "c"] , "lines - mixed formats");
+    deepEqual(_U.lines(" a\t\r\nb\r\nc"), [" a\t", "b", "c"] , "lines - windows formats");
+  });
+
+  test("UTILS - keys", function(){
+    var keys;
+    keys = _U.keys([1]);
+    equal(keys.length, 1);
+    equal(keys[0], 0);
+
+    keys = _U.keys({a:1, b:2});
+    equal(keys.length, 2);
+    equal(keys[0], "a");
+    equal(keys[1], "b");
+  });
+
+  test("UTILS - joinKeys", function(){
+    var keys = _U.joinKeys({a:1, b:2}, "|");
+    equal(keys, "a|b", "joining object properties");
+  });
+
+  test("UTILS - path.parent", function(){
+    equal(_U.path.parent("a/b/c.txt"), "a/b/", "parent of a file");
+    equal(_U.path.parent("a/b/c/"),    "a/b/", "parent of a folder");
+    equal(_U.path.parent("a/b/c"),     "a/b/", "parent");
+  });
+
+  test("UTILS - path.concat", function(){
+    equal(_U.path.concat("a","/b/","c.txt"),  "a/b/c.txt");
+    equal(_U.path.concat("a/b", "c/"),        "a/b/c/");
+    equal(_U.path.concat("a/", "//b/", "/c"), "a/b/c");
+  });
+
+
 });
 </script>
 </body>

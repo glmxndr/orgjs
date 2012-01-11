@@ -196,12 +196,22 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
     
     Org.getUtils = function(org, params){
     
+    #+END_SRC
+** Testing for presence of Node =fs= module
+    #+BEGIN_SRC js
       var _require = function(){return null;};
       if(typeof require === "function"){
         _require = require;
       }
       var fs = _require("fs");
     
+    #+END_SRC
+** Built-in object modifications
+   We try to remain as light as possible, only adding functionalities
+   that may already be present in certain versions of Javascript.
+
+*** =Object.create= implementation if not present
+    #+BEGIN_SRC js
       if (typeof Object.create !== 'function') {
         Object.create = function (o) {
           function F() {}
@@ -210,6 +220,9 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
         };
       }
     
+    #+END_SRC
+*** =Array.prototype.indexOf= implementation if not present
+    #+BEGIN_SRC js
       if (!Array.prototype.indexOf) {
         Array.prototype.indexOf = function (searchElement /*, fromIndex */ ) {
           "use strict";
@@ -243,188 +256,270 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
         };
       }
     
+    #+END_SRC
+** =Utils= object to be returned
+    #+BEGIN_SRC js
       var _R = org.Regexps;
     
       var _U = {
-        root: function(obj){
-          var result = obj;
-          while(result.parent){result = result.parent;}
-          return result;
-        },
-    
-        range: function(){
-          var from, to, step, args = arguments, result = [], i;
-          switch(args.length){
-            case 0: return result;
-            case 1: from = 0;       to = args[0]; step = to > from ? 1 : -1; break;
-            case 2: from = args[0]; to = args[1]; step = to > from ? 1 : -1; break;
-            case 3: from = args[0]; to = args[1]; step = args[2];            break;
-          }
-          if(step === 0){return result;}
-          for(i = from; step > 0 ? i < to : i > to ; i += step){
-            result.push(i);
-          }
-          return result;
-        },
-    
-        trim: function(str){
-          return str && str.length ? str.replace(/^\s*|\s*$/g, "") : "";
-        },
-    
-        unquote: function(str){
-          str = str || "";
-          var result = /^(['"])(.*)\1$/.exec(str);
-          if(result){
-            return result[2];
-          }
-          return str;
-        },
-    
-        empty: function(o){
-          // Valid only for strings and arrays
-          return (!(o && o.length));
-        },
-    
-        notEmpty: function(o){
-          // Valid only for strings and arrays
-          return !this.empty(o);
-        },
-    
-        blank: function(str){
-          // Valid only for strings and arrays
-          return !str || str == 0;
-        },
-    
-        notBlank: function(str){
-          // Valid only for strings and arrays
-          return !this.blank(str);
-        },
-    
-        repeat: function(str, times){
-          var result = [];
-          for(var i=0; i<times; i++){
-            result.push(str);
-          }
-          return result.join('');
-        },
-    
-        each: function(arr, fn){
-          var name, length = arr.length, i = 0, isObj = length === undefined;
-          if ( isObj ) {
-            for ( name in arr ) {
-              if ( fn.call( arr[ name ], arr[ name ], name ) === false ) {break;}
-            }
-          } else {
-            if(!length){return;}
-            for ( var value = arr[0];
-              i < length && fn.call( value, value, i ) !== false;
-              value = arr[++i] ) {}
-          }
-        },
-    
-        map: function(arr, fn){
-          var result = [];
-          this.each(arr, function(val, idx){
-            var mapped = fn.call(val, val, idx);
-            if (mapped !== null){result.push(mapped);}
-          });
-          return result;
-        },
-    
-        log: function(o){
-          if(console && console.log){console.log(o);}
-        },
-    
-        firstLine: function(str){
-          var match = _R.firstLine.exec(str);
-          return match ? match[0] : "";
-        },
-    
-        lines: function(str){
-          if (!str && str !== ""){return [];}
-          return str.split(_R.newline);
-        },
-    
-        indentLevel: function(str){
-          return (/^\s*/).exec(str)[0].length;
-        },
-    
-        randomStr: function(length, chars){
-          var str = "";
-          var available = chars || "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-          for( var i=0; i < length; i++ )
-              str += available.charAt(Math.floor(Math.random() * available.length));
-          return str;
-        },
-    
-        keys: function(obj){
-          var result = [];
-          this.each(obj, function(v, k){result.push(k);});
-          return result;
-        },
-    
-        joinKeys: function(str, obj){
-          return this.keys(obj).join(str);
-        },
-    
-        getAbsentToken: function(str, prefix){
-          var token, start = prefix + "_";
-          if(str.indexOf(start) === -1){return start;}
-          token = start + this.randomStr(5);
-          while(str.indexOf(token) !== -1){
-            token = start + this.randomStr(5);
-          }
-          return token;
-        },
-        
-        path: {
-          parent: function(path){
-            path = _U.trim("" + path);
-            var split = path.split(/\//);
-            if(_U.blank(split.pop())){
-              split.pop();
-            }
-            return split.join("/") + "/";
-          },
-    
-          concat: function(){
-            var idx;
-            var args = Array.prototype.slice.call(arguments);
-            var max = args.length;
-            var result = args.join("/").replace(/\/+/g, "/");
-            return result;
-          }
-        },
-    
-        get: function(location){
-          var result = null;
-          if(jQuery){
-            // If we're in the browser, org.js requires jQuery...
-            // Maybe to refactor to using XHR / ActiveX ourselves
-            jQuery.ajax({
-              async: false,
-              url: location,
-              dataType: 'text',
-              success: function(data){
-                result = data;
-              }
-            });
-          } else if(fs) {
-            // Else pretend we're in node.js...
-            result = fs.readFileSync(location);
-          }
-          return result;
-        },
-    
-        noop: function(){}
-    
-      };
-    
-      return _U;
-    
-    };
-    
     #+END_SRC
+     + =root= goes up the chain of =parent= properties, until no finding any parent.
+           #+BEGIN_SRC js
+               root: function(obj){
+                 var result = obj;
+                 while(result.parent){result = result.parent;}
+                 return result;
+               },
+           
+           #+END_SRC
+     + =range= returns an array of numbers, built depending on the arguments
+       - 1 argument : 0 to the argument, incrementing if positive, decrementing if negative
+       - 2 arguments : =arg[0]= to =arg[1]=, incrementing or decrementing,
+       - 3 arguments:  =arg[0]= to =arg[1]=, incrementing by =arg[3]=
+             #+BEGIN_SRC js
+                 range: function(){
+                   var from, to, step, args = arguments, result = [], i;
+                   switch(args.length){
+                     case 0: return result;
+                     case 1: from = 0;       to = args[0]; step = to > from ? 1 : -1; break;
+                     case 2: from = args[0]; to = args[1]; step = to > from ? 1 : -1; break;
+                     case 3: from = args[0]; to = args[1]; step = args[2];            break;
+                   }
+                   if(step === 0){return result;}
+                   for(i = from; step > 0 ? i < to : i > to ; i += step){
+                     result.push(i);
+                   }
+                   return result;
+                 },
+             
+             #+END_SRC
+      + trimming a string, always returning a string (never return null or unusable output)
+            #+BEGIN_SRC js
+                trim: function(str){
+                  return str && str.length ? str.replace(/^\s*|\s*$/g, "") : "";
+                },
+            
+            #+END_SRC
+     + if the input is inserted in quotes (='=) or double quotes (="=), remove them ; return
+       input if enclosing quotes not found.
+             #+BEGIN_SRC js
+                 unquote: function(str){
+                   str = str || "";
+                   var result = /^(['"])(.*)\1$/.exec(str);
+                   if(result){
+                     return result[2];
+                   }
+                   return str;
+                 },
+             
+             #+END_SRC
+     + tells if a given string or array is empty
+       (more exactly, tells if the length property of the argument is falsy)
+             #+BEGIN_SRC js
+                 empty: function(o){
+                   // Valid only for strings and arrays
+                   return (!(o && o.length));
+                 },
+             
+             #+END_SRC
+     + inverse of =empty=
+           #+BEGIN_SRC js
+               notEmpty: function(o){
+                 // Valid only for strings and arrays
+                 return !this.empty(o);
+               },
+           
+           #+END_SRC
+     + tells if the given string has only blank characters
+           #+BEGIN_SRC js
+               blank: function(str){
+                 // Valid only for strings and arrays
+                 return !str || str == 0;
+               },
+           
+           #+END_SRC
+     + inverse of =blank=
+           #+BEGIN_SRC js
+               notBlank: function(str){
+                 // Valid only for strings and arrays
+                 return !this.blank(str);
+               },
+           
+           #+END_SRC
+     + repeats the given string n times
+           #+BEGIN_SRC js
+               repeat: function(str, times){
+                 var result = [];
+                 for(var i=0; i<times; i++){
+                   result.push(str);
+                 }
+                 return result.join('');
+               },
+           
+           #+END_SRC
+     + applies a function for each element of the given array or object
+           #+BEGIN_SRC js
+               each: function(arr, fn){
+                 var name, length = arr.length, i = 0, isObj = length === undefined;
+                 if ( isObj ) {
+                   for ( name in arr ) {
+                     if ( fn.call( arr[ name ], arr[ name ], name ) === false ) {break;}
+                   }
+                 } else {
+                   if(!length){return;}
+                   for ( var value = arr[0];
+                     i < length && fn.call( value, value, i ) !== false;
+                     value = arr[++i] ) {}
+                 }
+               },
+           
+           #+END_SRC
+     + applies the given function for each element of the given array or
+       object, and returns the array of results
+             #+BEGIN_SRC js
+                 map: function(arr, fn){
+                   var result = [];
+                   this.each(arr, function(val, idx){
+                     var mapped = fn.call(val, val, idx);
+                     if (mapped !== null){result.push(mapped);}
+                   });
+                   return result;
+                 },
+             
+             #+END_SRC
+     + logs the given argument (relies on =console.log=, does nothing if
+       not present)
+             #+BEGIN_SRC js
+                 log: function(o){
+                   if(console && console.log){console.log(o);}
+                 },
+             
+             #+END_SRC
+     + returns the first line of the given string
+           #+BEGIN_SRC js
+               firstLine: function(str){
+                 var match = _R.firstLine.exec(str);
+                 return match ? match[0] : "";
+               },
+           
+           #+END_SRC
+     + splits the given string in lines, returns the array of lines
+       without the trailing line feed
+             #+BEGIN_SRC js
+                 lines: function(str){
+                   if (!str && str !== ""){return [];}
+                   return str.split(_R.newline);
+                 },
+             
+             #+END_SRC
+     + returns a random string of given length
+           #+BEGIN_SRC js
+               randomStr: function(length, chars){
+                 var str = "";
+                 var available = chars || "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+                 for( var i=0; i < length; i++ )
+                     str += available.charAt(Math.floor(Math.random() * available.length));
+                 return str;
+               },
+           
+           #+END_SRC
+     + returns an array of the keys of the given object
+           #+BEGIN_SRC js
+               keys: function(obj){
+                 var result = [];
+                 this.each(obj, function(v, k){result.push(k);});
+                 return result;
+               },
+           
+           #+END_SRC
+     + returns the keys of the given object joined with the given delimiter
+           #+BEGIN_SRC js
+               joinKeys: function(obj, delim){
+                 return this.keys(obj).join(delim);
+               },
+           
+           #+END_SRC
+     + returns a random token not present in the given string
+           #+BEGIN_SRC js
+               getAbsentToken: function(str, prefix){
+                 prefix = prefix || "";
+                 var token, start = prefix + "_";
+                 if(str.indexOf(start) === -1){return start;}
+                 token = start + this.randomStr(5);
+                 while(str.indexOf(token) !== -1){
+                   token = start + this.randomStr(5);
+                 }
+                 return token;
+               },
+               
+           #+END_SRC
+     + URI-style path utilities
+           #+BEGIN_SRC js
+               path: {
+           
+           #+END_SRC
+       + gets the parent of the given path
+               #+BEGIN_SRC js
+                     parent: function(path){
+                       path = _U.trim("" + path);
+                       var split = path.split(/\//);
+                       if(_U.blank(split.pop())){
+                         split.pop();
+                       }
+                       return split.join("/") + "/";
+                     },
+               
+               #+END_SRC
+       + concatenates path pieces into a valid path
+         (normalizing path separators)
+                 #+BEGIN_SRC js
+                       concat: function(){
+                         var idx;
+                         var args = Array.prototype.slice.call(arguments);
+                         var max = args.length;
+                         var result = args.join("/").replace(/\/+/g, "/");
+                         return result;
+                       }
+                     },
+                 
+                 #+END_SRC
+     + gets the content from a given location :
+       + through AJAX if jQuery is detected,
+       + through node.js filesystem if node.js is detected,
+       + returning null if nothing found
+             #+BEGIN_SRC js
+                 get: function(location){
+                   var result = null;
+                   if(jQuery){
+                     // If we're in the browser, org.js requires jQuery...
+                     // Maybe to refactor to using XHR / ActiveX ourselves
+                     jQuery.ajax({
+                       async: false,
+                       url: location,
+                       dataType: 'text',
+                       success: function(data){
+                         result = data;
+                       }
+                     });
+                   } else if(fs) {
+                     // Else pretend we're in node.js...
+                     result = fs.readFileSync(location);
+                   }
+                   return result;
+                 },
+             
+             #+END_SRC
+     + =_U.noop= is (slightly) shorter to write than =function(){}= ...
+           #+BEGIN_SRC js
+               noop: function(){}
+           
+             };
+           
+             return _U;
+           
+           };
+           
+           #+END_SRC
 
 * Markup parser
 
@@ -551,7 +646,7 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
         }
         if(this.content && this.content.length){
           var content = this.content;
-          var pipedKeys =  _U.joinKeys("|", tokens);
+          var pipedKeys =  _U.joinKeys(tokens, "|");
           if(_U.blank(pipedKeys)){return;}
           var rgx = new RegExp('^((?:.|\n)*?)(' + pipedKeys + ')((?:.|\n)*)$');
           var match, pre, token, rest;
