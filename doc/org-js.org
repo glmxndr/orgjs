@@ -65,7 +65,6 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 ** URL protocols
 
 
-
 * =Org.Regexps= : the regexp bank
 
   The parser needs a lot of regular expressions.
@@ -73,120 +72,110 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
   and accessible under the object =Org.Regexps=.
     #+BEGIN_SRC js
     
-    Org.getRegexps = function(org, params){
+    (function() {
     
-      var _R = {
-    
-        /**
-         * A new line declaration, either windows or unix-like
-         */
-        newline: /\r?\n/,
-    
-        /**
-         * Captures the first line of the string
-         */
-        firstLine: /^(.*)/,
-    
-        /**
-         * Selects anything in the given string until the next heading, or the end.
-         * Example :
-         * ----
-         * some content
-         *
-         * * next heading
-         * ----
-         * would match "some content\n\n*"
-         *
-         * Captures everything except the star of the following heading.
-         */
-        beforeNextHeading: /^([\s\S]*?)(?:\n\*|$)/,
-    
-        /**
-         * Parses a heading line, capturing :
-         * - the stars
-         * - the TODO status
-         * - the priority
-         * - the heading title
-         * - the tags, if any, separated by colons
-         */
-        headingLine: /(\**)\s*(?:([A-Z]{4})\s+)?(?:\[#([A-Z])\]\s+)?(.*?)\s*(?:\s+:([A-Za-z0-9:]+):\s*)?(?:\n|$)/,
-    
-        /**
-         * How a meta information begins ( "#+META_KEY:" )
-         */
-        metaDeclaration: /\s*#\+[A-Z0-9_]+:/,
-    
-        /**
-         * A meta information line, capturing:
-         * - the meta key,
-         * - the meta value
-         *
-         * Example:
-         * ----
-         *    #+TITLE: The title
-         * ----
-         * captures "TITLE", "The title"
-         */
-        metaLine: /(?:^|\s*)#\+([A-Z0-9_]+):\s*(.*)(\n|$)/m,
-    
-        /**
-         * The property section. Captures the content of the section.
-         */
-        propertySection: /:PROPERTIES:\s*\n([\s\S]+?)\n\s*:END:/,
-    
-        /**
-         * Property line. Captures the KEY and the value.
-         */
-        propertyLine: /^\s*:([A-Z0-9_-]+):\s*(\S[\s\S]*)\s*$/im,
-    
-        /**
-         * Clock section when several clock lines are defined.
-         */
-        clockSection: /:CLOCK:\s*\n([\s\S]+?)\n?\s*:END:/,
-    
-        /**
-         * Matches a clock line, either started only, or finished.
-         * Captures:
-         *  - start date (yyyy-MM-dd)
-         *  - start time (hh:mm)
-         *  - end date (yyyy-MM-dd)
-         *  - end time (hh:mm)
-         *  - duration (hh:mm)
-         */
-        clockLine: /CLOCK: \[(\d{4}-\d\d-\d\d) [A-Za-z]{3}\.? (\d\d:\d\d)\](?:--\[(\d{4}-\d\d-\d\d) [A-Za-z]{3}\.? (\d\d:\d\d)\] =>\s*(-?\d+:\d\d))?/g,
-    
-        scheduled: /SCHEDULED: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>/,
-    
-        deadline: /DEADLINE: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>/,
-    
-        lineTypes: {
-            letter:  /^\s*[a-z]/i,
-            ignored: /^#(?:[^+]|$)/,
-            litem:   /^\s+[+*-] /,
-            dlitem:  / ::/,
-            olitem:  /^\s*\d+[.)] /,
-            fndef:   /^\s*\[(\d+|fn:.+?)\]/,
-    
-            _bBlk: {},
-            beginBlock: function(type){
-              return this._bBlk[type] ||
-                (this._bBlk[type] = new RegExp("^\\s*#\\+BEGIN_" + type + "\\s", "i"));
-            },
-    
-            _eBlk: {},
-            endBlock: function(type){
-              return this._eBlk[type] ||
-                (this._eBlk[type] = new RegExp("^\\s*#\\+END_" + type + "(\\s|$)", "i"));
-            }
-        }
-    
-      };
-    
-      return _R;
-    
-    };
-    
+      Org.getRegexps = function(org, params) {
+        var _R;
+        _R = {
     #+END_SRC
+ + A new line declaration, either windows or unix-like
+         #+BEGIN_SRC js
+               newline: /\r?\n/,
+         #+END_SRC
+ + Captures the first line of the string
+         #+BEGIN_SRC js
+               firstLine: /^(.*)/,
+         #+END_SRC
+ + Selects anything in the given string until the next heading, or the end.
+   Example :
+   #+BEGIN_EXAMPLE
+   some content
+   * next heading
+   #+END_EXAMPLE
+   would match "some content\n\n*"
+          Captures everything except the star of the following heading.
+                  #+BEGIN_SRC js
+                        beforeNextHeading: /^([\s\S]*?)(?:\n\*|$)/,
+                  #+END_SRC
+ + Parses a heading line, capturing :
+   - the stars
+   - the TODO status
+   - the priority
+   - the heading title
+   - the tags, if any, separated by colons
+           #+BEGIN_SRC js
+                 headingLine: /(\**)\s*(?:([A-Z]{4})\s+)?(?:\[\#([A-Z])\]\s+)?(.*?)\s*(?:\s+:([A-Za-z0-9:]+):\s*)?(?:\n|$)/,
+           #+END_SRC
+ + How a meta information begins ( =#\+META_KEY:= )
+         #+BEGIN_SRC js
+               metaDeclaration: /\s*#\+[A-Z0-9_]+:/,
+         #+END_SRC
+ + A meta information line, capturing:
+   - the meta key,
+   - the meta value
+   Example:
+   #+BEGIN_EXAMPLE
+      #+TITLE: The title
+   #+END_EXAMPLE
+   captures: "TITLE", "The title"
+           #+BEGIN_SRC js
+                 metaLine: /(?:^|\s*)#\+([A-Z0-9_]+):\s*(.*)(\n|$)/m,
+           #+END_SRC
+ + The property section. Captures the content of the section.
+         #+BEGIN_SRC js
+               propertySection: /:PROPERTIES:\s*\n([\s\S]+?)\n\s*:END:/,
+         #+END_SRC
+ + Property line. Captures the KEY and the value.
+         #+BEGIN_SRC js
+               propertyLine: /^\s*:([A-Z0-9_-]+):\s*(\S[\s\S]*)\s*$/i,
+         #+END_SRC
+ + Clock section when several clock lines are defined.
+         #+BEGIN_SRC js
+               clockSection: /:CLOCK:\s*\n([\s\S]+?)\n?\s*:END:/,
+         #+END_SRC
+ + Matches a clock line, either started only, or finished.
+   Captures:
+    - start date (yyyy-MM-dd)
+    - start time (hh:mm)
+    - end date (yyyy-MM-dd)
+    - end time (hh:mm)
+    - duration (hh:mm)
+            #+BEGIN_SRC js
+                  clockLine: /CLOCK: \[(\d{4}-\d\d-\d\d) [A-Za-z]{3}\.? (\d\d:\d\d)\](?:--\[(\d{4}-\d\d-\d\d) [A-Za-z]{3}\.? (\d\d:\d\d)\] =>\s*(-?\d+:\d\d))?/g,
+            #+END_SRC
+ +
+         #+BEGIN_SRC js
+               scheduled: /SCHEDULED: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>/,
+         #+END_SRC
+ +
+         #+BEGIN_SRC js
+               deadline: /DEADLINE: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>/,
+         #+END_SRC
+ +
+         #+BEGIN_SRC js
+               lineTypes: {
+                 letter: /^\s*[a-z]/i,
+                 ignored: /^#(?:[^+]|$)/,
+                 litem: /^\s+[+*-]\ /,
+                 dlitem: RegExp(" ::"),
+                 olitem: /^\s*\d+[.)] /,
+                 fndef: /^\s*\[(\d+|fn:.+?)\]/,
+                 _bBlk: {},
+                 beginBlock: function(type) {
+                   return this._bBlk[type] || (this._bBlk[type] = new RegExp("^\\s*#\\+BEGIN_" + type + "\\s", "i"));
+                 },
+                 _eBlk: {},
+                 endBlock: function(type) {
+                   return this._eBlk[type] || (this._eBlk[type] = new RegExp("^\\s*#\\+END_" + type + "(\\s|$)", "i"));
+                 }
+               }
+             };
+             return _R;
+           };
+         
+         }).call(this);
+         
+         #+END_SRC
 
 * =Org.Utils= : useful functions
 

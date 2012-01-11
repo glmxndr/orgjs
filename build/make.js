@@ -1,12 +1,14 @@
 #! /usr/bin/env node
 
 var fs  = require('fs'),
-    util = require('util');
+    path = require('path'),
+    spawn = require('child_process').spawn,
+    exec = require('child_process').exec;
 
 var srcFiles = [
   './src/org.main.js',
   './src/org.config.js',
-  './src/org.regexps.js',
+  './src/org.regexps.coffee',
   './src/org.utils.js',
   './src/org.markup.js',
   './src/org.content.js',
@@ -29,7 +31,7 @@ var release = function(type){
 
 var noop = function(){};
 function date(){return new Date().toTimeString();}
-function log(str){util.puts(date() + ' # ' + str);}
+function log(str){console.log(date() + ' # ' + str);}
 
 
 var watchFiles = true;
@@ -66,8 +68,20 @@ function buildSrc(){
 
   function readFile(){
     var file = files.shift();
+    var child;
     if(file){
-      fs.readFile(file, concat);
+      if(file.match(/\.coffee$/)){
+        var filepath = path.join(path.dirname(fs.realpathSync(__filename)), '.' + file);
+        var command = 'coffee -c "' + filepath + '"';
+        log(command);
+        exec(command, function(err, stdout, stderr){
+          log("Compiled, status " + err);
+          file = file.replace(/\.coffee$/, ".js");
+          fs.readFile(file, concat);
+        });
+      } else {
+        fs.readFile(file, concat);
+      }
     } else {
       writeFile();
       return;
@@ -103,7 +117,18 @@ function buildDoc(){
   function readFile(){
     var file = files.shift();
     if(file){
-      fs.readFile(file, concat);
+      if(file.match(/\.coffee$/)){
+        var filepath = path.join(path.dirname(fs.realpathSync(__filename)), '.' + file);
+        var command = 'coffee -c "' + filepath + '"';
+        log(command);
+        exec(command, function(err, stdout, stderr){
+          log("Compiled, status " + err);
+          file = file.replace(/\.coffee$/, ".js");
+          fs.readFile(file, concat);
+        });
+      } else {
+        fs.readFile(file, concat);
+      }
     } else {
       writeFile();
       return;
