@@ -12,9 +12,11 @@ Org.getOutline = function(org, params){
   var OC = org.Content;
   var _U = org.Utils;
 
-  /////////////////////////////////////////////////////////////////////////////
-  // NODE : corresponds to a line starting with stars "*** ..."
-
+  /*orgdoc
+  ** =Node=
+     Objects representing the headlines and their associated content
+     (including sub-nodes)
+  */
   var Node = function(whole, params){
     params          = params || {};
     
@@ -35,24 +37,35 @@ Org.getOutline = function(org, params){
 
   };
 
-  /**
-   * Counting the documents generated in this page.
-   * Helps to generate an ID for the nodes
-   * when no docid is given in the root node.
-   */
+  /*orgdoc
+  *** =Node.tocnum=
+     Counting the documents generated in this page.
+     Helps to generate an ID for the nodes
+     when no docid is given in the root node.
+  */
   Node.tocnum = 0;
 
+  /*orgdoc
+  *** =Node.prototype=
+  */
   Node.prototype = {
+    /*orgdoc
+         + =parseContent()=
+    */
     parseContent: function(){
       var lines = _U.lines(this.content);
       this.contentNode = OC.parse(this, lines);
     },
-
+    /*orgdoc
+         + =siblings()=
+    */
     siblings: function(){
       return this.parent ? this.parent.children : [];
     },
 
-    // Computes the ID of this node
+    /*orgdoc
+         + =id()=
+    */
     id: function(){
       if (!this.parent){
         return this.docid || "doc#" + (Node.tocnum++) + "/";
@@ -60,6 +73,9 @@ Org.getOutline = function(org, params){
       return this.parent.id() + "" + this.siblings().indexOf(this) + "/";
     },
 
+    /*orgdoc
+         + =addFootnoteDef=
+    */
     addFootnoteDef: function(inline, name){
       if(this.fnByName === void(0)){
         this.fnByName    = {};
@@ -80,11 +96,11 @@ Org.getOutline = function(org, params){
     }
   };
 
-  /////////////////////////////////////////////////////////////////////////////
-  // PARSING
 
-  /**
-   * Headline embeds the parsing of a heading line.
+  /*orgdoc
+  ** Parsing nodes
+  *** =Headline= 
+      Headline embeds the parsing of a heading line (without the subcontent).
    */
   var Headline = function(txt){
     this.nodeType = "Headline";
@@ -111,16 +127,17 @@ Org.getOutline = function(org, params){
     }
   };
 
-  /**
-   * Parsing a whole section
+  /*orgdoc
+  ** =NodeParser=
+     Parsing a whole section
    */
   var NodeParser = function(txt){
     this.content = txt;
   };
 
   NodeParser.prototype = {
-    /**
-     * Returns the heading object for this node
+    /*orgdoc
+       + Returns the heading object for this node
      */
     getHeading: function(){
       if(this.heading){return this.heading;}
@@ -129,8 +146,8 @@ Org.getOutline = function(org, params){
       return this.heading;
     },
 
-    /**
-     * Returns the map of headers (defined by "#+META: ..." line definitions)
+    /*orgdoc
+       + Returns the map of headers (defined by "#+META: ..." line definitions)
      */
     getMeta: function(){
       if(this.meta){return this.meta;}
@@ -141,8 +158,8 @@ Org.getOutline = function(org, params){
       return this.meta;
     },
 
-    /**
-     * Returns the properties as defined in the :PROPERTIES: field
+    /*orgdoc
+       + Returns the properties as defined in the :PROPERTIES: field
      */
     getProperties: function(){
       if(this.props){return this.props;}
@@ -164,8 +181,8 @@ Org.getOutline = function(org, params){
       return this.props;
     },
 
-    /**
-     * Returns the whole content without the heading nor the subitems
+    /*orgdoc
+       + Returns the whole content without the heading nor the subitems
      */
     getItem: function(){
       if(this.item){return this.item;}
@@ -178,8 +195,8 @@ Org.getOutline = function(org, params){
       return content;
     },
 
-    /**
-     * Returns the content only : no heading, no properties, no subitems, no clock, etc.
+    /*orgdoc
+       + Returns the content only : no heading, no properties, no subitems, no clock, etc.
      */
     getContent: function(){
       if(this.text){return this.text;}
@@ -194,8 +211,8 @@ Org.getOutline = function(org, params){
       return content;
     },
 
-    /**
-     * Extracts all the ""#+HEADER: Content" lines
+    /*orgdoc
+       + Extracts all the ""#+HEADER: Content" lines
      * at the beginning of the given text, and returns a map
      * of HEADER => Content
      */
@@ -218,8 +235,8 @@ Org.getOutline = function(org, params){
       return result;
     },
 
-    /**
-     * Returns the given text without the "#+HEADER: Content" lines at the beginning
+    /*orgdoc
+       + Returns the given text without the "#+HEADER: Content" lines at the beginning
      */
     removeHeaders: function(txt){
       var result = "";
@@ -235,7 +252,9 @@ Org.getOutline = function(org, params){
     }
   };
 
-
+  /*orgdoc
+  ** The returned object
+  */
   var Outline = {
     Node:       Node,
     Headline:   Headline,

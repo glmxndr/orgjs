@@ -37,7 +37,10 @@ Org.getConfig = function(org, params){
 
   var _C = {};
 
-  _C.urlProtocols = [
+  /*orgdoc
+  ** URL protocols
+  */
+  _C.urlProtocols = params.urlProtocols || [
     "http",
     "https",
     "ftp",
@@ -48,11 +51,16 @@ Org.getConfig = function(org, params){
     "elisp"
   ];
 
-/*orgdoc
+  _C.todoMarkers = params.todoMarkers || [
+    "TODO",
+    "DONE"
+  ];
 
-** Tab width
-    Specifies how much single spaces for each tabulation character. 4 by default.
-*/
+  /*orgdoc
+
+  ** Tab width
+      Specifies how much single spaces for each tabulation character. 4 by default.
+  */
   _C.tabWidth = params.tabWidth || 4;
 
 
@@ -61,8 +69,6 @@ Org.getConfig = function(org, params){
 };
 
 /*orgdoc
-** Tab width
-** URL protocols
 * =Org.Regexps= : the regexp bank
 
   The parser needs a lot of regular expressions.
@@ -73,7 +79,8 @@ Org.getConfig = function(org, params){
 (function() {
 
   Org.getRegexps = function(org, params) {
-    var _R;
+    var _C, _R;
+    _C = org.Config;
     _R = {
       /*orgdoc
        + A new line declaration, either windows or unix-like
@@ -102,7 +109,16 @@ Org.getConfig = function(org, params){
          - the heading title
          - the tags, if any, separated by colons
       */
-      headingLine: /(\**)\s*(?:([A-Z]{4})\s+)?(?:\[\#([A-Z])\]\s+)?(.*?)\s*(?:\s+:([A-Za-z0-9:]+):\s*)?(?:\n|$)/,
+      headingLine: (function() {
+        var str;
+        str = "(\\**)\\s*";
+        str += "(?:(" + _C.todoMarkers.join('|') + ")\\s+)?";
+        str += "(?:\\[\\#([A-Z])\\]\\s+)?";
+        str += "(.*?)\\s*";
+        str += "(?:\\s+:([A-Za-z0-9:]+):\\s*)?";
+        str += "(?:\n|$)";
+        return RegExp(str);
+      })(),
       /*orgdoc
        + How a meta information begins ( =#\+META_KEY:= )
       */
@@ -141,15 +157,15 @@ Org.getConfig = function(org, params){
       */
       clockLine: /CLOCK: \[(\d{4}-\d\d-\d\d) [A-Za-z]{3}\.? (\d\d:\d\d)\](?:--\[(\d{4}-\d\d-\d\d) [A-Za-z]{3}\.? (\d\d:\d\d)\] =>\s*(-?\d+:\d\d))?/g,
       /*orgdoc
-       +
+        + Scheduled
       */
       scheduled: /SCHEDULED: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>/,
       /*orgdoc
-       +
+        + Deadline
       */
       deadline: /DEADLINE: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>/,
       /*orgdoc
-       +
+        + The different kinds of lines encountered when parsing the content
       */
       lineTypes: {
         letter: /^\s*[a-z]/i,
@@ -160,7 +176,7 @@ Org.getConfig = function(org, params){
         fndef: /^\s*\[(\d+|fn:.+?)\]/,
         _bBlk: {},
         beginBlock: function(type) {
-          return this._bBlk[type] || (this._bBlk[type] = new RegExp("^\\s*#\\+BEGIN_" + type + "\\s", "i"));
+          return this._bBlk[type] || (this._bBlk[type] = new RegExp("^\\s*#\\+BEGIN_" + type + "(\\s|$)", "i"));
         },
         _eBlk: {},
         endBlock: function(type) {
@@ -515,9 +531,10 @@ Org.getMarkup = function(org, params){
 
   var Markup = {};
 
-///////////////////////////////////////////////////////////////////////////////
-// LINKS
-
+  /*orgdoc
+  ** Link management
+  *** Link type definitions
+  */
   var LinkDefs = (function(){
     var l = 0;
     return {
@@ -541,6 +558,9 @@ Org.getMarkup = function(org, params){
     }
   }
 
+  /*orgdoc
+  *** =Link= object
+  */
   var Link = function(parent, raw, url, desc, token){
     this.nodeType = "Link";
     this.raw = raw;
@@ -552,6 +572,11 @@ Org.getMarkup = function(org, params){
   };
   Markup.Link = Link;
 
+  /*orgdoc
+  ** Footnote references
+     Footnotes have definitions as blocks in the =Content= section. This section deals
+     only with footnote references from within the markup.
+  */
   var FootNoteRef = function(parent, raw, name, token){
     this.nodeType = "FootNoteRef";
     this.raw = raw;
@@ -561,37 +586,42 @@ Org.getMarkup = function(org, params){
   };
   Markup.FootNoteRef = FootNoteRef;
 
-///////////////////////////////////////////////////////////////////////////////
-// TYPO
+  /*orgdoc
+  ** Typographic markup
+  *** =EmphMarkers= : emphasis marker abstract object
+  */
 
-//   + Allowed pre:      " \t('\"{"
-//   + Allowed post:     "- \t.,:!?;'\")}\\"
-//   + Forbidden border: " \t\r\n,\"'"
-//   + Allowed body:     "."
-// (defcustom org-emphasis-regexp-components
-//   '(" \t('\"{" "- \t.,:!?;'\")}\\" " \t\r\n,\"'" "." 1)
-//   "Components used to build the regular expression for emphasis.
-// This is a list with five entries.  Terminology:  In an emphasis string
-// like \" *strong word* \", we call the initial space PREMATCH, the final
-// space POSTMATCH, the stars MARKERS, \"s\" and \"d\" are BORDER characters
-// and \"trong wor\" is the body.  The different components in this variable
-// specify what is allowed/forbidden in each part:
-// pre          Chars allowed as prematch.  Beginning of line will be allowed too.
-// post         Chars allowed as postmatch.  End of line will be allowed too.
-// border       The chars *forbidden* as border characters.
-// body-regexp  A regexp like \".\" to match a body character.  Don't use
-//              non-shy groups here, and don't allow newline here.
-// newline      The maximum number of newlines allowed in an emphasis exp.
-// Use customize to modify this, or restart Emacs after changing it."
-//   :group 'org-appearance
-//   :set 'org-set-emph-re
-//   :type '(list
-//     (sexp    :tag "Allowed chars in pre      ")
-//     (sexp    :tag "Allowed chars in post     ")
-//     (sexp    :tag "Forbidden chars in border ")
-//     (sexp    :tag "Regexp for body           ")
-//     (integer :tag "number of newlines allowed")
-//     (option (boolean :tag "Please ignore this button"))))
+  ///////////////////////////////////////////////////////////////////////////////
+  // TYPO
+
+  //   + Allowed pre:      " \t('\"{"
+  //   + Allowed post:     "- \t.,:!?;'\")}\\"
+  //   + Forbidden border: " \t\r\n,\"'"
+  //   + Allowed body:     "."
+  // (defcustom org-emphasis-regexp-components
+  //   '(" \t('\"{" "- \t.,:!?;'\")}\\" " \t\r\n,\"'" "." 1)
+  //   "Components used to build the regular expression for emphasis.
+  // This is a list with five entries.  Terminology:  In an emphasis string
+  // like \" *strong word* \", we call the initial space PREMATCH, the final
+  // space POSTMATCH, the stars MARKERS, \"s\" and \"d\" are BORDER characters
+  // and \"trong wor\" is the body.  The different components in this variable
+  // specify what is allowed/forbidden in each part:
+  // pre          Chars allowed as prematch.  Beginning of line will be allowed too.
+  // post         Chars allowed as postmatch.  End of line will be allowed too.
+  // border       The chars *forbidden* as border characters.
+  // body-regexp  A regexp like \".\" to match a body character.  Don't use
+  //              non-shy groups here, and don't allow newline here.
+  // newline      The maximum number of newlines allowed in an emphasis exp.
+  // Use customize to modify this, or restart Emacs after changing it."
+  //   :group 'org-appearance
+  //   :set 'org-set-emph-re
+  //   :type '(list
+  //     (sexp    :tag "Allowed chars in pre      ")
+  //     (sexp    :tag "Allowed chars in post     ")
+  //     (sexp    :tag "Forbidden chars in border ")
+  //     (sexp    :tag "Regexp for body           ")
+  //     (integer :tag "number of newlines allowed")
+  //     (option (boolean :tag "Please ignore this button"))))
 
   var EmphMarkers = {};
   _U.each("/*~=+_".split(""), function(t){EmphMarkers[t] = {};});
@@ -607,6 +637,17 @@ Org.getMarkup = function(org, params){
   };
   Markup.EmphMarkers = EmphMarkers;
 
+
+  /*orgdoc
+  ** Inline nodes containing either inline nodes or raw textual content
+  *** =makeInline=            :function:
+       + Purpose :: Creates an inline node object
+       + Arguments ::
+         + =constr= :: constructor for the object to build ;
+                       should build an object with a =consume()= property
+         + =parent= :: parent of the node to build ; ust have an =adopt= method
+         + =food= :: textual content the new inline node has to parse as subnodes
+  */
   function makeInline(constr, parent, food){
     var inline = new constr(parent);
     parent.adopt(inline);
@@ -614,6 +655,9 @@ Org.getMarkup = function(org, params){
     return inline;
   }
 
+  /*orgdoc
+  *** =EmphInline= : abstract high-level inline node
+  */
   var EmphInline = function(parent){
     this.nodeType = "EmphInline";
     this.parent = parent;
@@ -672,6 +716,12 @@ Org.getMarkup = function(org, params){
   };
   Markup.EmphInline = EmphInline;
 
+  /*orgdoc
+  *** End-point node types
+      Basic inline types containing raw text content.
+      Can not contain anything else than text content.
+  **** =EmphRaw= : basic text
+  */
   var EmphRaw = function(parent){
     EmphInline.call(this, parent);
     this.nodeType = "EmphRaw";
@@ -683,7 +733,34 @@ Org.getMarkup = function(org, params){
   };
   Markup.EmphRaw = EmphRaw;
 
+  /*orgdoc
+  **** =EmphCode= : code example
+  */
+  var EmphCode = function(parent){
+    EmphRaw.call(this, parent);
+    this.nodeType = "EmphCode";
+  };
+  EmphCode.prototype = Object.create(EmphRaw.prototype);
+  EmphMarkers["="].constr = EmphCode;
+  Markup.EmphCode = EmphCode;
 
+  /*orgdoc
+  **** =EmphVerbatim= : unedited content
+  */
+  var EmphVerbatim = function(parent){
+    EmphRaw.call(this, parent);
+    this.nodeType = "EmphVerbatim";
+  };
+  EmphVerbatim.prototype = Object.create(EmphRaw.prototype);
+  EmphMarkers["~"].constr = EmphVerbatim;
+  Markup.EmphVerbatim = EmphVerbatim;
+
+  /*orgdoc
+  *** Recursing nodes
+      These nodes contain other sub nodes (either =EmphRaw=,
+      other =EmphInline= subtypes, =Link=s, etc.).
+  **** =EmphItalic= : recursing node
+  */
   var EmphItalic = function(parent){
     EmphInline.call(this, parent);
     this.nodeType = "EmphItalic";
@@ -693,7 +770,9 @@ Org.getMarkup = function(org, params){
   EmphMarkers["/"].constr = EmphItalic;
   Markup.EmphItalic = EmphItalic;
 
-
+  /*orgdoc
+  **** =EmphBold= : recursing node
+  */
   var EmphBold = function(parent){
     EmphInline.call(this, parent);
     this.nodeType = "EmphBold";
@@ -703,7 +782,9 @@ Org.getMarkup = function(org, params){
   EmphMarkers["*"].constr = EmphBold;
   Markup.EmphBold = EmphBold;
 
-
+  /*orgdoc
+  **** =EmphUnderline= : recursing node
+  */
   var EmphUnderline = function(parent){
     EmphInline.call(this, parent);
     this.nodeType = "EmphUnderline";
@@ -713,7 +794,9 @@ Org.getMarkup = function(org, params){
   EmphMarkers["_"].constr = EmphUnderline;
   Markup.EmphUnderline = EmphUnderline;
 
-
+  /*orgdoc
+  **** =EmphStrike= : recursing node
+  */
   var EmphStrike = function(parent){
     EmphInline.call(this, parent);
     this.nodeType = "EmphStrike";
@@ -722,24 +805,6 @@ Org.getMarkup = function(org, params){
   EmphStrike.prototype = Object.create(EmphInline.prototype);
   EmphMarkers["+"].constr = EmphStrike;
   Markup.EmphStrike = EmphStrike;
-
-
-  var EmphCode = function(parent){
-    EmphRaw.call(this, parent);
-    this.nodeType = "EmphCode";
-  };
-  EmphCode.prototype = Object.create(EmphRaw.prototype);
-  EmphMarkers["="].constr = EmphCode;
-  Markup.EmphCode = EmphCode;
-
-
-  var EmphVerbatim = function(parent){
-    EmphRaw.call(this, parent);
-    this.nodeType = "EmphVerbatim";
-  };
-  EmphVerbatim.prototype = Object.create(EmphRaw.prototype);
-  EmphMarkers["~"].constr = EmphVerbatim;
-  Markup.EmphVerbatim = EmphVerbatim;
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -969,15 +1034,15 @@ Org.getContent = function(org, params){
     return new constr(parent, line);
   }
 
-/*orgdoc
-*** Container block
-    This kind of block is abstract: many other blocks inherit from it, and it will not be used as is.
+  /*orgdoc
+  *** Container block
+      This kind of block is abstract: many other blocks inherit from it, and it will not be used as is.
 
-    It provides functionality for blocks which contain other sub-blocks.
+      It provides functionality for blocks which contain other sub-blocks.
 
-    It contains an array of =children=, containing the children blocks.
+      It contains an array of =children=, containing the children blocks.
 
-*/
+  */
   var ContainerBlock = function(parent){
     this.parent = parent;
     this.nodeType = "ContainerBlock";
@@ -986,12 +1051,11 @@ Org.getContent = function(org, params){
   };
   ContainerBlock.prototype.finalize = function(){};
 
-/*orgdoc
-
-*** Root block
-    This block represents the root content under a headline of the document.
-    It is the highest container directly under the headline node.
-*/
+  /*orgdoc
+  *** Root block
+      This block represents the root content under a headline of the document.
+      It is the highest container directly under the headline node.
+  */
   var RootBlock = function(parent){
     ContainerBlock.call(this, parent);
     this.nodeType = "RootBlock";
@@ -1006,8 +1070,9 @@ Org.getContent = function(org, params){
     return block.consume(line);
   };
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  CONTENTBLOCK
+  /*orgdoc
+  *** Generic content block
+  */
   var ContentBlock = function(parent){
     this.parent = parent;
     this.nodeType = "ContentBlock";
@@ -1016,8 +1081,9 @@ Org.getContent = function(org, params){
   };
   ContentBlock.prototype.finalize = function(){};
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  CONTENTMARKUPBLOCK
+  /*orgdoc
+  *** Generic content with markup block
+  */
   var ContentMarkupBlock = function(parent){
     ContentBlock.call(this, parent);
     this.nodeType = "ContentMarkupBlock";
@@ -1030,8 +1096,9 @@ Org.getContent = function(org, params){
     this.children.push(inline);
   };
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  PARABLOCK
+  /*orgdoc
+  *** Paragraph block
+  */
   var ParaBlock = function(parent){
     ContentMarkupBlock.call(this, parent);
     this.nodeType = "ParaBlock";
@@ -1066,8 +1133,9 @@ Org.getContent = function(org, params){
   };
 
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  FNDEFBLOCK
+  /*orgdoc
+  *** Footnote definition block
+  */
   var FndefBlock = function(parent){
     ContentMarkupBlock.call(this, parent);
     this.nodeType = "FndefBlock";
@@ -1112,8 +1180,9 @@ Org.getContent = function(org, params){
     root.addFootnoteDef(inline, this.name);
   };
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  BEGINENDBLOCK
+  /*orgdoc
+  *** Generic Begin/End block
+  */
   var BeginEndBlock = function(parent, line, type){
     ContentBlock.call(this, parent);
     this.nodeType = "BeginEndBlock";
@@ -1141,8 +1210,9 @@ Org.getContent = function(org, params){
     return this;
   };
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  VERSEBLOCK
+  /*orgdoc
+  *** Verse block
+  */
   var VerseBlock = function(parent, line){
     ContentMarkupBlock.call(this, parent);
     BeginEndBlock.call(this, parent, line, "VERSE");
@@ -1152,8 +1222,9 @@ Org.getContent = function(org, params){
   VerseBlock.prototype = Object.create(BeginEndBlock.prototype);
   VerseBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  QUOTEBLOCK
+  /*orgdoc
+  *** Quote block
+  */
   var QuoteBlock = function(parent, line){
     ContentMarkupBlock.call(this, parent);
     BeginEndBlock.call(this, parent, line, "QUOTE");
@@ -1163,8 +1234,9 @@ Org.getContent = function(org, params){
   QuoteBlock.prototype = Object.create(BeginEndBlock.prototype);
   QuoteBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  CENTERBLOCK
+  /*orgdoc
+  *** Centered-text block
+  */
   var CenterBlock = function(parent, line){
     ContentMarkupBlock.call(this, parent);
     BeginEndBlock.call(this, parent, line, "CENTER");
@@ -1174,8 +1246,9 @@ Org.getContent = function(org, params){
   CenterBlock.prototype = Object.create(BeginEndBlock.prototype);
   CenterBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  EXAMPLEBLOCK
+  /*orgdoc
+  *** Example block
+  */
   var ExampleBlock = function(parent, line){
     BeginEndBlock.call(this, parent, line, "EXAMPLE");
     this.nodeType = "ExampleBlock";
@@ -1184,20 +1257,22 @@ Org.getContent = function(org, params){
   LineDef.EXAMPLE.constr = Content.ExampleBlock = ExampleBlock;
   ExampleBlock.prototype = Object.create(BeginEndBlock.prototype);
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  SRCBLOCK
+  /*orgdoc
+  *** Source code block
+  */
   var SrcBlock = function(parent, line){
     BeginEndBlock.call(this, parent, line, "SRC");
     this.nodeType = "SrcBlock";
     this.verbatim = true;
-    var match = /BEGIN_SRC\s+([a-z-]+)(?:\s*|$)/i.exec(line);
+    var match = /BEGIN_SRC\s+([a-z\-]+)(?:\s*|$)/i.exec(line);
     this.language = match ? match[1] : null;
   };
   LineDef.SRC.constr = Content.SrcBlock = SrcBlock;
   SrcBlock.prototype = Object.create(BeginEndBlock.prototype);
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  HTMLBLOCK
+  /*orgdoc
+  *** HTML block
+  */
   var HtmlBlock = function(parent, line){
     BeginEndBlock.call(this, parent, line, "HTML");
     this.nodeType = "HtmlBlock";
@@ -1206,8 +1281,9 @@ Org.getContent = function(org, params){
   LineDef.HTML.constr = Content.HtmlBlock = HtmlBlock;
   HtmlBlock.prototype = Object.create(BeginEndBlock.prototype);
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  COMMENTBLOCK
+  /*orgdoc
+  *** Comment block
+  */
   var CommentBlock = function(parent, line){
     BeginEndBlock.call(this, parent, line, "COMMENT");
     this.nodeType = "CommentBlock";
@@ -1216,74 +1292,9 @@ Org.getContent = function(org, params){
   LineDef.COMMENT.constr = Content.CommentBlock = CommentBlock;
   CommentBlock.prototype = Object.create(BeginEndBlock.prototype);
 
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  ULISTBLOCK
-  var UlistBlock = function(parent, line){
-    ContainerBlock.call(this, parent);
-    this.nodeType = "UlistBlock";
-    this.indent = getLineIndent(line);
-  };
-  LineDef.ULITEM.constr = Content.UlistBlock = UlistBlock;
-  UlistBlock.prototype = Object.create(ContainerBlock.prototype);
-
-  UlistBlock.prototype.accept  = function(line){
-    return getLineType(line) === LineType.ULITEM &&
-      getLineIndent(line) === this.indent;
-  };
-
-  UlistBlock.prototype.consume = function(line){
-    var item = new UlistItemBlock(this, line);
-    this.children.push(item);
-    return item.consume(line);
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  OLISTBLOCK
-  var OlistBlock = function(parent, line){
-    ContainerBlock.call(this, parent);
-    this.nodeType = "OlistBlock";
-    this.indent = getLineIndent(line);
-    var match = /^\s*\d+[.)]\s+\[@(\d+)\]/.exec(line);
-    this.start = match ? +(match[1]) : 1;
-  };
-  LineDef.OLITEM.constr = Content.OlistBlock = OlistBlock;
-  OlistBlock.prototype = Object.create(ContainerBlock.prototype);
-
-  OlistBlock.prototype.accept  = function(line){
-    return getLineType(line) === LineType.OLITEM &&
-      getLineIndent(line) === this.indent;
-  };
-
-  OlistBlock.prototype.consume = function(line){
-    var item = new OlistItemBlock(this, line);
-    this.children.push(item);
-    return item.consume(line);
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  DLISTBLOCK
-  var DlistBlock = function(parent, line){
-    ContainerBlock.call(this, parent);
-    this.nodeType = "DlistBlock";
-    this.indent = getLineIndent(line);
-  };
-  LineDef.DLITEM.constr = Content.DlistBlock = DlistBlock;
-  DlistBlock.prototype = Object.create(ContainerBlock.prototype);
-
-  DlistBlock.prototype.accept  = function(line){
-    return getLineType(line) === LineType.DLITEM &&
-      getLineIndent(line) === this.indent;
-  };
-
-  DlistBlock.prototype.consume = function(line){
-    var item = new DlistItemBlock(this, line);
-    this.children.push(item);
-    return item.consume(line);
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  LISTITEMBLOCK
+  /*orgdoc
+  *** Generic List Item block
+  */
   var ListItemBlock = function(parent, line){
     ContainerBlock.call(this, parent);
     this.nodeType = "ListItemBlock";
@@ -1306,8 +1317,31 @@ Org.getContent = function(org, params){
     return block.consume(line);
   };
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  ULISTITEMBLOCK
+  /*orgdoc
+  *** Unordered List block
+  */
+  var UlistBlock = function(parent, line){
+    ContainerBlock.call(this, parent);
+    this.nodeType = "UlistBlock";
+    this.indent = getLineIndent(line);
+  };
+  LineDef.ULITEM.constr = Content.UlistBlock = UlistBlock;
+  UlistBlock.prototype = Object.create(ContainerBlock.prototype);
+
+  UlistBlock.prototype.accept  = function(line){
+    return getLineType(line) === LineType.ULITEM &&
+      getLineIndent(line) === this.indent;
+  };
+
+  UlistBlock.prototype.consume = function(line){
+    var item = new UlistItemBlock(this, line);
+    this.children.push(item);
+    return item.consume(line);
+  };
+
+  /*orgdoc
+  *** Unoredered List Item block
+  */
   var UlistItemBlock = function(parent, line){
     ListItemBlock.call(this, parent, line);
     this.nodeType = "UlistItemBlock";
@@ -1316,12 +1350,36 @@ Org.getContent = function(org, params){
 
   UlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
   UlistItemBlock.prototype.preprocess = function(line){
-    return line.replace(/^(\s*)[+*-] /, "$1  ");
+    return line.replace(/^(\s*)[+*\-] /, "$1  ");
   };
 
+  /*orgdoc
+  *** Ordered List block
+  */
+  var OlistBlock = function(parent, line){
+    ContainerBlock.call(this, parent);
+    this.nodeType = "OlistBlock";
+    this.indent = getLineIndent(line);
+    var match = /^\s*\d+[.)]\s+\[@(\d+)\]/.exec(line);
+    this.start = match ? +(match[1]) : 1;
+  };
+  LineDef.OLITEM.constr = Content.OlistBlock = OlistBlock;
+  OlistBlock.prototype = Object.create(ContainerBlock.prototype);
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  OLISTITEMBLOCK
+  OlistBlock.prototype.accept  = function(line){
+    return getLineType(line) === LineType.OLITEM &&
+      getLineIndent(line) === this.indent;
+  };
+
+  OlistBlock.prototype.consume = function(line){
+    var item = new OlistItemBlock(this, line);
+    this.children.push(item);
+    return item.consume(line);
+  };
+
+  /*orgdoc
+  *** Ordered list item block
+  */
   var OlistItemBlock = function(parent, line){
     ListItemBlock.call(this, parent, line);
     this.nodeType = "OlistItemBlock";
@@ -1335,23 +1393,47 @@ Org.getContent = function(org, params){
     return line.replace(/^(\s+)\d+[.)](?:\s+\[@\d+\])? /, "$1  ");
   };
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  DLISTITEMBLOCK
+  /*orgdoc
+  *** Definition List block
+  */
+  var DlistBlock = function(parent, line){
+    ContainerBlock.call(this, parent);
+    this.nodeType = "DlistBlock";
+    this.indent = getLineIndent(line);
+  };
+  LineDef.DLITEM.constr = Content.DlistBlock = DlistBlock;
+  DlistBlock.prototype = Object.create(ContainerBlock.prototype);
+
+  DlistBlock.prototype.accept  = function(line){
+    return getLineType(line) === LineType.DLITEM &&
+      getLineIndent(line) === this.indent;
+  };
+
+  DlistBlock.prototype.consume = function(line){
+    var item = new DlistItemBlock(this, line);
+    this.children.push(item);
+    return item.consume(line);
+  };
+
+  /*orgdoc
+  *** DlistItem block
+  */
   var DlistItemBlock = function(parent, line){
     ListItemBlock.call(this, parent,line);
     this.nodeType = "DlistItemBlock";
-    var title = (/^\s*[+*-] (.*) ::/).exec(line)[1];
+    var title = (/^\s*[+*\-] (.*) ::/).exec(line)[1];
     this.titleInline = OM.tokenize(this, title);
   };
   Content.DlistItemBlock = DlistItemBlock;
 
   DlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
   DlistItemBlock.prototype.preprocess = function(line){
-    return line.replace(/^(\s*)[+*-]\s+.*? ::/, "$1  ");
+    return line.replace(/^(\s*)[+*\-]\s+.*? ::/, "$1  ");
   };
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //       PARSECONTENT
+  /*orgdoc
+  ** Parsing the content
+  */
   Content.parse = function(parent, lines){
     var root = new RootBlock(parent);
     var current = root;
@@ -1394,9 +1476,11 @@ Org.getOutline = function(org, params){
   var OC = org.Content;
   var _U = org.Utils;
 
-  /////////////////////////////////////////////////////////////////////////////
-  // NODE : corresponds to a line starting with stars "*** ..."
-
+  /*orgdoc
+  ** =Node=
+     Objects representing the headlines and their associated content
+     (including sub-nodes)
+  */
   var Node = function(whole, params){
     params          = params || {};
     
@@ -1417,24 +1501,35 @@ Org.getOutline = function(org, params){
 
   };
 
-  /**
-   * Counting the documents generated in this page.
-   * Helps to generate an ID for the nodes
-   * when no docid is given in the root node.
-   */
+  /*orgdoc
+  *** =Node.tocnum=
+     Counting the documents generated in this page.
+     Helps to generate an ID for the nodes
+     when no docid is given in the root node.
+  */
   Node.tocnum = 0;
 
+  /*orgdoc
+  *** =Node.prototype=
+  */
   Node.prototype = {
+    /*orgdoc
+         + =parseContent()=
+    */
     parseContent: function(){
       var lines = _U.lines(this.content);
       this.contentNode = OC.parse(this, lines);
     },
-
+    /*orgdoc
+         + =siblings()=
+    */
     siblings: function(){
       return this.parent ? this.parent.children : [];
     },
 
-    // Computes the ID of this node
+    /*orgdoc
+         + =id()=
+    */
     id: function(){
       if (!this.parent){
         return this.docid || "doc#" + (Node.tocnum++) + "/";
@@ -1442,6 +1537,9 @@ Org.getOutline = function(org, params){
       return this.parent.id() + "" + this.siblings().indexOf(this) + "/";
     },
 
+    /*orgdoc
+         + =addFootnoteDef=
+    */
     addFootnoteDef: function(inline, name){
       if(this.fnByName === void(0)){
         this.fnByName    = {};
@@ -1462,11 +1560,11 @@ Org.getOutline = function(org, params){
     }
   };
 
-  /////////////////////////////////////////////////////////////////////////////
-  // PARSING
 
-  /**
-   * Headline embeds the parsing of a heading line.
+  /*orgdoc
+  ** Parsing nodes
+  *** =Headline= 
+      Headline embeds the parsing of a heading line (without the subcontent).
    */
   var Headline = function(txt){
     this.nodeType = "Headline";
@@ -1493,16 +1591,17 @@ Org.getOutline = function(org, params){
     }
   };
 
-  /**
-   * Parsing a whole section
+  /*orgdoc
+  ** =NodeParser=
+     Parsing a whole section
    */
   var NodeParser = function(txt){
     this.content = txt;
   };
 
   NodeParser.prototype = {
-    /**
-     * Returns the heading object for this node
+    /*orgdoc
+       + Returns the heading object for this node
      */
     getHeading: function(){
       if(this.heading){return this.heading;}
@@ -1511,8 +1610,8 @@ Org.getOutline = function(org, params){
       return this.heading;
     },
 
-    /**
-     * Returns the map of headers (defined by "#+META: ..." line definitions)
+    /*orgdoc
+       + Returns the map of headers (defined by "#+META: ..." line definitions)
      */
     getMeta: function(){
       if(this.meta){return this.meta;}
@@ -1523,8 +1622,8 @@ Org.getOutline = function(org, params){
       return this.meta;
     },
 
-    /**
-     * Returns the properties as defined in the :PROPERTIES: field
+    /*orgdoc
+       + Returns the properties as defined in the :PROPERTIES: field
      */
     getProperties: function(){
       if(this.props){return this.props;}
@@ -1546,8 +1645,8 @@ Org.getOutline = function(org, params){
       return this.props;
     },
 
-    /**
-     * Returns the whole content without the heading nor the subitems
+    /*orgdoc
+       + Returns the whole content without the heading nor the subitems
      */
     getItem: function(){
       if(this.item){return this.item;}
@@ -1560,8 +1659,8 @@ Org.getOutline = function(org, params){
       return content;
     },
 
-    /**
-     * Returns the content only : no heading, no properties, no subitems, no clock, etc.
+    /*orgdoc
+       + Returns the content only : no heading, no properties, no subitems, no clock, etc.
      */
     getContent: function(){
       if(this.text){return this.text;}
@@ -1576,8 +1675,8 @@ Org.getOutline = function(org, params){
       return content;
     },
 
-    /**
-     * Extracts all the ""#+HEADER: Content" lines
+    /*orgdoc
+       + Extracts all the ""#+HEADER: Content" lines
      * at the beginning of the given text, and returns a map
      * of HEADER => Content
      */
@@ -1600,8 +1699,8 @@ Org.getOutline = function(org, params){
       return result;
     },
 
-    /**
-     * Returns the given text without the "#+HEADER: Content" lines at the beginning
+    /*orgdoc
+       + Returns the given text without the "#+HEADER: Content" lines at the beginning
      */
     removeHeaders: function(txt){
       var result = "";
@@ -1617,7 +1716,9 @@ Org.getOutline = function(org, params){
     }
   };
 
-
+  /*orgdoc
+  ** The returned object
+  */
   var Outline = {
     Node:       Node,
     Headline:   Headline,

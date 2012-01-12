@@ -1,10 +1,23 @@
 
 section{
-  margin-left:2em;
+  margin-left:1em;
   margin-top:0.5em;
 }
 
+section.level-1 > div.title {font-size: 200%;}
+section.level-2 > div.title {font-size: 150%;}
+section.level-3 > div.title {font-size: 120%;}
+section.level-4 > div.title {font-size: 110%;}
+section.level-5 > div.title {font-size: 100%;}
+section.level-6 > div.title {font-size: 100%;}
+
+
+.org-inline-raw{
+  font-family: "Georgia", serif;
+}
+
 div.title{
+  font-family: "Georgia", serif;
   font-weight:bold;
   color: gray;
   border-bottom:1px solid #AAA;

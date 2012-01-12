@@ -6,6 +6,9 @@
   and accessible under the object =Org.Regexps=.
 ###
 Org.getRegexps = (org, params) ->
+
+  _C = org.Config
+
   _R =
 
     ###orgdoc
@@ -38,14 +41,14 @@ Org.getRegexps = (org, params) ->
        - the heading title
        - the tags, if any, separated by colons
     ###
-    headingLine: ///
-      (\**)\s*                       # The beginning stars
-      (?:([A-Z]{4})\s+)?             # A TODO flag, optional
-      (?:\[\#([A-Z])\]\s+)?          # A priority, optional
-      (.*?)\s*                       # The title
-      (?:\s+:([A-Za-z0-9:]+):\s*)?   # The tags
-      (?:\n|$)                       # End of line or input
-    ///
+    headingLine: do -> 
+      str = "(\\**)\\s*"                                      # the stars
+      str += "(?:(" + _C.todoMarkers.join('|') + ")\\s+)?"    # the optional TODO markers
+      str += "(?:\\[\\#([A-Z])\\]\\s+)?"                      # the optional priority
+      str += "(.*?)\\s*"                                      # the title
+      str += "(?:\\s+:([A-Za-z0-9:]+):\\s*)?"                 # the optional tags
+      str += "(?:\n|$)"                                       # the end
+      RegExp(str)
     
     ###orgdoc
      + How a meta information begins ( =#\+META_KEY:= )
@@ -91,17 +94,17 @@ Org.getRegexps = (org, params) ->
     clockLine: /CLOCK: \[(\d{4}-\d\d-\d\d) [A-Za-z]{3}\.? (\d\d:\d\d)\](?:--\[(\d{4}-\d\d-\d\d) [A-Za-z]{3}\.? (\d\d:\d\d)\] =>\s*(-?\d+:\d\d))?/g
     
     ###orgdoc
-     +
+      + Scheduled
     ###
     scheduled: /SCHEDULED: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>/
     
     ###orgdoc
-     +
+      + Deadline
     ###
     deadline: /DEADLINE: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>/
     
     ###orgdoc
-     +
+      + The different kinds of lines encountered when parsing the content
     ###
     lineTypes:
       letter: /^\s*[a-z]/i           # Line starting with a letter character
@@ -112,7 +115,7 @@ Org.getRegexps = (org, params) ->
       fndef: /^\s*\[(\d+|fn:.+?)\]/  # Footnote definition 
       _bBlk: {}
       beginBlock: (type) ->
-        @_bBlk[type] or (@_bBlk[type] = new RegExp("^\\s*#\\+BEGIN_" + type + "\\s", "i"))
+        @_bBlk[type] or (@_bBlk[type] = new RegExp("^\\s*#\\+BEGIN_" + type + "(\\s|$)", "i"))
 
       _eBlk: {}
       endBlock: (type) ->

@@ -1,8 +1,15 @@
 
-* Test header
-
+* TODO [#A] Test header                          :some:tags:
+* DONE [#B] Test header 2                        :some:tags:
+** Sample
   This is a /sample _paragraph_/. With some formatting (see http://google.com/).
   + A *\*bold\** word
   + A tilde: ~\~~
     - A sublist
     - [ ] with a... checkbox?
+** Sample again
+   #+BEGIN_CENTER
+   Centered text
+   #+END_CENTER
+
+  

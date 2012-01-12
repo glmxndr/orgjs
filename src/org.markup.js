@@ -10,9 +10,10 @@ Org.getMarkup = function(org, params){
 
   var Markup = {};
 
-///////////////////////////////////////////////////////////////////////////////
-// LINKS
-
+  /*orgdoc
+  ** Link management
+  *** Link type definitions
+  */
   var LinkDefs = (function(){
     var l = 0;
     return {
@@ -36,6 +37,9 @@ Org.getMarkup = function(org, params){
     }
   }
 
+  /*orgdoc
+  *** =Link= object
+  */
   var Link = function(parent, raw, url, desc, token){
     this.nodeType = "Link";
     this.raw = raw;
@@ -47,6 +51,11 @@ Org.getMarkup = function(org, params){
   };
   Markup.Link = Link;
 
+  /*orgdoc
+  ** Footnote references
+     Footnotes have definitions as blocks in the =Content= section. This section deals
+     only with footnote references from within the markup.
+  */
   var FootNoteRef = function(parent, raw, name, token){
     this.nodeType = "FootNoteRef";
     this.raw = raw;
@@ -56,37 +65,42 @@ Org.getMarkup = function(org, params){
   };
   Markup.FootNoteRef = FootNoteRef;
 
-///////////////////////////////////////////////////////////////////////////////
-// TYPO
+  /*orgdoc
+  ** Typographic markup
+  *** =EmphMarkers= : emphasis marker abstract object
+  */
 
-//   + Allowed pre:      " \t('\"{"
-//   + Allowed post:     "- \t.,:!?;'\")}\\"
-//   + Forbidden border: " \t\r\n,\"'"
-//   + Allowed body:     "."
-// (defcustom org-emphasis-regexp-components
-//   '(" \t('\"{" "- \t.,:!?;'\")}\\" " \t\r\n,\"'" "." 1)
-//   "Components used to build the regular expression for emphasis.
-// This is a list with five entries.  Terminology:  In an emphasis string
-// like \" *strong word* \", we call the initial space PREMATCH, the final
-// space POSTMATCH, the stars MARKERS, \"s\" and \"d\" are BORDER characters
-// and \"trong wor\" is the body.  The different components in this variable
-// specify what is allowed/forbidden in each part:
-// pre          Chars allowed as prematch.  Beginning of line will be allowed too.
-// post         Chars allowed as postmatch.  End of line will be allowed too.
-// border       The chars *forbidden* as border characters.
-// body-regexp  A regexp like \".\" to match a body character.  Don't use
-//              non-shy groups here, and don't allow newline here.
-// newline      The maximum number of newlines allowed in an emphasis exp.
-// Use customize to modify this, or restart Emacs after changing it."
-//   :group 'org-appearance
-//   :set 'org-set-emph-re
-//   :type '(list
-//     (sexp    :tag "Allowed chars in pre      ")
-//     (sexp    :tag "Allowed chars in post     ")
-//     (sexp    :tag "Forbidden chars in border ")
-//     (sexp    :tag "Regexp for body           ")
-//     (integer :tag "number of newlines allowed")
-//     (option (boolean :tag "Please ignore this button"))))
+  ///////////////////////////////////////////////////////////////////////////////
+  // TYPO
+
+  //   + Allowed pre:      " \t('\"{"
+  //   + Allowed post:     "- \t.,:!?;'\")}\\"
+  //   + Forbidden border: " \t\r\n,\"'"
+  //   + Allowed body:     "."
+  // (defcustom org-emphasis-regexp-components
+  //   '(" \t('\"{" "- \t.,:!?;'\")}\\" " \t\r\n,\"'" "." 1)
+  //   "Components used to build the regular expression for emphasis.
+  // This is a list with five entries.  Terminology:  In an emphasis string
+  // like \" *strong word* \", we call the initial space PREMATCH, the final
+  // space POSTMATCH, the stars MARKERS, \"s\" and \"d\" are BORDER characters
+  // and \"trong wor\" is the body.  The different components in this variable
+  // specify what is allowed/forbidden in each part:
+  // pre          Chars allowed as prematch.  Beginning of line will be allowed too.
+  // post         Chars allowed as postmatch.  End of line will be allowed too.
+  // border       The chars *forbidden* as border characters.
+  // body-regexp  A regexp like \".\" to match a body character.  Don't use
+  //              non-shy groups here, and don't allow newline here.
+  // newline      The maximum number of newlines allowed in an emphasis exp.
+  // Use customize to modify this, or restart Emacs after changing it."
+  //   :group 'org-appearance
+  //   :set 'org-set-emph-re
+  //   :type '(list
+  //     (sexp    :tag "Allowed chars in pre      ")
+  //     (sexp    :tag "Allowed chars in post     ")
+  //     (sexp    :tag "Forbidden chars in border ")
+  //     (sexp    :tag "Regexp for body           ")
+  //     (integer :tag "number of newlines allowed")
+  //     (option (boolean :tag "Please ignore this button"))))
 
   var EmphMarkers = {};
   _U.each("/*~=+_".split(""), function(t){EmphMarkers[t] = {};});
@@ -102,6 +116,17 @@ Org.getMarkup = function(org, params){
   };
   Markup.EmphMarkers = EmphMarkers;
 
+
+  /*orgdoc
+  ** Inline nodes containing either inline nodes or raw textual content
+  *** =makeInline=            :function:
+       + Purpose :: Creates an inline node object
+       + Arguments ::
+         + =constr= :: constructor for the object to build ;
+                       should build an object with a =consume()= property
+         + =parent= :: parent of the node to build ; ust have an =adopt= method
+         + =food= :: textual content the new inline node has to parse as subnodes
+  */
   function makeInline(constr, parent, food){
     var inline = new constr(parent);
     parent.adopt(inline);
@@ -109,6 +134,9 @@ Org.getMarkup = function(org, params){
     return inline;
   }
 
+  /*orgdoc
+  *** =EmphInline= : abstract high-level inline node
+  */
   var EmphInline = function(parent){
     this.nodeType = "EmphInline";
     this.parent = parent;
@@ -167,6 +195,12 @@ Org.getMarkup = function(org, params){
   };
   Markup.EmphInline = EmphInline;
 
+  /*orgdoc
+  *** End-point node types
+      Basic inline types containing raw text content.
+      Can not contain anything else than text content.
+  **** =EmphRaw= : basic text
+  */
   var EmphRaw = function(parent){
     EmphInline.call(this, parent);
     this.nodeType = "EmphRaw";
@@ -178,7 +212,34 @@ Org.getMarkup = function(org, params){
   };
   Markup.EmphRaw = EmphRaw;
 
+  /*orgdoc
+  **** =EmphCode= : code example
+  */
+  var EmphCode = function(parent){
+    EmphRaw.call(this, parent);
+    this.nodeType = "EmphCode";
+  };
+  EmphCode.prototype = Object.create(EmphRaw.prototype);
+  EmphMarkers["="].constr = EmphCode;
+  Markup.EmphCode = EmphCode;
 
+  /*orgdoc
+  **** =EmphVerbatim= : unedited content
+  */
+  var EmphVerbatim = function(parent){
+    EmphRaw.call(this, parent);
+    this.nodeType = "EmphVerbatim";
+  };
+  EmphVerbatim.prototype = Object.create(EmphRaw.prototype);
+  EmphMarkers["~"].constr = EmphVerbatim;
+  Markup.EmphVerbatim = EmphVerbatim;
+
+  /*orgdoc
+  *** Recursing nodes
+      These nodes contain other sub nodes (either =EmphRaw=,
+      other =EmphInline= subtypes, =Link=s, etc.).
+  **** =EmphItalic= : recursing node
+  */
   var EmphItalic = function(parent){
     EmphInline.call(this, parent);
     this.nodeType = "EmphItalic";
@@ -188,7 +249,9 @@ Org.getMarkup = function(org, params){
   EmphMarkers["/"].constr = EmphItalic;
   Markup.EmphItalic = EmphItalic;
 
-
+  /*orgdoc
+  **** =EmphBold= : recursing node
+  */
   var EmphBold = function(parent){
     EmphInline.call(this, parent);
     this.nodeType = "EmphBold";
@@ -198,7 +261,9 @@ Org.getMarkup = function(org, params){
   EmphMarkers["*"].constr = EmphBold;
   Markup.EmphBold = EmphBold;
 
-
+  /*orgdoc
+  **** =EmphUnderline= : recursing node
+  */
   var EmphUnderline = function(parent){
     EmphInline.call(this, parent);
     this.nodeType = "EmphUnderline";
@@ -208,7 +273,9 @@ Org.getMarkup = function(org, params){
   EmphMarkers["_"].constr = EmphUnderline;
   Markup.EmphUnderline = EmphUnderline;
 
-
+  /*orgdoc
+  **** =EmphStrike= : recursing node
+  */
   var EmphStrike = function(parent){
     EmphInline.call(this, parent);
     this.nodeType = "EmphStrike";
@@ -217,24 +284,6 @@ Org.getMarkup = function(org, params){
   EmphStrike.prototype = Object.create(EmphInline.prototype);
   EmphMarkers["+"].constr = EmphStrike;
   Markup.EmphStrike = EmphStrike;
-
-
-  var EmphCode = function(parent){
-    EmphRaw.call(this, parent);
-    this.nodeType = "EmphCode";
-  };
-  EmphCode.prototype = Object.create(EmphRaw.prototype);
-  EmphMarkers["="].constr = EmphCode;
-  Markup.EmphCode = EmphCode;
-
-
-  var EmphVerbatim = function(parent){
-    EmphRaw.call(this, parent);
-    this.nodeType = "EmphVerbatim";
-  };
-  EmphVerbatim.prototype = Object.create(EmphRaw.prototype);
-  EmphMarkers["~"].constr = EmphVerbatim;
-  Markup.EmphVerbatim = EmphVerbatim;
 
 
 ///////////////////////////////////////////////////////////////////////////////

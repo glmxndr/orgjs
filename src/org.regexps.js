@@ -10,7 +10,8 @@
 (function() {
 
   Org.getRegexps = function(org, params) {
-    var _R;
+    var _C, _R;
+    _C = org.Config;
     _R = {
       /*orgdoc
        + A new line declaration, either windows or unix-like
@@ -39,7 +40,16 @@
          - the heading title
          - the tags, if any, separated by colons
       */
-      headingLine: /(\**)\s*(?:([A-Z]{4})\s+)?(?:\[\#([A-Z])\]\s+)?(.*?)\s*(?:\s+:([A-Za-z0-9:]+):\s*)?(?:\n|$)/,
+      headingLine: (function() {
+        var str;
+        str = "(\\**)\\s*";
+        str += "(?:(" + _C.todoMarkers.join('|') + ")\\s+)?";
+        str += "(?:\\[\\#([A-Z])\\]\\s+)?";
+        str += "(.*?)\\s*";
+        str += "(?:\\s+:([A-Za-z0-9:]+):\\s*)?";
+        str += "(?:\n|$)";
+        return RegExp(str);
+      })(),
       /*orgdoc
        + How a meta information begins ( =#\+META_KEY:= )
       */
@@ -78,15 +88,15 @@
       */
       clockLine: /CLOCK: \[(\d{4}-\d\d-\d\d) [A-Za-z]{3}\.? (\d\d:\d\d)\](?:--\[(\d{4}-\d\d-\d\d) [A-Za-z]{3}\.? (\d\d:\d\d)\] =>\s*(-?\d+:\d\d))?/g,
       /*orgdoc
-       +
+        + Scheduled
       */
       scheduled: /SCHEDULED: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>/,
       /*orgdoc
-       +
+        + Deadline
       */
       deadline: /DEADLINE: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>/,
       /*orgdoc
-       +
+        + The different kinds of lines encountered when parsing the content
       */
       lineTypes: {
         letter: /^\s*[a-z]/i,
@@ -97,7 +107,7 @@
         fndef: /^\s*\[(\d+|fn:.+?)\]/,
         _bBlk: {},
         beginBlock: function(type) {
-          return this._bBlk[type] || (this._bBlk[type] = new RegExp("^\\s*#\\+BEGIN_" + type + "\\s", "i"));
+          return this._bBlk[type] || (this._bBlk[type] = new RegExp("^\\s*#\\+BEGIN_" + type + "(\\s|$)", "i"));
         },
         _eBlk: {},
         endBlock: function(type) {

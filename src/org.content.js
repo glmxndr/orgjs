@@ -149,15 +149,15 @@ Org.getContent = function(org, params){
     return new constr(parent, line);
   }
 
-/*orgdoc
-*** Container block
-    This kind of block is abstract: many other blocks inherit from it, and it will not be used as is.
+  /*orgdoc
+  *** Container block
+      This kind of block is abstract: many other blocks inherit from it, and it will not be used as is.
 
-    It provides functionality for blocks which contain other sub-blocks.
+      It provides functionality for blocks which contain other sub-blocks.
 
-    It contains an array of =children=, containing the children blocks.
+      It contains an array of =children=, containing the children blocks.
 
-*/
+  */
   var ContainerBlock = function(parent){
     this.parent = parent;
     this.nodeType = "ContainerBlock";
@@ -166,12 +166,11 @@ Org.getContent = function(org, params){
   };
   ContainerBlock.prototype.finalize = function(){};
 
-/*orgdoc
-
-*** Root block
-    This block represents the root content under a headline of the document.
-    It is the highest container directly under the headline node.
-*/
+  /*orgdoc
+  *** Root block
+      This block represents the root content under a headline of the document.
+      It is the highest container directly under the headline node.
+  */
   var RootBlock = function(parent){
     ContainerBlock.call(this, parent);
     this.nodeType = "RootBlock";
@@ -186,8 +185,9 @@ Org.getContent = function(org, params){
     return block.consume(line);
   };
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  CONTENTBLOCK
+  /*orgdoc
+  *** Generic content block
+  */
   var ContentBlock = function(parent){
     this.parent = parent;
     this.nodeType = "ContentBlock";
@@ -196,8 +196,9 @@ Org.getContent = function(org, params){
   };
   ContentBlock.prototype.finalize = function(){};
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  CONTENTMARKUPBLOCK
+  /*orgdoc
+  *** Generic content with markup block
+  */
   var ContentMarkupBlock = function(parent){
     ContentBlock.call(this, parent);
     this.nodeType = "ContentMarkupBlock";
@@ -210,8 +211,9 @@ Org.getContent = function(org, params){
     this.children.push(inline);
   };
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  PARABLOCK
+  /*orgdoc
+  *** Paragraph block
+  */
   var ParaBlock = function(parent){
     ContentMarkupBlock.call(this, parent);
     this.nodeType = "ParaBlock";
@@ -246,8 +248,9 @@ Org.getContent = function(org, params){
   };
 
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  FNDEFBLOCK
+  /*orgdoc
+  *** Footnote definition block
+  */
   var FndefBlock = function(parent){
     ContentMarkupBlock.call(this, parent);
     this.nodeType = "FndefBlock";
@@ -292,8 +295,9 @@ Org.getContent = function(org, params){
     root.addFootnoteDef(inline, this.name);
   };
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  BEGINENDBLOCK
+  /*orgdoc
+  *** Generic Begin/End block
+  */
   var BeginEndBlock = function(parent, line, type){
     ContentBlock.call(this, parent);
     this.nodeType = "BeginEndBlock";
@@ -321,8 +325,9 @@ Org.getContent = function(org, params){
     return this;
   };
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  VERSEBLOCK
+  /*orgdoc
+  *** Verse block
+  */
   var VerseBlock = function(parent, line){
     ContentMarkupBlock.call(this, parent);
     BeginEndBlock.call(this, parent, line, "VERSE");
@@ -332,8 +337,9 @@ Org.getContent = function(org, params){
   VerseBlock.prototype = Object.create(BeginEndBlock.prototype);
   VerseBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  QUOTEBLOCK
+  /*orgdoc
+  *** Quote block
+  */
   var QuoteBlock = function(parent, line){
     ContentMarkupBlock.call(this, parent);
     BeginEndBlock.call(this, parent, line, "QUOTE");
@@ -343,8 +349,9 @@ Org.getContent = function(org, params){
   QuoteBlock.prototype = Object.create(BeginEndBlock.prototype);
   QuoteBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  CENTERBLOCK
+  /*orgdoc
+  *** Centered-text block
+  */
   var CenterBlock = function(parent, line){
     ContentMarkupBlock.call(this, parent);
     BeginEndBlock.call(this, parent, line, "CENTER");
@@ -354,8 +361,9 @@ Org.getContent = function(org, params){
   CenterBlock.prototype = Object.create(BeginEndBlock.prototype);
   CenterBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  EXAMPLEBLOCK
+  /*orgdoc
+  *** Example block
+  */
   var ExampleBlock = function(parent, line){
     BeginEndBlock.call(this, parent, line, "EXAMPLE");
     this.nodeType = "ExampleBlock";
@@ -364,20 +372,22 @@ Org.getContent = function(org, params){
   LineDef.EXAMPLE.constr = Content.ExampleBlock = ExampleBlock;
   ExampleBlock.prototype = Object.create(BeginEndBlock.prototype);
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  SRCBLOCK
+  /*orgdoc
+  *** Source code block
+  */
   var SrcBlock = function(parent, line){
     BeginEndBlock.call(this, parent, line, "SRC");
     this.nodeType = "SrcBlock";
     this.verbatim = true;
-    var match = /BEGIN_SRC\s+([a-z-]+)(?:\s*|$)/i.exec(line);
+    var match = /BEGIN_SRC\s+([a-z\-]+)(?:\s*|$)/i.exec(line);
     this.language = match ? match[1] : null;
   };
   LineDef.SRC.constr = Content.SrcBlock = SrcBlock;
   SrcBlock.prototype = Object.create(BeginEndBlock.prototype);
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  HTMLBLOCK
+  /*orgdoc
+  *** HTML block
+  */
   var HtmlBlock = function(parent, line){
     BeginEndBlock.call(this, parent, line, "HTML");
     this.nodeType = "HtmlBlock";
@@ -386,8 +396,9 @@ Org.getContent = function(org, params){
   LineDef.HTML.constr = Content.HtmlBlock = HtmlBlock;
   HtmlBlock.prototype = Object.create(BeginEndBlock.prototype);
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  COMMENTBLOCK
+  /*orgdoc
+  *** Comment block
+  */
   var CommentBlock = function(parent, line){
     BeginEndBlock.call(this, parent, line, "COMMENT");
     this.nodeType = "CommentBlock";
@@ -396,74 +407,9 @@ Org.getContent = function(org, params){
   LineDef.COMMENT.constr = Content.CommentBlock = CommentBlock;
   CommentBlock.prototype = Object.create(BeginEndBlock.prototype);
 
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  ULISTBLOCK
-  var UlistBlock = function(parent, line){
-    ContainerBlock.call(this, parent);
-    this.nodeType = "UlistBlock";
-    this.indent = getLineIndent(line);
-  };
-  LineDef.ULITEM.constr = Content.UlistBlock = UlistBlock;
-  UlistBlock.prototype = Object.create(ContainerBlock.prototype);
-
-  UlistBlock.prototype.accept  = function(line){
-    return getLineType(line) === LineType.ULITEM &&
-      getLineIndent(line) === this.indent;
-  };
-
-  UlistBlock.prototype.consume = function(line){
-    var item = new UlistItemBlock(this, line);
-    this.children.push(item);
-    return item.consume(line);
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  OLISTBLOCK
-  var OlistBlock = function(parent, line){
-    ContainerBlock.call(this, parent);
-    this.nodeType = "OlistBlock";
-    this.indent = getLineIndent(line);
-    var match = /^\s*\d+[.)]\s+\[@(\d+)\]/.exec(line);
-    this.start = match ? +(match[1]) : 1;
-  };
-  LineDef.OLITEM.constr = Content.OlistBlock = OlistBlock;
-  OlistBlock.prototype = Object.create(ContainerBlock.prototype);
-
-  OlistBlock.prototype.accept  = function(line){
-    return getLineType(line) === LineType.OLITEM &&
-      getLineIndent(line) === this.indent;
-  };
-
-  OlistBlock.prototype.consume = function(line){
-    var item = new OlistItemBlock(this, line);
-    this.children.push(item);
-    return item.consume(line);
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  DLISTBLOCK
-  var DlistBlock = function(parent, line){
-    ContainerBlock.call(this, parent);
-    this.nodeType = "DlistBlock";
-    this.indent = getLineIndent(line);
-  };
-  LineDef.DLITEM.constr = Content.DlistBlock = DlistBlock;
-  DlistBlock.prototype = Object.create(ContainerBlock.prototype);
-
-  DlistBlock.prototype.accept  = function(line){
-    return getLineType(line) === LineType.DLITEM &&
-      getLineIndent(line) === this.indent;
-  };
-
-  DlistBlock.prototype.consume = function(line){
-    var item = new DlistItemBlock(this, line);
-    this.children.push(item);
-    return item.consume(line);
-  };
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //  LISTITEMBLOCK
+  /*orgdoc
+  *** Generic List Item block
+  */
   var ListItemBlock = function(parent, line){
     ContainerBlock.call(this, parent);
     this.nodeType = "ListItemBlock";
@@ -486,8 +432,31 @@ Org.getContent = function(org, params){
     return block.consume(line);
   };
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  ULISTITEMBLOCK
+  /*orgdoc
+  *** Unordered List block
+  */
+  var UlistBlock = function(parent, line){
+    ContainerBlock.call(this, parent);
+    this.nodeType = "UlistBlock";
+    this.indent = getLineIndent(line);
+  };
+  LineDef.ULITEM.constr = Content.UlistBlock = UlistBlock;
+  UlistBlock.prototype = Object.create(ContainerBlock.prototype);
+
+  UlistBlock.prototype.accept  = function(line){
+    return getLineType(line) === LineType.ULITEM &&
+      getLineIndent(line) === this.indent;
+  };
+
+  UlistBlock.prototype.consume = function(line){
+    var item = new UlistItemBlock(this, line);
+    this.children.push(item);
+    return item.consume(line);
+  };
+
+  /*orgdoc
+  *** Unoredered List Item block
+  */
   var UlistItemBlock = function(parent, line){
     ListItemBlock.call(this, parent, line);
     this.nodeType = "UlistItemBlock";
@@ -496,12 +465,36 @@ Org.getContent = function(org, params){
 
   UlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
   UlistItemBlock.prototype.preprocess = function(line){
-    return line.replace(/^(\s*)[+*-] /, "$1  ");
+    return line.replace(/^(\s*)[+*\-] /, "$1  ");
   };
 
+  /*orgdoc
+  *** Ordered List block
+  */
+  var OlistBlock = function(parent, line){
+    ContainerBlock.call(this, parent);
+    this.nodeType = "OlistBlock";
+    this.indent = getLineIndent(line);
+    var match = /^\s*\d+[.)]\s+\[@(\d+)\]/.exec(line);
+    this.start = match ? +(match[1]) : 1;
+  };
+  LineDef.OLITEM.constr = Content.OlistBlock = OlistBlock;
+  OlistBlock.prototype = Object.create(ContainerBlock.prototype);
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  OLISTITEMBLOCK
+  OlistBlock.prototype.accept  = function(line){
+    return getLineType(line) === LineType.OLITEM &&
+      getLineIndent(line) === this.indent;
+  };
+
+  OlistBlock.prototype.consume = function(line){
+    var item = new OlistItemBlock(this, line);
+    this.children.push(item);
+    return item.consume(line);
+  };
+
+  /*orgdoc
+  *** Ordered list item block
+  */
   var OlistItemBlock = function(parent, line){
     ListItemBlock.call(this, parent, line);
     this.nodeType = "OlistItemBlock";
@@ -515,23 +508,47 @@ Org.getContent = function(org, params){
     return line.replace(/^(\s+)\d+[.)](?:\s+\[@\d+\])? /, "$1  ");
   };
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //  DLISTITEMBLOCK
+  /*orgdoc
+  *** Definition List block
+  */
+  var DlistBlock = function(parent, line){
+    ContainerBlock.call(this, parent);
+    this.nodeType = "DlistBlock";
+    this.indent = getLineIndent(line);
+  };
+  LineDef.DLITEM.constr = Content.DlistBlock = DlistBlock;
+  DlistBlock.prototype = Object.create(ContainerBlock.prototype);
+
+  DlistBlock.prototype.accept  = function(line){
+    return getLineType(line) === LineType.DLITEM &&
+      getLineIndent(line) === this.indent;
+  };
+
+  DlistBlock.prototype.consume = function(line){
+    var item = new DlistItemBlock(this, line);
+    this.children.push(item);
+    return item.consume(line);
+  };
+
+  /*orgdoc
+  *** DlistItem block
+  */
   var DlistItemBlock = function(parent, line){
     ListItemBlock.call(this, parent,line);
     this.nodeType = "DlistItemBlock";
-    var title = (/^\s*[+*-] (.*) ::/).exec(line)[1];
+    var title = (/^\s*[+*\-] (.*) ::/).exec(line)[1];
     this.titleInline = OM.tokenize(this, title);
   };
   Content.DlistItemBlock = DlistItemBlock;
 
   DlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
   DlistItemBlock.prototype.preprocess = function(line){
-    return line.replace(/^(\s*)[+*-]\s+.*? ::/, "$1  ");
+    return line.replace(/^(\s*)[+*\-]\s+.*? ::/, "$1  ");
   };
 
-  ////////////////////////////////////////////////////////////////////////////////
-  //       PARSECONTENT
+  /*orgdoc
+  ** Parsing the content
+  */
   Content.parse = function(parent, lines){
     var root = new RootBlock(parent);
     var current = root;

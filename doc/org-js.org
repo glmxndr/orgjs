@@ -37,33 +37,38 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
   
     var _C = {};
   
-    _C.urlProtocols = [
-      "http",
-      "https",
-      "ftp",
-      "mailto",
-      "file",
-      "id",
-      "javascript",
-      "elisp"
-    ];
-  
   #+END_SRC
+** URL protocols
+    #+BEGIN_SRC js
+      _C.urlProtocols = params.urlProtocols || [
+        "http",
+        "https",
+        "ftp",
+        "mailto",
+        "file",
+        "id",
+        "javascript",
+        "elisp"
+      ];
+    
+      _C.todoMarkers = params.todoMarkers || [
+        "TODO",
+        "DONE"
+      ];
+    
+    #+END_SRC
 
 ** Tab width
     Specifies how much single spaces for each tabulation character. 4 by default.
-      #+BEGIN_SRC js
-        _C.tabWidth = params.tabWidth || 4;
-      
-      
-        return _C;
-      
-      };
-      
-      #+END_SRC
-** Tab width
-** URL protocols
-
+        #+BEGIN_SRC js
+          _C.tabWidth = params.tabWidth || 4;
+        
+        
+          return _C;
+        
+        };
+        
+        #+END_SRC
 
 * =Org.Regexps= : the regexp bank
 
@@ -75,7 +80,8 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
     (function() {
     
       Org.getRegexps = function(org, params) {
-        var _R;
+        var _C, _R;
+        _C = org.Config;
         _R = {
     #+END_SRC
  + A new line declaration, either windows or unix-like
@@ -104,7 +110,16 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
    - the heading title
    - the tags, if any, separated by colons
            #+BEGIN_SRC js
-                 headingLine: /(\**)\s*(?:([A-Z]{4})\s+)?(?:\[\#([A-Z])\]\s+)?(.*?)\s*(?:\s+:([A-Za-z0-9:]+):\s*)?(?:\n|$)/,
+                 headingLine: (function() {
+                   var str;
+                   str = "(\\**)\\s*";
+                   str += "(?:(" + _C.todoMarkers.join('|') + ")\\s+)?";
+                   str += "(?:\\[\\#([A-Z])\\]\\s+)?";
+                   str += "(.*?)\\s*";
+                   str += "(?:\\s+:([A-Za-z0-9:]+):\\s*)?";
+                   str += "(?:\n|$)";
+                   return RegExp(str);
+                 })(),
            #+END_SRC
  + How a meta information begins ( =#\+META_KEY:= )
          #+BEGIN_SRC js
@@ -143,39 +158,39 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
             #+BEGIN_SRC js
                   clockLine: /CLOCK: \[(\d{4}-\d\d-\d\d) [A-Za-z]{3}\.? (\d\d:\d\d)\](?:--\[(\d{4}-\d\d-\d\d) [A-Za-z]{3}\.? (\d\d:\d\d)\] =>\s*(-?\d+:\d\d))?/g,
             #+END_SRC
- +
-         #+BEGIN_SRC js
-               scheduled: /SCHEDULED: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>/,
-         #+END_SRC
- +
-         #+BEGIN_SRC js
-               deadline: /DEADLINE: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>/,
-         #+END_SRC
- +
-         #+BEGIN_SRC js
-               lineTypes: {
-                 letter: /^\s*[a-z]/i,
-                 ignored: /^#(?:[^+]|$)/,
-                 litem: /^\s+[+*-]\ /,
-                 dlitem: RegExp(" ::"),
-                 olitem: /^\s*\d+[.)] /,
-                 fndef: /^\s*\[(\d+|fn:.+?)\]/,
-                 _bBlk: {},
-                 beginBlock: function(type) {
-                   return this._bBlk[type] || (this._bBlk[type] = new RegExp("^\\s*#\\+BEGIN_" + type + "\\s", "i"));
-                 },
-                 _eBlk: {},
-                 endBlock: function(type) {
-                   return this._eBlk[type] || (this._eBlk[type] = new RegExp("^\\s*#\\+END_" + type + "(\\s|$)", "i"));
-                 }
-               }
-             };
-             return _R;
-           };
-         
-         }).call(this);
-         
-         #+END_SRC
+  + Scheduled
+          #+BEGIN_SRC js
+                scheduled: /SCHEDULED: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>/,
+          #+END_SRC
+  + Deadline
+          #+BEGIN_SRC js
+                deadline: /DEADLINE: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>/,
+          #+END_SRC
+  + The different kinds of lines encountered when parsing the content
+          #+BEGIN_SRC js
+                lineTypes: {
+                  letter: /^\s*[a-z]/i,
+                  ignored: /^#(?:[^+]|$)/,
+                  litem: /^\s+[+*-]\ /,
+                  dlitem: RegExp(" ::"),
+                  olitem: /^\s*\d+[.)] /,
+                  fndef: /^\s*\[(\d+|fn:.+?)\]/,
+                  _bBlk: {},
+                  beginBlock: function(type) {
+                    return this._bBlk[type] || (this._bBlk[type] = new RegExp("^\\s*#\\+BEGIN_" + type + "(\\s|$)", "i"));
+                  },
+                  _eBlk: {},
+                  endBlock: function(type) {
+                    return this._eBlk[type] || (this._eBlk[type] = new RegExp("^\\s*#\\+END_" + type + "(\\s|$)", "i"));
+                  }
+                }
+              };
+              return _R;
+            };
+          
+          }).call(this);
+          
+          #+END_SRC
 
 * =Org.Utils= : useful functions
 
@@ -521,9 +536,10 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
     
       var Markup = {};
     
-    ///////////////////////////////////////////////////////////////////////////////
-    // LINKS
-    
+    #+END_SRC
+** Link management
+*** Link type definitions
+    #+BEGIN_SRC js
       var LinkDefs = (function(){
         var l = 0;
         return {
@@ -547,6 +563,9 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
         }
       }
     
+    #+END_SRC
+*** =Link= object
+    #+BEGIN_SRC js
       var Link = function(parent, raw, url, desc, token){
         this.nodeType = "Link";
         this.raw = raw;
@@ -558,46 +577,56 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
       };
       Markup.Link = Link;
     
-      var FootNoteRef = function(parent, raw, name, token){
-        this.nodeType = "FootNoteRef";
-        this.raw = raw;
-        this.parent = parent;
-        this.name = name;
-        this.token = token;
-      };
-      Markup.FootNoteRef = FootNoteRef;
+    #+END_SRC
+** Footnote references
+   Footnotes have definitions as blocks in the =Content= section. This section deals
+   only with footnote references from within the markup.
+       #+BEGIN_SRC js
+         var FootNoteRef = function(parent, raw, name, token){
+           this.nodeType = "FootNoteRef";
+           this.raw = raw;
+           this.parent = parent;
+           this.name = name;
+           this.token = token;
+         };
+         Markup.FootNoteRef = FootNoteRef;
+       
+       #+END_SRC
+** Typographic markup
+*** =EmphMarkers= : emphasis marker abstract object
+    #+BEGIN_SRC js
     
-    ///////////////////////////////////////////////////////////////////////////////
-    // TYPO
+      ///////////////////////////////////////////////////////////////////////////////
+      // TYPO
     
-    //   + Allowed pre:      " \t('\"{"
-    //   + Allowed post:     "- \t.,:!?;'\")}\\"
-    //   + Forbidden border: " \t\r\n,\"'"
-    //   + Allowed body:     "."
-    // (defcustom org-emphasis-regexp-components
-    //   '(" \t('\"{" "- \t.,:!?;'\")}\\" " \t\r\n,\"'" "." 1)
-    //   "Components used to build the regular expression for emphasis.
-    // This is a list with five entries.  Terminology:  In an emphasis string
-    // like \" *strong word* \", we call the initial space PREMATCH, the final
-    // space POSTMATCH, the stars MARKERS, \"s\" and \"d\" are BORDER characters
-    // and \"trong wor\" is the body.  The different components in this variable
-    // specify what is allowed/forbidden in each part:
-    // pre          Chars allowed as prematch.  Beginning of line will be allowed too.
-    // post         Chars allowed as postmatch.  End of line will be allowed too.
-    // border       The chars *forbidden* as border characters.
-    // body-regexp  A regexp like \".\" to match a body character.  Don't use
-    //              non-shy groups here, and don't allow newline here.
-    // newline      The maximum number of newlines allowed in an emphasis exp.
-    // Use customize to modify this, or restart Emacs after changing it."
-    //   :group 'org-appearance
-    //   :set 'org-set-emph-re
-    //   :type '(list
-    //     (sexp    :tag "Allowed chars in pre      ")
-    //     (sexp    :tag "Allowed chars in post     ")
-    //     (sexp    :tag "Forbidden chars in border ")
-    //     (sexp    :tag "Regexp for body           ")
-    //     (integer :tag "number of newlines allowed")
-    //     (option (boolean :tag "Please ignore this button"))))
+      //   + Allowed pre:      " \t('\"{"
+      //   + Allowed post:     "- \t.,:!?;'\")}\\"
+      //   + Forbidden border: " \t\r\n,\"'"
+      //   + Allowed body:     "."
+      // (defcustom org-emphasis-regexp-components
+      //   '(" \t('\"{" "- \t.,:!?;'\")}\\" " \t\r\n,\"'" "." 1)
+      //   "Components used to build the regular expression for emphasis.
+      // This is a list with five entries.  Terminology:  In an emphasis string
+      // like \" *strong word* \", we call the initial space PREMATCH, the final
+      // space POSTMATCH, the stars MARKERS, \"s\" and \"d\" are BORDER characters
+      // and \"trong wor\" is the body.  The different components in this variable
+      // specify what is allowed/forbidden in each part:
+      // pre          Chars allowed as prematch.  Beginning of line will be allowed too.
+      // post         Chars allowed as postmatch.  End of line will be allowed too.
+      // border       The chars *forbidden* as border characters.
+      // body-regexp  A regexp like \".\" to match a body character.  Don't use
+      //              non-shy groups here, and don't allow newline here.
+      // newline      The maximum number of newlines allowed in an emphasis exp.
+      // Use customize to modify this, or restart Emacs after changing it."
+      //   :group 'org-appearance
+      //   :set 'org-set-emph-re
+      //   :type '(list
+      //     (sexp    :tag "Allowed chars in pre      ")
+      //     (sexp    :tag "Allowed chars in post     ")
+      //     (sexp    :tag "Forbidden chars in border ")
+      //     (sexp    :tag "Regexp for body           ")
+      //     (integer :tag "number of newlines allowed")
+      //     (option (boolean :tag "Please ignore this button"))))
     
       var EmphMarkers = {};
       _U.each("/*~=+_".split(""), function(t){EmphMarkers[t] = {};});
@@ -613,13 +642,27 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
       };
       Markup.EmphMarkers = EmphMarkers;
     
-      function makeInline(constr, parent, food){
-        var inline = new constr(parent);
-        parent.adopt(inline);
-        if(food){inline.consume(food);}
-        return inline;
-      }
     
+    #+END_SRC
+** Inline nodes containing either inline nodes or raw textual content
+*** =makeInline=            :function:
+     + Purpose :: Creates an inline node object
+     + Arguments ::
+       + =constr= :: constructor for the object to build ;
+                     should build an object with a =consume()= property
+       + =parent= :: parent of the node to build ; ust have an =adopt= method
+       + =food= :: textual content the new inline node has to parse as subnodes
+           #+BEGIN_SRC js
+             function makeInline(constr, parent, food){
+               var inline = new constr(parent);
+               parent.adopt(inline);
+               if(food){inline.consume(food);}
+               return inline;
+             }
+           
+           #+END_SRC
+*** =EmphInline= : abstract high-level inline node
+    #+BEGIN_SRC js
       var EmphInline = function(parent){
         this.nodeType = "EmphInline";
         this.parent = parent;
@@ -678,6 +721,12 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
       };
       Markup.EmphInline = EmphInline;
     
+    #+END_SRC
+*** End-point node types
+    Basic inline types containing raw text content.
+    Can not contain anything else than text content.
+**** =EmphRaw= : basic text
+    #+BEGIN_SRC js
       var EmphRaw = function(parent){
         EmphInline.call(this, parent);
         this.nodeType = "EmphRaw";
@@ -689,7 +738,34 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
       };
       Markup.EmphRaw = EmphRaw;
     
+    #+END_SRC
+**** =EmphCode= : code example
+    #+BEGIN_SRC js
+      var EmphCode = function(parent){
+        EmphRaw.call(this, parent);
+        this.nodeType = "EmphCode";
+      };
+      EmphCode.prototype = Object.create(EmphRaw.prototype);
+      EmphMarkers["="].constr = EmphCode;
+      Markup.EmphCode = EmphCode;
     
+    #+END_SRC
+**** =EmphVerbatim= : unedited content
+    #+BEGIN_SRC js
+      var EmphVerbatim = function(parent){
+        EmphRaw.call(this, parent);
+        this.nodeType = "EmphVerbatim";
+      };
+      EmphVerbatim.prototype = Object.create(EmphRaw.prototype);
+      EmphMarkers["~"].constr = EmphVerbatim;
+      Markup.EmphVerbatim = EmphVerbatim;
+    
+    #+END_SRC
+*** Recursing nodes
+    These nodes contain other sub nodes (either =EmphRaw=,
+    other =EmphInline= subtypes, =Link=s, etc.).
+**** =EmphItalic= : recursing node
+    #+BEGIN_SRC js
       var EmphItalic = function(parent){
         EmphInline.call(this, parent);
         this.nodeType = "EmphItalic";
@@ -699,7 +775,9 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
       EmphMarkers["/"].constr = EmphItalic;
       Markup.EmphItalic = EmphItalic;
     
-    
+    #+END_SRC
+**** =EmphBold= : recursing node
+    #+BEGIN_SRC js
       var EmphBold = function(parent){
         EmphInline.call(this, parent);
         this.nodeType = "EmphBold";
@@ -709,7 +787,9 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
       EmphMarkers["*"].constr = EmphBold;
       Markup.EmphBold = EmphBold;
     
-    
+    #+END_SRC
+**** =EmphUnderline= : recursing node
+    #+BEGIN_SRC js
       var EmphUnderline = function(parent){
         EmphInline.call(this, parent);
         this.nodeType = "EmphUnderline";
@@ -719,7 +799,9 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
       EmphMarkers["_"].constr = EmphUnderline;
       Markup.EmphUnderline = EmphUnderline;
     
-    
+    #+END_SRC
+**** =EmphStrike= : recursing node
+    #+BEGIN_SRC js
       var EmphStrike = function(parent){
         EmphInline.call(this, parent);
         this.nodeType = "EmphStrike";
@@ -728,24 +810,6 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
       EmphStrike.prototype = Object.create(EmphInline.prototype);
       EmphMarkers["+"].constr = EmphStrike;
       Markup.EmphStrike = EmphStrike;
-    
-    
-      var EmphCode = function(parent){
-        EmphRaw.call(this, parent);
-        this.nodeType = "EmphCode";
-      };
-      EmphCode.prototype = Object.create(EmphRaw.prototype);
-      EmphMarkers["="].constr = EmphCode;
-      Markup.EmphCode = EmphCode;
-    
-    
-      var EmphVerbatim = function(parent){
-        EmphRaw.call(this, parent);
-        this.nodeType = "EmphVerbatim";
-      };
-      EmphVerbatim.prototype = Object.create(EmphRaw.prototype);
-      EmphMarkers["~"].constr = EmphVerbatim;
-      Markup.EmphVerbatim = EmphVerbatim;
     
     
     ///////////////////////////////////////////////////////////////////////////////
@@ -994,400 +1058,417 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
     ContainerBlock.prototype.finalize = function(){};
   
   #+END_SRC
-
 *** Root block
     This block represents the root content under a headline of the document.
     It is the highest container directly under the headline node.
-      #+BEGIN_SRC js
-        var RootBlock = function(parent){
-          ContainerBlock.call(this, parent);
-          this.nodeType = "RootBlock";
-        };
-        Content.RootBlock = RootBlock;
-        RootBlock.prototype = Object.create(ContainerBlock.prototype);
-      
-        RootBlock.prototype.accept  = function(line){return true;};
-        RootBlock.prototype.consume = function(line){
-          var block = getNewBlock(line, this);
-          this.children.push(block);
-          return block.consume(line);
-        };
-      
-        ////////////////////////////////////////////////////////////////////////////////
-        //  CONTENTBLOCK
-        var ContentBlock = function(parent){
-          this.parent = parent;
-          this.nodeType = "ContentBlock";
-          this.isContent = true;
-          this.lines = [];
-        };
-        ContentBlock.prototype.finalize = function(){};
-      
-        ////////////////////////////////////////////////////////////////////////////////
-        //  CONTENTMARKUPBLOCK
-        var ContentMarkupBlock = function(parent){
-          ContentBlock.call(this, parent);
-          this.nodeType = "ContentMarkupBlock";
-          this.hasMarkup = true;
-          this.children = [];
-        };
-        ContentMarkupBlock.prototype.finalize = function(){
-          var content = this.lines.join("\n");
-          var inline = OM.tokenize(this, content);
-          this.children.push(inline);
-        };
-      
-        ////////////////////////////////////////////////////////////////////////////////
-        //  PARABLOCK
-        var ParaBlock = function(parent){
-          ContentMarkupBlock.call(this, parent);
-          this.nodeType = "ParaBlock";
-          this.indent = parent.indent || 0;
-        };
-        LineDef.PARA.constr = Content.ParaBlock = ParaBlock;
-        ParaBlock.prototype = Object.create(ContentMarkupBlock.prototype);
-        ParaBlock.prototype.accept = function(line){
-          var indent;
-          var type = getLineType(line);
-          if(type === LineType.BLANK){
-            if(this.ended){return true;}
-            this.ended = true; return true;
-          }
-          if(type !== LineType.PARA){return false;}
-          if(this.ended){return false;}
-      
-          if(this.indent === 0){return true;}
-          indent = getLineIndent(line);
-          if(indent <= this.indent){
-            return false;
-          }
-          return true;
-        };
-      
-        ParaBlock.prototype.consume = function(line){
-          var type = getLineType(line);
-          if(type !== LineType.IGNORED){
-            this.lines.push(line);
-          }
-          return this;
-        };
-      
-      
-        ////////////////////////////////////////////////////////////////////////////////
-        //  FNDEFBLOCK
-        var FndefBlock = function(parent){
-          ContentMarkupBlock.call(this, parent);
-          this.nodeType = "FndefBlock";
-          this.indent = parent.indent || 0;
-          this.firstline = true;
-        };
-        LineDef.FNDEF.constr = Content.FndefBlock = FndefBlock;
-        FndefBlock.prototype = Object.create(ContentMarkupBlock.prototype);
-      
-        FndefBlock.prototype.accept = function(line){
-          var indent;
-          var type = getLineType(line);
-          if(type === LineType.FNDEF){
-            if(this.ended){return false;}
-            return true;
-          }
-          if(type === LineType.BLANK){
-            if(this.ended){ return true; }
-            this.ended = true; return true;
-          }
-          if(this.ended){ return false; }
-          return true;
-        };
-      
-        FndefBlock.prototype.consume = function(line){
-          var type = getLineType(line);
-          if(this.firstline){
-            this.name = /^\s*\[(.*?)\]/.exec(line)[1].replace(/^fn:/, '');
-            this.firstline = false;
-          }
-          if(type !== LineType.IGNORED){
-            this.lines.push(line);
-          }
-          return this;
-        };
-      
-        FndefBlock.prototype.finalize = function(line){
-          var root = _U.root(this);
-          var content = this.lines.join("\n");
-          content = content.replace(/^(\s*)\[.*?\]/, "$1");
-          var inline = OM.tokenize(this, content);
-          root.addFootnoteDef(inline, this.name);
-        };
-      
-        ////////////////////////////////////////////////////////////////////////////////
-        //  BEGINENDBLOCK
-        var BeginEndBlock = function(parent, line, type){
-          ContentBlock.call(this, parent);
-          this.nodeType = "BeginEndBlock";
-          this.indent = getLineIndent(line);
-          this.ended = false;
-          this.beginre = _R.lineTypes.beginBlock(type);
-          this.endre   = _R.lineTypes.endBlock(type);
-        };
-        BeginEndBlock.prototype = Object.create(ContentBlock.prototype);
-        BeginEndBlock.prototype.accept      = function(line){return !this.ended;};
-        BeginEndBlock.prototype.treatBegin  = function(line){};
-        BeginEndBlock.prototype.consume     = function(line){
-          if(this.beginre.exec(line)){ this.treatBegin(line); }
-          else if(this.endre.exec(line)){ this.ended = true; }
-          else {
-            if(this.verbatim){
-              this.lines.push(line);
-            } else {
-              var type = getLineType(line);
-              if(type !== LineType.IGNORED){
-                this.lines.push(line);
-              }
-            }
-          }
-          return this;
-        };
-      
-        ////////////////////////////////////////////////////////////////////////////////
-        //  VERSEBLOCK
-        var VerseBlock = function(parent, line){
-          ContentMarkupBlock.call(this, parent);
-          BeginEndBlock.call(this, parent, line, "VERSE");
-          this.nodeType = "VerseBlock";
-        };
-        LineDef.VERSE.constr = Content.VerseBlock = VerseBlock;
-        VerseBlock.prototype = Object.create(BeginEndBlock.prototype);
-        VerseBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
-      
-        ////////////////////////////////////////////////////////////////////////////////
-        //  QUOTEBLOCK
-        var QuoteBlock = function(parent, line){
-          ContentMarkupBlock.call(this, parent);
-          BeginEndBlock.call(this, parent, line, "QUOTE");
-          this.nodeType = "QuoteBlock";
-        };
-        LineDef.QUOTE.constr = Content.QuoteBlock = QuoteBlock;
-        QuoteBlock.prototype = Object.create(BeginEndBlock.prototype);
-        QuoteBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
-      
-        ////////////////////////////////////////////////////////////////////////////////
-        //  CENTERBLOCK
-        var CenterBlock = function(parent, line){
-          ContentMarkupBlock.call(this, parent);
-          BeginEndBlock.call(this, parent, line, "CENTER");
-          this.nodeType = "CenterBlock";
-        };
-        LineDef.CENTER.constr = Content.CenterBlock = CenterBlock;
-        CenterBlock.prototype = Object.create(BeginEndBlock.prototype);
-        CenterBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
-      
-        ////////////////////////////////////////////////////////////////////////////////
-        //  EXAMPLEBLOCK
-        var ExampleBlock = function(parent, line){
-          BeginEndBlock.call(this, parent, line, "EXAMPLE");
-          this.nodeType = "ExampleBlock";
-          this.verbatim = true;
-        };
-        LineDef.EXAMPLE.constr = Content.ExampleBlock = ExampleBlock;
-        ExampleBlock.prototype = Object.create(BeginEndBlock.prototype);
-      
-        ////////////////////////////////////////////////////////////////////////////////
-        //  SRCBLOCK
-        var SrcBlock = function(parent, line){
-          BeginEndBlock.call(this, parent, line, "SRC");
-          this.nodeType = "SrcBlock";
-          this.verbatim = true;
-          var match = /BEGIN_SRC\s+([a-z-]+)(?:\s*|$)/i.exec(line);
-          this.language = match ? match[1] : null;
-        };
-        LineDef.SRC.constr = Content.SrcBlock = SrcBlock;
-        SrcBlock.prototype = Object.create(BeginEndBlock.prototype);
-      
-        ////////////////////////////////////////////////////////////////////////////////
-        //  HTMLBLOCK
-        var HtmlBlock = function(parent, line){
-          BeginEndBlock.call(this, parent, line, "HTML");
-          this.nodeType = "HtmlBlock";
-          this.verbatim = true;
-        };
-        LineDef.HTML.constr = Content.HtmlBlock = HtmlBlock;
-        HtmlBlock.prototype = Object.create(BeginEndBlock.prototype);
-      
-        ////////////////////////////////////////////////////////////////////////////////
-        //  COMMENTBLOCK
-        var CommentBlock = function(parent, line){
-          BeginEndBlock.call(this, parent, line, "COMMENT");
-          this.nodeType = "CommentBlock";
-          this.verbatim = true;
-        };
-        LineDef.COMMENT.constr = Content.CommentBlock = CommentBlock;
-        CommentBlock.prototype = Object.create(BeginEndBlock.prototype);
-      
-      
-        ////////////////////////////////////////////////////////////////////////////////
-        //  ULISTBLOCK
-        var UlistBlock = function(parent, line){
-          ContainerBlock.call(this, parent);
-          this.nodeType = "UlistBlock";
-          this.indent = getLineIndent(line);
-        };
-        LineDef.ULITEM.constr = Content.UlistBlock = UlistBlock;
-        UlistBlock.prototype = Object.create(ContainerBlock.prototype);
-      
-        UlistBlock.prototype.accept  = function(line){
-          return getLineType(line) === LineType.ULITEM &&
-            getLineIndent(line) === this.indent;
-        };
-      
-        UlistBlock.prototype.consume = function(line){
-          var item = new UlistItemBlock(this, line);
-          this.children.push(item);
-          return item.consume(line);
-        };
-      
-        ////////////////////////////////////////////////////////////////////////////////
-        //  OLISTBLOCK
-        var OlistBlock = function(parent, line){
-          ContainerBlock.call(this, parent);
-          this.nodeType = "OlistBlock";
-          this.indent = getLineIndent(line);
-          var match = /^\s*\d+[.)]\s+\[@(\d+)\]/.exec(line);
-          this.start = match ? +(match[1]) : 1;
-        };
-        LineDef.OLITEM.constr = Content.OlistBlock = OlistBlock;
-        OlistBlock.prototype = Object.create(ContainerBlock.prototype);
-      
-        OlistBlock.prototype.accept  = function(line){
-          return getLineType(line) === LineType.OLITEM &&
-            getLineIndent(line) === this.indent;
-        };
-      
-        OlistBlock.prototype.consume = function(line){
-          var item = new OlistItemBlock(this, line);
-          this.children.push(item);
-          return item.consume(line);
-        };
-      
-        ////////////////////////////////////////////////////////////////////////////////
-        //  DLISTBLOCK
-        var DlistBlock = function(parent, line){
-          ContainerBlock.call(this, parent);
-          this.nodeType = "DlistBlock";
-          this.indent = getLineIndent(line);
-        };
-        LineDef.DLITEM.constr = Content.DlistBlock = DlistBlock;
-        DlistBlock.prototype = Object.create(ContainerBlock.prototype);
-      
-        DlistBlock.prototype.accept  = function(line){
-          return getLineType(line) === LineType.DLITEM &&
-            getLineIndent(line) === this.indent;
-        };
-      
-        DlistBlock.prototype.consume = function(line){
-          var item = new DlistItemBlock(this, line);
-          this.children.push(item);
-          return item.consume(line);
-        };
-      
-        ////////////////////////////////////////////////////////////////////////////////
-        //  LISTITEMBLOCK
-        var ListItemBlock = function(parent, line){
-          ContainerBlock.call(this, parent);
-          this.nodeType = "ListItemBlock";
-          this.indent = parent.indent;
-        };
-        ListItemBlock.prototype = Object.create(ContainerBlock.prototype);
-      
-        ListItemBlock.prototype.accept  = function(line){
-          var isMoreIndented = getLineIndent(line) > this.indent;
-          return isMoreIndented;
-        };
-      
-        ListItemBlock.prototype.consume = function(line){
-          var block;
-          if(this.children.length === 0){
-            line = this.preprocess(line);
-          }
-          block = getNewBlock(line, this);
-          this.children.push(block);
-          return block.consume(line);
-        };
-      
-        ////////////////////////////////////////////////////////////////////////////////
-        //  ULISTITEMBLOCK
-        var UlistItemBlock = function(parent, line){
-          ListItemBlock.call(this, parent, line);
-          this.nodeType = "UlistItemBlock";
-        };
-        Content.UlistItemBlock = UlistItemBlock;
-      
-        UlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
-        UlistItemBlock.prototype.preprocess = function(line){
-          return line.replace(/^(\s*)[+*-] /, "$1  ");
-        };
-      
-      
-        ////////////////////////////////////////////////////////////////////////////////
-        //  OLISTITEMBLOCK
-        var OlistItemBlock = function(parent, line){
-          ListItemBlock.call(this, parent, line);
-          this.nodeType = "OlistItemBlock";
-          var match = /^\s*(\d+)[.)] /.exec(line);
-          this.number = match ? +(match[1]) : 1;
-        };
-        Content.OlistItemBlock = OlistItemBlock;
-      
-        OlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
-        OlistItemBlock.prototype.preprocess = function(line){
-          return line.replace(/^(\s+)\d+[.)](?:\s+\[@\d+\])? /, "$1  ");
-        };
-      
-        ////////////////////////////////////////////////////////////////////////////////
-        //  DLISTITEMBLOCK
-        var DlistItemBlock = function(parent, line){
-          ListItemBlock.call(this, parent,line);
-          this.nodeType = "DlistItemBlock";
-          var title = (/^\s*[+*-] (.*) ::/).exec(line)[1];
-          this.titleInline = OM.tokenize(this, title);
-        };
-        Content.DlistItemBlock = DlistItemBlock;
-      
-        DlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
-        DlistItemBlock.prototype.preprocess = function(line){
-          return line.replace(/^(\s*)[+*-]\s+.*? ::/, "$1  ");
-        };
-      
-        ////////////////////////////////////////////////////////////////////////////////
-        //       PARSECONTENT
-        Content.parse = function(parent, lines){
-          var root = new RootBlock(parent);
-          var current = root;
-          var line = lines.shift();
-          // Ignore first blank lines...
-          while(line !== undefined && getLineType(line) === LineType.BLANK){
-            line = lines.shift();
-          }
-          while(line !== undefined){
-            while(current){
-              if(current.accept(line)){
-                current = current.consume(line);
-                break;
-              } else {
-                current.finalize();
-                current = current.parent;
-              }
-            }
-            line = lines.shift();
-          }
-          if(current){current.finalize();}
-          return root;
-        };
-      
-        return Content;
-      
+        #+BEGIN_SRC js
+          var RootBlock = function(parent){
+            ContainerBlock.call(this, parent);
+            this.nodeType = "RootBlock";
+          };
+          Content.RootBlock = RootBlock;
+          RootBlock.prototype = Object.create(ContainerBlock.prototype);
+        
+          RootBlock.prototype.accept  = function(line){return true;};
+          RootBlock.prototype.consume = function(line){
+            var block = getNewBlock(line, this);
+            this.children.push(block);
+            return block.consume(line);
+          };
+        
+        #+END_SRC
+*** Generic content block
+    #+BEGIN_SRC js
+      var ContentBlock = function(parent){
+        this.parent = parent;
+        this.nodeType = "ContentBlock";
+        this.isContent = true;
+        this.lines = [];
       };
-      
-      #+END_SRC
+      ContentBlock.prototype.finalize = function(){};
+    
+    #+END_SRC
+*** Generic content with markup block
+    #+BEGIN_SRC js
+      var ContentMarkupBlock = function(parent){
+        ContentBlock.call(this, parent);
+        this.nodeType = "ContentMarkupBlock";
+        this.hasMarkup = true;
+        this.children = [];
+      };
+      ContentMarkupBlock.prototype.finalize = function(){
+        var content = this.lines.join("\n");
+        var inline = OM.tokenize(this, content);
+        this.children.push(inline);
+      };
+    
+    #+END_SRC
+*** Paragraph block
+    #+BEGIN_SRC js
+      var ParaBlock = function(parent){
+        ContentMarkupBlock.call(this, parent);
+        this.nodeType = "ParaBlock";
+        this.indent = parent.indent || 0;
+      };
+      LineDef.PARA.constr = Content.ParaBlock = ParaBlock;
+      ParaBlock.prototype = Object.create(ContentMarkupBlock.prototype);
+      ParaBlock.prototype.accept = function(line){
+        var indent;
+        var type = getLineType(line);
+        if(type === LineType.BLANK){
+          if(this.ended){return true;}
+          this.ended = true; return true;
+        }
+        if(type !== LineType.PARA){return false;}
+        if(this.ended){return false;}
+    
+        if(this.indent === 0){return true;}
+        indent = getLineIndent(line);
+        if(indent <= this.indent){
+          return false;
+        }
+        return true;
+      };
+    
+      ParaBlock.prototype.consume = function(line){
+        var type = getLineType(line);
+        if(type !== LineType.IGNORED){
+          this.lines.push(line);
+        }
+        return this;
+      };
+    
+    
+    #+END_SRC
+*** Footnote definition block
+    #+BEGIN_SRC js
+      var FndefBlock = function(parent){
+        ContentMarkupBlock.call(this, parent);
+        this.nodeType = "FndefBlock";
+        this.indent = parent.indent || 0;
+        this.firstline = true;
+      };
+      LineDef.FNDEF.constr = Content.FndefBlock = FndefBlock;
+      FndefBlock.prototype = Object.create(ContentMarkupBlock.prototype);
+    
+      FndefBlock.prototype.accept = function(line){
+        var indent;
+        var type = getLineType(line);
+        if(type === LineType.FNDEF){
+          if(this.ended){return false;}
+          return true;
+        }
+        if(type === LineType.BLANK){
+          if(this.ended){ return true; }
+          this.ended = true; return true;
+        }
+        if(this.ended){ return false; }
+        return true;
+      };
+    
+      FndefBlock.prototype.consume = function(line){
+        var type = getLineType(line);
+        if(this.firstline){
+          this.name = /^\s*\[(.*?)\]/.exec(line)[1].replace(/^fn:/, '');
+          this.firstline = false;
+        }
+        if(type !== LineType.IGNORED){
+          this.lines.push(line);
+        }
+        return this;
+      };
+    
+      FndefBlock.prototype.finalize = function(line){
+        var root = _U.root(this);
+        var content = this.lines.join("\n");
+        content = content.replace(/^(\s*)\[.*?\]/, "$1");
+        var inline = OM.tokenize(this, content);
+        root.addFootnoteDef(inline, this.name);
+      };
+    
+    #+END_SRC
+*** Generic Begin/End block
+    #+BEGIN_SRC js
+      var BeginEndBlock = function(parent, line, type){
+        ContentBlock.call(this, parent);
+        this.nodeType = "BeginEndBlock";
+        this.indent = getLineIndent(line);
+        this.ended = false;
+        this.beginre = _R.lineTypes.beginBlock(type);
+        this.endre   = _R.lineTypes.endBlock(type);
+      };
+      BeginEndBlock.prototype = Object.create(ContentBlock.prototype);
+      BeginEndBlock.prototype.accept      = function(line){return !this.ended;};
+      BeginEndBlock.prototype.treatBegin  = function(line){};
+      BeginEndBlock.prototype.consume     = function(line){
+        if(this.beginre.exec(line)){ this.treatBegin(line); }
+        else if(this.endre.exec(line)){ this.ended = true; }
+        else {
+          if(this.verbatim){
+            this.lines.push(line);
+          } else {
+            var type = getLineType(line);
+            if(type !== LineType.IGNORED){
+              this.lines.push(line);
+            }
+          }
+        }
+        return this;
+      };
+    
+    #+END_SRC
+*** Verse block
+    #+BEGIN_SRC js
+      var VerseBlock = function(parent, line){
+        ContentMarkupBlock.call(this, parent);
+        BeginEndBlock.call(this, parent, line, "VERSE");
+        this.nodeType = "VerseBlock";
+      };
+      LineDef.VERSE.constr = Content.VerseBlock = VerseBlock;
+      VerseBlock.prototype = Object.create(BeginEndBlock.prototype);
+      VerseBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
+    
+    #+END_SRC
+*** Quote block
+    #+BEGIN_SRC js
+      var QuoteBlock = function(parent, line){
+        ContentMarkupBlock.call(this, parent);
+        BeginEndBlock.call(this, parent, line, "QUOTE");
+        this.nodeType = "QuoteBlock";
+      };
+      LineDef.QUOTE.constr = Content.QuoteBlock = QuoteBlock;
+      QuoteBlock.prototype = Object.create(BeginEndBlock.prototype);
+      QuoteBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
+    
+    #+END_SRC
+*** Centered-text block
+    #+BEGIN_SRC js
+      var CenterBlock = function(parent, line){
+        ContentMarkupBlock.call(this, parent);
+        BeginEndBlock.call(this, parent, line, "CENTER");
+        this.nodeType = "CenterBlock";
+      };
+      LineDef.CENTER.constr = Content.CenterBlock = CenterBlock;
+      CenterBlock.prototype = Object.create(BeginEndBlock.prototype);
+      CenterBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
+    
+    #+END_SRC
+*** Example block
+    #+BEGIN_SRC js
+      var ExampleBlock = function(parent, line){
+        BeginEndBlock.call(this, parent, line, "EXAMPLE");
+        this.nodeType = "ExampleBlock";
+        this.verbatim = true;
+      };
+      LineDef.EXAMPLE.constr = Content.ExampleBlock = ExampleBlock;
+      ExampleBlock.prototype = Object.create(BeginEndBlock.prototype);
+    
+    #+END_SRC
+*** Source code block
+    #+BEGIN_SRC js
+      var SrcBlock = function(parent, line){
+        BeginEndBlock.call(this, parent, line, "SRC");
+        this.nodeType = "SrcBlock";
+        this.verbatim = true;
+        var match = /BEGIN_SRC\s+([a-z\-]+)(?:\s*|$)/i.exec(line);
+        this.language = match ? match[1] : null;
+      };
+      LineDef.SRC.constr = Content.SrcBlock = SrcBlock;
+      SrcBlock.prototype = Object.create(BeginEndBlock.prototype);
+    
+    #+END_SRC
+*** HTML block
+    #+BEGIN_SRC js
+      var HtmlBlock = function(parent, line){
+        BeginEndBlock.call(this, parent, line, "HTML");
+        this.nodeType = "HtmlBlock";
+        this.verbatim = true;
+      };
+      LineDef.HTML.constr = Content.HtmlBlock = HtmlBlock;
+      HtmlBlock.prototype = Object.create(BeginEndBlock.prototype);
+    
+    #+END_SRC
+*** Comment block
+    #+BEGIN_SRC js
+      var CommentBlock = function(parent, line){
+        BeginEndBlock.call(this, parent, line, "COMMENT");
+        this.nodeType = "CommentBlock";
+        this.verbatim = true;
+      };
+      LineDef.COMMENT.constr = Content.CommentBlock = CommentBlock;
+      CommentBlock.prototype = Object.create(BeginEndBlock.prototype);
+    
+    #+END_SRC
+*** Generic List Item block
+    #+BEGIN_SRC js
+      var ListItemBlock = function(parent, line){
+        ContainerBlock.call(this, parent);
+        this.nodeType = "ListItemBlock";
+        this.indent = parent.indent;
+      };
+      ListItemBlock.prototype = Object.create(ContainerBlock.prototype);
+    
+      ListItemBlock.prototype.accept  = function(line){
+        var isMoreIndented = getLineIndent(line) > this.indent;
+        return isMoreIndented;
+      };
+    
+      ListItemBlock.prototype.consume = function(line){
+        var block;
+        if(this.children.length === 0){
+          line = this.preprocess(line);
+        }
+        block = getNewBlock(line, this);
+        this.children.push(block);
+        return block.consume(line);
+      };
+    
+    #+END_SRC
+*** Unordered List block
+    #+BEGIN_SRC js
+      var UlistBlock = function(parent, line){
+        ContainerBlock.call(this, parent);
+        this.nodeType = "UlistBlock";
+        this.indent = getLineIndent(line);
+      };
+      LineDef.ULITEM.constr = Content.UlistBlock = UlistBlock;
+      UlistBlock.prototype = Object.create(ContainerBlock.prototype);
+    
+      UlistBlock.prototype.accept  = function(line){
+        return getLineType(line) === LineType.ULITEM &&
+          getLineIndent(line) === this.indent;
+      };
+    
+      UlistBlock.prototype.consume = function(line){
+        var item = new UlistItemBlock(this, line);
+        this.children.push(item);
+        return item.consume(line);
+      };
+    
+    #+END_SRC
+*** Unoredered List Item block
+    #+BEGIN_SRC js
+      var UlistItemBlock = function(parent, line){
+        ListItemBlock.call(this, parent, line);
+        this.nodeType = "UlistItemBlock";
+      };
+      Content.UlistItemBlock = UlistItemBlock;
+    
+      UlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
+      UlistItemBlock.prototype.preprocess = function(line){
+        return line.replace(/^(\s*)[+*\-] /, "$1  ");
+      };
+    
+    #+END_SRC
+*** Ordered List block
+    #+BEGIN_SRC js
+      var OlistBlock = function(parent, line){
+        ContainerBlock.call(this, parent);
+        this.nodeType = "OlistBlock";
+        this.indent = getLineIndent(line);
+        var match = /^\s*\d+[.)]\s+\[@(\d+)\]/.exec(line);
+        this.start = match ? +(match[1]) : 1;
+      };
+      LineDef.OLITEM.constr = Content.OlistBlock = OlistBlock;
+      OlistBlock.prototype = Object.create(ContainerBlock.prototype);
+    
+      OlistBlock.prototype.accept  = function(line){
+        return getLineType(line) === LineType.OLITEM &&
+          getLineIndent(line) === this.indent;
+      };
+    
+      OlistBlock.prototype.consume = function(line){
+        var item = new OlistItemBlock(this, line);
+        this.children.push(item);
+        return item.consume(line);
+      };
+    
+    #+END_SRC
+*** Ordered list item block
+    #+BEGIN_SRC js
+      var OlistItemBlock = function(parent, line){
+        ListItemBlock.call(this, parent, line);
+        this.nodeType = "OlistItemBlock";
+        var match = /^\s*(\d+)[.)] /.exec(line);
+        this.number = match ? +(match[1]) : 1;
+      };
+      Content.OlistItemBlock = OlistItemBlock;
+    
+      OlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
+      OlistItemBlock.prototype.preprocess = function(line){
+        return line.replace(/^(\s+)\d+[.)](?:\s+\[@\d+\])? /, "$1  ");
+      };
+    
+    #+END_SRC
+*** Definition List block
+    #+BEGIN_SRC js
+      var DlistBlock = function(parent, line){
+        ContainerBlock.call(this, parent);
+        this.nodeType = "DlistBlock";
+        this.indent = getLineIndent(line);
+      };
+      LineDef.DLITEM.constr = Content.DlistBlock = DlistBlock;
+      DlistBlock.prototype = Object.create(ContainerBlock.prototype);
+    
+      DlistBlock.prototype.accept  = function(line){
+        return getLineType(line) === LineType.DLITEM &&
+          getLineIndent(line) === this.indent;
+      };
+    
+      DlistBlock.prototype.consume = function(line){
+        var item = new DlistItemBlock(this, line);
+        this.children.push(item);
+        return item.consume(line);
+      };
+    
+    #+END_SRC
+*** DlistItem block
+    #+BEGIN_SRC js
+      var DlistItemBlock = function(parent, line){
+        ListItemBlock.call(this, parent,line);
+        this.nodeType = "DlistItemBlock";
+        var title = (/^\s*[+*\-] (.*) ::/).exec(line)[1];
+        this.titleInline = OM.tokenize(this, title);
+      };
+      Content.DlistItemBlock = DlistItemBlock;
+    
+      DlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
+      DlistItemBlock.prototype.preprocess = function(line){
+        return line.replace(/^(\s*)[+*\-]\s+.*? ::/, "$1  ");
+      };
+    
+    #+END_SRC
+** Parsing the content
+    #+BEGIN_SRC js
+      Content.parse = function(parent, lines){
+        var root = new RootBlock(parent);
+        var current = root;
+        var line = lines.shift();
+        // Ignore first blank lines...
+        while(line !== undefined && getLineType(line) === LineType.BLANK){
+          line = lines.shift();
+        }
+        while(line !== undefined){
+          while(current){
+            if(current.accept(line)){
+              current = current.consume(line);
+              break;
+            } else {
+              current.finalize();
+              current = current.parent;
+            }
+          }
+          line = lines.shift();
+        }
+        if(current){current.finalize();}
+        return root;
+      };
+    
+      return Content;
+    
+    };
+    
+    #+END_SRC
 
 
 * =Org.Outline= : the outline/headlines parser
@@ -1402,230 +1483,249 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
       var OC = org.Content;
       var _U = org.Utils;
     
-      /////////////////////////////////////////////////////////////////////////////
-      // NODE : corresponds to a line starting with stars "*** ..."
-    
-      var Node = function(whole, params){
-        params          = params || {};
-        
-        this.nodeType = "Node";
-    
-        this.docid      = params.docid;
-        this.parent     = params.parent;
-        this.children   = params.children || [];
-        
-        this.whole      = whole;
-        this.parser     = new NodeParser(this.whole);
-        this.heading    = this.parser.getHeading();
-        this.level      = params.level || (this.heading.getStars() || "").length;
-        
-        this.properties = this.parser.getProperties();
-        this.meta       = this.parser.getMeta();
-        this.content    = this.parser.getContent();
-    
-      };
-    
-      /**
-       * Counting the documents generated in this page.
-       * Helps to generate an ID for the nodes
-       * when no docid is given in the root node.
-       */
-      Node.tocnum = 0;
-    
+    #+END_SRC
+** =Node=
+   Objects representing the headlines and their associated content
+   (including sub-nodes)
+       #+BEGIN_SRC js
+         var Node = function(whole, params){
+           params          = params || {};
+           
+           this.nodeType = "Node";
+       
+           this.docid      = params.docid;
+           this.parent     = params.parent;
+           this.children   = params.children || [];
+           
+           this.whole      = whole;
+           this.parser     = new NodeParser(this.whole);
+           this.heading    = this.parser.getHeading();
+           this.level      = params.level || (this.heading.getStars() || "").length;
+           
+           this.properties = this.parser.getProperties();
+           this.meta       = this.parser.getMeta();
+           this.content    = this.parser.getContent();
+       
+         };
+       
+       #+END_SRC
+*** =Node.tocnum=
+   Counting the documents generated in this page.
+   Helps to generate an ID for the nodes
+   when no docid is given in the root node.
+       #+BEGIN_SRC js
+         Node.tocnum = 0;
+       
+       #+END_SRC
+*** =Node.prototype=
+    #+BEGIN_SRC js
       Node.prototype = {
-        parseContent: function(){
-          var lines = _U.lines(this.content);
-          this.contentNode = OC.parse(this, lines);
-        },
-    
-        siblings: function(){
-          return this.parent ? this.parent.children : [];
-        },
-    
-        // Computes the ID of this node
-        id: function(){
-          if (!this.parent){
-            return this.docid || "doc#" + (Node.tocnum++) + "/";
-          }
-          return this.parent.id() + "" + this.siblings().indexOf(this) + "/";
-        },
-    
-        addFootnoteDef: function(inline, name){
-          if(this.fnByName === void(0)){
-            this.fnByName    = {};
-            this.fnNameByNum = [];
-            this.fnNextNum   = 1;
-          }
-          if(!name){name = "" + this.fnNextNum;}
-          if(this.fnByName[name]){
-            this.fnByName[name].inline = inline;
-            return this.fnNextNum;
-          }
-          else {
-            this.fnByName[name] = {"inline": inline, "num": this.fnNextNum, "name": name};
-            this.fnNameByNum[this.fnNextNum] = name;
-            this.fnNextNum = this.fnNextNum + 1;
-            return this.fnNextNum - 1;
-          }
-        }
-      };
-    
-      /////////////////////////////////////////////////////////////////////////////
-      // PARSING
-    
-      /**
-       * Headline embeds the parsing of a heading line.
-       */
-      var Headline = function(txt){
-        this.nodeType = "Headline";
-        this.repr = _U.trim(txt);
-        this.match = _R.headingLine.exec(this.repr) || [];
-      };
-    
-      Headline.prototype = {
-        getStars: function(){
-          return this.match[1];
-        },
-        getTodo: function(){
-          return this.match[2];
-        },
-        getPriority: function(){
-          return this.match[3];
-        },
-        getTitle: function(){
-          return this.match[4] || "";
-        },
-        getTags: function(){
-          var tags = this.match[5];
-          return tags ? tags.split(":") : [];
-        }
-      };
-    
-      /**
-       * Parsing a whole section
-       */
-      var NodeParser = function(txt){
-        this.content = txt;
-      };
-    
-      NodeParser.prototype = {
-        /**
-         * Returns the heading object for this node
-         */
-        getHeading: function(){
-          if(this.heading){return this.heading;}
-          var firstLine = _U.firstLine(this.content);
-          this.heading  = new Headline(firstLine);
-          return this.heading;
-        },
-    
-        /**
-         * Returns the map of headers (defined by "#+META: ..." line definitions)
-         */
-        getMeta: function(){
-          if(this.meta){return this.meta;}
-          var content = this.content;
-          if(this.level > 0){content = content.replace(_R.headingLine, "\n");}
-          var meta = this.parseHeaders(content);
-          this.meta = meta;
-          return this.meta;
-        },
-    
-        /**
-         * Returns the properties as defined in the :PROPERTIES: field
-         */
-        getProperties: function(){
-          if(this.props){return this.props;}
-          var content = this.content;
-          content = content.replace(_R.headingLine, "\n");
-          var subHeadingStars = "\n" + this.getHeading().getStars() + "*";
-          content = content.split(subHeadingStars)[0];
-          var props = this.props = {};
-          var propMatch = _R.propertySection.exec(content);
-          if(!propMatch){return this.props;}
-          var propLines = _U.lines(propMatch[1]);
-          _U.each(propLines, function(line, idx){
-            var match = _R.propertyLine.exec(line);
-            if(!match){return 1;} // continue
-            // Properties may be defined on several lines ; concatenate the values if needed
-            props[match[1]] = props[match[1]] ? props[match[1]] + " " + match[2] : match[2];
-          });
-          this.props = props;
-          return this.props;
-        },
-    
-        /**
-         * Returns the whole content without the heading nor the subitems
-         */
-        getItem: function(){
-          if(this.item){return this.item;}
-          var content = this.content;
-          content = content.replace(_R.headingLine, "\n");
-          var subHeadingStars = "\n" + this.getHeading().getStars() + "*";
-          //_U.log(subHeadingStars);
-          content = content.split(subHeadingStars)[0];
-          this.item = content;
-          return content;
-        },
-    
-        /**
-         * Returns the content only : no heading, no properties, no subitems, no clock, etc.
-         */
-        getContent: function(){
-          if(this.text){return this.text;}
-          var content = this.getItem();
-          content = this.removeHeaders(content);
-          content = content.replace(_R.propertySection, "");
-          content = content.replace(_R.scheduled, "");
-          content = content.replace(_R.deadline, "");
-          content = content.replace(_R.clockSection, "");
-          content = content.replace(_R.clockLine, "");
-          this.text = content;
-          return content;
-        },
-    
-        /**
-         * Extracts all the ""#+HEADER: Content" lines
-         * at the beginning of the given text, and returns a map
-         * of HEADER => Content
-         */
-        parseHeaders: function(txt){
-          var result = {};
-          var lines = txt.split(_R.newline);
-          _U.each(lines, function(line, idx){
-            if(_U.blank(line)){return true;}
-            if(!line.match(_R.metaDeclaration)){return false;} // we went ahead the headers : break the loop
-            var match = _R.metaLine.exec(line);
-            if (match){
-              if(result[match[1]]){
-                result[match[1]] = result[match[1]] + "\n" + match[2];
-              } else {
-                result[match[1]] = match[2];
-              }
+    #+END_SRC
+     + =parseContent()=
+           #+BEGIN_SRC js
+               parseContent: function(){
+                 var lines = _U.lines(this.content);
+                 this.contentNode = OC.parse(this, lines);
+               },
+           #+END_SRC
+     + =siblings()=
+           #+BEGIN_SRC js
+               siblings: function(){
+                 return this.parent ? this.parent.children : [];
+               },
+           
+           #+END_SRC
+     + =id()=
+           #+BEGIN_SRC js
+               id: function(){
+                 if (!this.parent){
+                   return this.docid || "doc#" + (Node.tocnum++) + "/";
+                 }
+                 return this.parent.id() + "" + this.siblings().indexOf(this) + "/";
+               },
+           
+           #+END_SRC
+     + =addFootnoteDef=
+           #+BEGIN_SRC js
+               addFootnoteDef: function(inline, name){
+                 if(this.fnByName === void(0)){
+                   this.fnByName    = {};
+                   this.fnNameByNum = [];
+                   this.fnNextNum   = 1;
+                 }
+                 if(!name){name = "" + this.fnNextNum;}
+                 if(this.fnByName[name]){
+                   this.fnByName[name].inline = inline;
+                   return this.fnNextNum;
+                 }
+                 else {
+                   this.fnByName[name] = {"inline": inline, "num": this.fnNextNum, "name": name};
+                   this.fnNameByNum[this.fnNextNum] = name;
+                   this.fnNextNum = this.fnNextNum + 1;
+                   return this.fnNextNum - 1;
+                 }
+               }
+             };
+           
+           
+           #+END_SRC
+** Parsing nodes
+*** =Headline= 
+    Headline embeds the parsing of a heading line (without the subcontent).
+        #+BEGIN_SRC js
+          var Headline = function(txt){
+            this.nodeType = "Headline";
+            this.repr = _U.trim(txt);
+            this.match = _R.headingLine.exec(this.repr) || [];
+          };
+        
+          Headline.prototype = {
+            getStars: function(){
+              return this.match[1];
+            },
+            getTodo: function(){
+              return this.match[2];
+            },
+            getPriority: function(){
+              return this.match[3];
+            },
+            getTitle: function(){
+              return this.match[4] || "";
+            },
+            getTags: function(){
+              var tags = this.match[5];
+              return tags ? tags.split(":") : [];
             }
-            return true;
-          });
-          return result;
-        },
-    
-        /**
-         * Returns the given text without the "#+HEADER: Content" lines at the beginning
-         */
-        removeHeaders: function(txt){
-          var result = "";
-          var lines  = txt.split(_R.newline);
-          var header = true;
-          _U.each(lines, function(line, idx){
-            if(header && _U.blank(line)){return;}
-            if(header && line.match(_R.metaDeclaration)){return;}
-            header = false;
-            result += "\n" + line;
-          });
-          return result;
-        }
-      };
-    
-    
+          };
+        
+        #+END_SRC
+** =NodeParser=
+   Parsing a whole section
+       #+BEGIN_SRC js
+         var NodeParser = function(txt){
+           this.content = txt;
+         };
+       
+         NodeParser.prototype = {
+       #+END_SRC
+   + Returns the heading object for this node
+         #+BEGIN_SRC js
+             getHeading: function(){
+               if(this.heading){return this.heading;}
+               var firstLine = _U.firstLine(this.content);
+               this.heading  = new Headline(firstLine);
+               return this.heading;
+             },
+         
+         #+END_SRC
+   + Returns the map of headers (defined by "#+META: ..." line definitions)
+         #+BEGIN_SRC js
+             getMeta: function(){
+               if(this.meta){return this.meta;}
+               var content = this.content;
+               if(this.level > 0){content = content.replace(_R.headingLine, "\n");}
+               var meta = this.parseHeaders(content);
+               this.meta = meta;
+               return this.meta;
+             },
+         
+         #+END_SRC
+   + Returns the properties as defined in the :PROPERTIES: field
+         #+BEGIN_SRC js
+             getProperties: function(){
+               if(this.props){return this.props;}
+               var content = this.content;
+               content = content.replace(_R.headingLine, "\n");
+               var subHeadingStars = "\n" + this.getHeading().getStars() + "*";
+               content = content.split(subHeadingStars)[0];
+               var props = this.props = {};
+               var propMatch = _R.propertySection.exec(content);
+               if(!propMatch){return this.props;}
+               var propLines = _U.lines(propMatch[1]);
+               _U.each(propLines, function(line, idx){
+                 var match = _R.propertyLine.exec(line);
+                 if(!match){return 1;} // continue
+                 // Properties may be defined on several lines ; concatenate the values if needed
+                 props[match[1]] = props[match[1]] ? props[match[1]] + " " + match[2] : match[2];
+               });
+               this.props = props;
+               return this.props;
+             },
+         
+         #+END_SRC
+   + Returns the whole content without the heading nor the subitems
+         #+BEGIN_SRC js
+             getItem: function(){
+               if(this.item){return this.item;}
+               var content = this.content;
+               content = content.replace(_R.headingLine, "\n");
+               var subHeadingStars = "\n" + this.getHeading().getStars() + "*";
+               //_U.log(subHeadingStars);
+               content = content.split(subHeadingStars)[0];
+               this.item = content;
+               return content;
+             },
+         
+         #+END_SRC
+   + Returns the content only : no heading, no properties, no subitems, no clock, etc.
+         #+BEGIN_SRC js
+             getContent: function(){
+               if(this.text){return this.text;}
+               var content = this.getItem();
+               content = this.removeHeaders(content);
+               content = content.replace(_R.propertySection, "");
+               content = content.replace(_R.scheduled, "");
+               content = content.replace(_R.deadline, "");
+               content = content.replace(_R.clockSection, "");
+               content = content.replace(_R.clockLine, "");
+               this.text = content;
+               return content;
+             },
+         
+         #+END_SRC
+   + Extracts all the ""#+HEADER: Content" lines
+ * at the beginning of the given text, and returns a map
+ * of HEADER => Content
+       #+BEGIN_SRC js
+           parseHeaders: function(txt){
+             var result = {};
+             var lines = txt.split(_R.newline);
+             _U.each(lines, function(line, idx){
+               if(_U.blank(line)){return true;}
+               if(!line.match(_R.metaDeclaration)){return false;} // we went ahead the headers : break the loop
+               var match = _R.metaLine.exec(line);
+               if (match){
+                 if(result[match[1]]){
+                   result[match[1]] = result[match[1]] + "\n" + match[2];
+                 } else {
+                   result[match[1]] = match[2];
+                 }
+               }
+               return true;
+             });
+             return result;
+           },
+       
+       #+END_SRC
+   + Returns the given text without the "#+HEADER: Content" lines at the beginning
+         #+BEGIN_SRC js
+             removeHeaders: function(txt){
+               var result = "";
+               var lines  = txt.split(_R.newline);
+               var header = true;
+               _U.each(lines, function(line, idx){
+                 if(header && _U.blank(line)){return;}
+                 if(header && line.match(_R.metaDeclaration)){return;}
+                 header = false;
+                 result += "\n" + line;
+               });
+               return result;
+             }
+           };
+         
+         #+END_SRC
+** The returned object
+    #+BEGIN_SRC js
       var Outline = {
         Node:       Node,
         Headline:   Headline,
