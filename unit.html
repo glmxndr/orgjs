@@ -135,6 +135,34 @@ $(function(){
   });
 
 
+  test("UTILS - TreeNode", function(){
+    // Reset incrementing for IDs
+    _U.incr = _U.incrementor();
+    // Getting the IDs of an array of nodes
+    var getIds = function(arr){
+      return _U.map(arr, function(v){return v.id;});
+    };
+    // Creating structure
+    var TreeNode = _U.TreeNode;
+    var root = new TreeNode();
+    var n1 = new TreeNode(root, {leaf:true});
+    var n2 = new TreeNode(root);
+    var n21 = new TreeNode(n2, {leaf:true});
+    var n22 = new TreeNode(n2, {leaf:true});
+    var n23 = new TreeNode(n2, {leaf:true});
+    var n24 = new TreeNode(n2, {leaf:true});
+    var n25 = new TreeNode(n2, {leaf:true});
+
+    deepEqual([3, 1],          getIds(n22.ancestors()) ,   "ancestors() not working");
+    deepEqual([4, 5, 6, 7, 8], getIds(n2.children()) ,     "children() not working");
+    deepEqual([4, 5],          getIds(n23.prevAll()) ,     "prevAll() not working");
+    deepEqual([5],             getIds([n23.prev()]) ,      "prev() not working");
+    deepEqual([7, 8],          getIds(n23.nextAll()) ,     "nextAll() not working");
+    deepEqual([7],             getIds([n23.next()]) ,      "next() not working");
+    deepEqual([4, 5, 6, 7, 8], getIds(n23.siblingsAll()) , "siblingsAll() not working");
+    deepEqual([4, 5, 7, 8],    getIds(n23.siblings()) ,    "siblings() not working");
+  });
+
 });
 </script>
 </body>

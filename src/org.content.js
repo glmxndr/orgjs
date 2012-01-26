@@ -12,11 +12,13 @@ Org.getContent = function(org, params){
   var _C  = org.Config;
   var OM = org.Markup;
   var _R = org.Regexps;
+  var RLT = _R.lineTypes;
 
   /*orgdoc
     =Content= is the object returned by this function.
   */
   var Content = {};
+
 
   /*orgdoc
   ** Types of lines
@@ -25,53 +27,27 @@ Org.getContent = function(org, params){
 
     Line types are given an =id= property: a number identifying them.
   */
-  var LineDef = (function(){
-    var l = -1;
-    return {
-      "BLANK":    {id: ++l},
-      "IGNORED":  {id: ++l},
-      "FNDEF":    {id: ++l},
-      "PARA":     {id: ++l},
-      "ULITEM":   {id: ++l},
-      "OLITEM":   {id: ++l},
-      "DLITEM":   {id: ++l},
+  var LineDefTestOrder = [
+    "BLANK",
+    "IGNORED",
+    "DLITEM",
+    "ULITEM",
+    "OLITEM",
+    "FNDEF",
+    "VERSE",
+    "QUOTE",
+    "CENTER",
+    "EXAMPLE",
+    "SRC",
+    "HTML",
+    "COMMENT"
+  ];
+  Content.LineDefTestOrder = LineDefTestOrder; 
 
-      /*orgdoc
-        Some lines start a =BEGIN_/END_= block, their line definition have a =beginEnd=
-        property set to =1=.
-      */
-      "VERSE":    {id: ++l, beginEnd:1},
-      "QUOTE":    {id: ++l, beginEnd:1},
-      "CENTER":   {id: ++l, beginEnd:1},
-      "EXAMPLE":  {id: ++l, beginEnd:1},
-      "SRC":      {id: ++l, beginEnd:1},
-      "HTML":     {id: ++l, beginEnd:1},
-      "COMMENT":  {id: ++l, beginEnd:1}
-    };
-  }());
-
-  /*orgdoc
-    Now defining different ways to access the line types.
-    Defining some other arrangements of the line definitions :
-    
-    + Simple index : type name => number
-  */
-  var LineType = {};
-  _U.each(LineDef, function(v, k){LineType[k] = v.id;});
-
-  /*orgdoc
-    + Reversed type index : number => type name
-  */
-  var LineTypeArr = [];
-  _U.each(LineDef, function(v, k){LineTypeArr[v.id] = k;});
-
-
-  /*orgdoc
-    + List of names of the blocks in =BEGIN_... / END_...= form
-  */
-  var BeginEndBlocks = {};
-  _U.each(LineDef, function(v, k){if(v.beginEnd) BeginEndBlocks[k] = 1;});
-
+  var LineDef = {
+    "BLANK":    {id:"BLANK", rgx: RLT.blank}
+  };
+  Content.LineDef = LineDef;
 
   /*orgdoc
     + Function which determines the type from the given line. A minimal caching system is
@@ -80,7 +56,7 @@ Org.getContent = function(org, params){
 
       The function will only compare the line with regexps.
   */
-  var lineTypeCache = {line: "", type: LineType.BLANK};
+  var lineTypeCache = {line: "", type: LineDef.BLANK.id};
 
   function getLineType(line){
 
@@ -92,41 +68,23 @@ Org.getContent = function(org, params){
       return type;
     }
 
-    var RLT = _R.lineTypes;
-
     // First test on a line beginning with a letter,
     // the most common case, to avoid making all the
     // other tests before returning the default.
     if(RLT.letter.exec(line)){
-      return cache(LineType.PARA);
-    }
-    if(_U.blank(line)){
-      return cache(LineType.BLANK);
-    }
-    if(RLT.ignored.exec(line)){
-      return cache(LineType.IGNORED);
-    }
-    // Then test all the other cases
-    if(RLT.litem.exec(line)){
-      if(RLT.dlitem.exec(line)){
-        return cache(LineType.DLITEM);
-      }
-      return cache(LineType.ULITEM);
-    }
-    if(RLT.olitem.exec(line)){
-      return cache(LineType.OLITEM);
-    }
-    if(RLT.fndef.exec(line)){
-      return cache(LineType.FNDEF);
+      return cache(LineDef.PARA.id);
     }
 
-    var k;
-    for(k in BeginEndBlocks){
-      if(RLT.beginBlock(k).exec(line)){
-        return cache(LineType[k]);
+    for(var idx in LineDefTestOrder){
+      var name = LineDefTestOrder[idx];
+      var type = LineDef[name];
+      if(type.rgx.exec(line)){
+        return cache(name);
       }
     }
-    return cache(LineType.PARA);
+
+    // By default, return PARA if all failed
+    return cache(LineDef.PARA.id);
   }
 
   /*orgdoc
@@ -144,8 +102,8 @@ Org.getContent = function(org, params){
   ** Blocks
   */
   function getNewBlock(line, parent){
-    var type = getLineType(line, line);
-    var constr = LineDef[LineTypeArr[type]].constr || LineDef.PARA.constr;
+    var type = getLineType(line);
+    var constr = LineDef[type].constr || LineDef.PARA.constr;
     return new constr(parent, line);
   }
 
@@ -178,8 +136,8 @@ Org.getContent = function(org, params){
   Content.RootBlock = RootBlock;
   RootBlock.prototype = Object.create(ContainerBlock.prototype);
 
-  RootBlock.prototype.accept  = function(line){return true;};
-  RootBlock.prototype.consume = function(line){
+  RootBlock.prototype.accept  = function(line, type){return true;};
+  RootBlock.prototype.consume = function(line, type){
     var block = getNewBlock(line, this);
     this.children.push(block);
     return block.consume(line);
@@ -219,16 +177,20 @@ Org.getContent = function(org, params){
     this.nodeType = "ParaBlock";
     this.indent = parent.indent || 0;
   };
-  LineDef.PARA.constr = Content.ParaBlock = ParaBlock;
+  LineDef.PARA = {
+    id:     "PARA", 
+    rgx:    RLT.letter,
+    constr: ParaBlock
+  };
+  Content.ParaBlock = ParaBlock;
   ParaBlock.prototype = Object.create(ContentMarkupBlock.prototype);
-  ParaBlock.prototype.accept = function(line){
+  ParaBlock.prototype.accept = function(line, type){
     var indent;
-    var type = getLineType(line);
-    if(type === LineType.BLANK){
+    if(type === LineDef.BLANK.id){
       if(this.ended){return true;}
       this.ended = true; return true;
     }
-    if(type !== LineType.PARA){return false;}
+    if(type !== LineDef.PARA.id){return false;}
     if(this.ended){return false;}
 
     if(this.indent === 0){return true;}
@@ -239,14 +201,47 @@ Org.getContent = function(org, params){
     return true;
   };
 
-  ParaBlock.prototype.consume = function(line){
-    var type = getLineType(line);
-    if(type !== LineType.IGNORED){
+  ParaBlock.prototype.consume = function(line, type){
+    if(type !== LineDef.IGNORED.id){
       this.lines.push(line);
     }
     return this;
   };
 
+  /*orgdoc
+  *** Ignored line (starting with a hash)
+  */
+  var IgnoredLine = function(parent){
+    ContentMarkupBlock.call(this, parent);
+    this.nodeType = "IgnoredLine";
+    this.indent = parent.indent || 0;
+    this.firstline = true;
+  };
+  LineDef.IGNORED = {
+    id:"IGNORED", 
+    rgx: RLT.ignored,
+    constr: IgnoredLine
+  };
+  Content.IgnoredLine = IgnoredLine;
+  IgnoredLine.prototype = Object.create(ContentBlock.prototype);
+
+  IgnoredLine.prototype.accept = function(line, type){
+    if(this.firstLine){
+      this.firstLine = false;
+      return true;
+    }
+    if(type === LineDef.BLANK.id){
+      return true;
+    }
+    return false;
+  };
+
+  IgnoredLine.prototype.consume = function(line, type){
+    if(type !== LineDef.BLANK.id){
+      this.content = line.replace(/^\s*#\s+/, "");
+    }
+    return this;
+  };
 
   /*orgdoc
   *** Footnote definition block
@@ -257,17 +252,21 @@ Org.getContent = function(org, params){
     this.indent = parent.indent || 0;
     this.firstline = true;
   };
-  LineDef.FNDEF.constr = Content.FndefBlock = FndefBlock;
+  LineDef.FNDEF = {
+    id:     "FNDEF", 
+    rgx:    RLT.fndef, 
+    constr: FndefBlock
+  };
+  Content.FndefBlock = FndefBlock;
   FndefBlock.prototype = Object.create(ContentMarkupBlock.prototype);
 
-  FndefBlock.prototype.accept = function(line){
+  FndefBlock.prototype.accept = function(line, type){
     var indent;
-    var type = getLineType(line);
-    if(type === LineType.FNDEF){
+    if(type === LineDef.FNDEF.id){
       if(this.ended){return false;}
       return true;
     }
-    if(type === LineType.BLANK){
+    if(type === LineDef.BLANK.id){
       if(this.ended){ return true; }
       this.ended = true; return true;
     }
@@ -275,13 +274,12 @@ Org.getContent = function(org, params){
     return true;
   };
 
-  FndefBlock.prototype.consume = function(line){
-    var type = getLineType(line);
+  FndefBlock.prototype.consume = function(line, type){
     if(this.firstline){
       this.name = /^\s*\[(.*?)\]/.exec(line)[1].replace(/^fn:/, '');
       this.firstline = false;
     }
-    if(type !== LineType.IGNORED){
+    if(type !== LineDef.IGNORED.id){
       this.lines.push(line);
     }
     return this;
@@ -303,21 +301,20 @@ Org.getContent = function(org, params){
     this.nodeType = "BeginEndBlock";
     this.indent = getLineIndent(line);
     this.ended = false;
-    this.beginre = _R.lineTypes.beginBlock(type);
-    this.endre   = _R.lineTypes.endBlock(type);
+    this.beginre = RLT.beginBlock(type);
+    this.endre   = RLT.endBlock(type);
   };
   BeginEndBlock.prototype = Object.create(ContentBlock.prototype);
-  BeginEndBlock.prototype.accept      = function(line){return !this.ended;};
-  BeginEndBlock.prototype.treatBegin  = function(line){};
-  BeginEndBlock.prototype.consume     = function(line){
+  BeginEndBlock.prototype.accept      = function(){return !this.ended;};
+  BeginEndBlock.prototype.treatBegin  = function(){};
+  BeginEndBlock.prototype.consume     = function(line, type){
     if(this.beginre.exec(line)){ this.treatBegin(line); }
     else if(this.endre.exec(line)){ this.ended = true; }
     else {
       if(this.verbatim){
         this.lines.push(line);
       } else {
-        var type = getLineType(line);
-        if(type !== LineType.IGNORED){
+        if(type !== LineDef.IGNORED.id){
           this.lines.push(line);
         }
       }
@@ -333,7 +330,13 @@ Org.getContent = function(org, params){
     BeginEndBlock.call(this, parent, line, "VERSE");
     this.nodeType = "VerseBlock";
   };
-  LineDef.VERSE.constr = Content.VerseBlock = VerseBlock;
+  LineDef.VERSE = {
+    id:       "VERSE", 
+    beginEnd: 1, 
+    rgx:      RLT.beginBlock("VERSE"),
+    constr:   VerseBlock
+  };
+  Content.VerseBlock = VerseBlock;
   VerseBlock.prototype = Object.create(BeginEndBlock.prototype);
   VerseBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
 
@@ -345,7 +348,13 @@ Org.getContent = function(org, params){
     BeginEndBlock.call(this, parent, line, "QUOTE");
     this.nodeType = "QuoteBlock";
   };
-  LineDef.QUOTE.constr = Content.QuoteBlock = QuoteBlock;
+  LineDef.QUOTE = {
+    id:       "QUOTE", 
+    beginEnd: 1, 
+    rgx:      RLT.beginBlock("QUOTE"),
+    constr:   QuoteBlock
+  };
+  Content.QuoteBlock = QuoteBlock;
   QuoteBlock.prototype = Object.create(BeginEndBlock.prototype);
   QuoteBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
 
@@ -357,7 +366,13 @@ Org.getContent = function(org, params){
     BeginEndBlock.call(this, parent, line, "CENTER");
     this.nodeType = "CenterBlock";
   };
-  LineDef.CENTER.constr = Content.CenterBlock = CenterBlock;
+  LineDef.CENTER = {
+    id:       "CENTER", 
+    beginEnd: 1, 
+    rgx:      RLT.beginBlock("CENTER"),
+    constr:   CenterBlock
+  };
+  Content.CenterBlock = CenterBlock;
   CenterBlock.prototype = Object.create(BeginEndBlock.prototype);
   CenterBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
 
@@ -369,7 +384,13 @@ Org.getContent = function(org, params){
     this.nodeType = "ExampleBlock";
     this.verbatim = true;
   };
-  LineDef.EXAMPLE.constr = Content.ExampleBlock = ExampleBlock;
+  LineDef.EXAMPLE = {
+    id:       "EXAMPLE", 
+    beginEnd: 1, 
+    rgx:      RLT.beginBlock("EXAMPLE"),
+    constr:   ExampleBlock
+  };
+  Content.ExampleBlock = ExampleBlock;
   ExampleBlock.prototype = Object.create(BeginEndBlock.prototype);
 
   /*orgdoc
@@ -382,7 +403,13 @@ Org.getContent = function(org, params){
     var match = /BEGIN_SRC\s+([a-z\-]+)(?:\s*|$)/i.exec(line);
     this.language = match ? match[1] : null;
   };
-  LineDef.SRC.constr = Content.SrcBlock = SrcBlock;
+  LineDef.SRC = {
+    id:       "SRC", 
+    beginEnd: 1, 
+    rgx:      RLT.beginBlock("SRC"),
+    constr:   SrcBlock
+  };
+  Content.SrcBlock = SrcBlock;
   SrcBlock.prototype = Object.create(BeginEndBlock.prototype);
 
   /*orgdoc
@@ -393,7 +420,13 @@ Org.getContent = function(org, params){
     this.nodeType = "HtmlBlock";
     this.verbatim = true;
   };
-  LineDef.HTML.constr = Content.HtmlBlock = HtmlBlock;
+  LineDef.HTML = {
+    id:       "HTML", 
+    beginEnd: 1, 
+    rgx:      RLT.beginBlock("HTML"),
+    constr:   HtmlBlock
+  };
+  Content.HtmlBlock = HtmlBlock;
   HtmlBlock.prototype = Object.create(BeginEndBlock.prototype);
 
   /*orgdoc
@@ -404,7 +437,13 @@ Org.getContent = function(org, params){
     this.nodeType = "CommentBlock";
     this.verbatim = true;
   };
-  LineDef.COMMENT.constr = Content.CommentBlock = CommentBlock;
+  LineDef.COMMENT = {
+    id:       "COMMENT", 
+    beginEnd: 1, 
+    rgx:      RLT.beginBlock("COMMENT"),
+    constr:   CommentBlock
+  };
+  Content.CommentBlock = CommentBlock;
   CommentBlock.prototype = Object.create(BeginEndBlock.prototype);
 
   /*orgdoc
@@ -417,12 +456,12 @@ Org.getContent = function(org, params){
   };
   ListItemBlock.prototype = Object.create(ContainerBlock.prototype);
 
-  ListItemBlock.prototype.accept  = function(line){
+  ListItemBlock.prototype.accept  = function(line, type){
     var isMoreIndented = getLineIndent(line) > this.indent;
     return isMoreIndented;
   };
 
-  ListItemBlock.prototype.consume = function(line){
+  ListItemBlock.prototype.consume = function(line, type){
     var block;
     if(this.children.length === 0){
       line = this.preprocess(line);
@@ -440,15 +479,20 @@ Org.getContent = function(org, params){
     this.nodeType = "UlistBlock";
     this.indent = getLineIndent(line);
   };
-  LineDef.ULITEM.constr = Content.UlistBlock = UlistBlock;
+  LineDef.ULITEM = {
+    id:     "ULITEM", 
+    rgx:    RLT.ulitem,
+    constr: UlistBlock
+  };
+  Content.UlistBlock = UlistBlock;
   UlistBlock.prototype = Object.create(ContainerBlock.prototype);
 
-  UlistBlock.prototype.accept  = function(line){
-    return getLineType(line) === LineType.ULITEM &&
+  UlistBlock.prototype.accept  = function(line, type){
+    return type === LineDef.ULITEM.id &&
       getLineIndent(line) === this.indent;
   };
 
-  UlistBlock.prototype.consume = function(line){
+  UlistBlock.prototype.consume = function(line, type){
     var item = new UlistItemBlock(this, line);
     this.children.push(item);
     return item.consume(line);
@@ -478,11 +522,16 @@ Org.getContent = function(org, params){
     var match = /^\s*\d+[.)]\s+\[@(\d+)\]/.exec(line);
     this.start = match ? +(match[1]) : 1;
   };
-  LineDef.OLITEM.constr = Content.OlistBlock = OlistBlock;
+  LineDef.OLITEM = {
+    id:     "OLITEM", 
+    rgx:    RLT.olitem,
+    constr: OlistBlock
+  };
+  Content.OlistBlock = OlistBlock;
   OlistBlock.prototype = Object.create(ContainerBlock.prototype);
 
-  OlistBlock.prototype.accept  = function(line){
-    return getLineType(line) === LineType.OLITEM &&
+  OlistBlock.prototype.accept  = function(line, type){
+    return type === LineDef.OLITEM.id &&
       getLineIndent(line) === this.indent;
   };
 
@@ -516,15 +565,20 @@ Org.getContent = function(org, params){
     this.nodeType = "DlistBlock";
     this.indent = getLineIndent(line);
   };
-  LineDef.DLITEM.constr = Content.DlistBlock = DlistBlock;
+  LineDef.DLITEM = {
+    id:     "DLITEM", 
+    rgx:    RLT.dlitem,
+    constr: DlistBlock
+  };
+  Content.DlistBlock = DlistBlock;
   DlistBlock.prototype = Object.create(ContainerBlock.prototype);
 
-  DlistBlock.prototype.accept  = function(line){
-    return getLineType(line) === LineType.DLITEM &&
+  DlistBlock.prototype.accept  = function(line, type){
+    return type === LineDef.DLITEM.id &&
       getLineIndent(line) === this.indent;
   };
 
-  DlistBlock.prototype.consume = function(line){
+  DlistBlock.prototype.consume = function(line, type){
     var item = new DlistItemBlock(this, line);
     this.children.push(item);
     return item.consume(line);
@@ -554,13 +608,15 @@ Org.getContent = function(org, params){
     var current = root;
     var line = lines.shift();
     // Ignore first blank lines...
-    while(line !== undefined && getLineType(line) === LineType.BLANK){
+    var type;
+    while(line !== undefined && (type = getLineType(line)) === LineDef.BLANK.id){
       line = lines.shift();
     }
     while(line !== undefined){
+      type = getLineType(line);
       while(current){
-        if(current.accept(line)){
-          current = current.consume(line);
+        if(current.accept(line, type)){
+          current = current.consume(line, type);
           break;
         } else {
           current.finalize();

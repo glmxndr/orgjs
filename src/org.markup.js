@@ -69,10 +69,6 @@ Org.getMarkup = function(org, params){
   ** Typographic markup
   *** =EmphMarkers= : emphasis marker abstract object
   */
-
-  ///////////////////////////////////////////////////////////////////////////////
-  // TYPO
-
   //   + Allowed pre:      " \t('\"{"
   //   + Allowed post:     "- \t.,:!?;'\")}\\"
   //   + Forbidden border: " \t\r\n,\"'"
@@ -110,9 +106,7 @@ Org.getMarkup = function(org, params){
     return new constr(parent);
   };
   EmphMarkers.getRegexpAll = function(){
-    // TODO : refactor to :
-    //    - take the real pre/post/border char sets in config
-    return (/(^(?:.|\n)*?)(([\/*~=+_])([^\s].*?[^\s\\]|[^\s\\])\3)/);        //*/
+    return (/(^(?:.|\n)*?)(([\/*~=+_])([^\s].*?[^\s\\]|[^\s\\])\3)/);
   };
   Markup.EmphMarkers = EmphMarkers;
 
@@ -286,8 +280,8 @@ Org.getMarkup = function(org, params){
   Markup.EmphStrike = EmphStrike;
 
 
-///////////////////////////////////////////////////////////////////////////////
-// PARSE
+  ///////////////////////////////////////////////////////////////////////////////
+  // PARSE
 
   var _linkTokenId = 0;
 
@@ -300,8 +294,8 @@ Org.getMarkup = function(org, params){
 
     function uniqToken(p){return _U.getAbsentToken(initStr, p);}
 
-///////////////////////////////////////////////////////////////////////////////
-//     LINKS
+    ///////////////////////////////////////////////////////////////////////////////
+    //     LINKS
     function linkToken(){return linkTokenPrefix + (++_linkTokenId);}
 
     function linkReplacer(urlIdx, descIdx){
@@ -327,8 +321,8 @@ Org.getMarkup = function(org, params){
                       '):[^\\s),;]+', "gi");
     str = str.replace(urlRegex, linkReplacer(0, 0));
 
-///////////////////////////////////////////////////////////////////////////////
-//     FOOTNOTES
+    ///////////////////////////////////////////////////////////////////////////////
+    //     FOOTNOTES
 
     var refFootnoteRegex = /\[(?:(\d+)|fn:([^:]*)(?::((?:.|\s)+?))?)\]/g;
     str = str.replace(refFootnoteRegex, function(){
@@ -349,8 +343,6 @@ Org.getMarkup = function(org, params){
       links[t] = fn;
       return t;
     });
-
-// TODO
 
     var iObj = new EmphInline(parent);
     iObj.consume(str);

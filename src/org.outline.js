@@ -10,6 +10,7 @@ Org.getOutline = function(org, params){
   var _P = params;
   var _R = org.Regexps;
   var OC = org.Content;
+  var OM = org.Markup;
   var _U = org.Utils;
 
   /*orgdoc
@@ -27,7 +28,7 @@ Org.getOutline = function(org, params){
     this.children   = params.children || [];
     
     this.whole      = whole;
-    this.parser     = new NodeParser(this.whole);
+    this.parser     = new NodeParser(this, this.whole);
     this.heading    = this.parser.getHeading();
     this.level      = params.level || (this.heading.getStars() || "").length;
     
@@ -102,10 +103,12 @@ Org.getOutline = function(org, params){
   *** =Headline= 
       Headline embeds the parsing of a heading line (without the subcontent).
    */
-  var Headline = function(txt){
+  var Headline = function(node, txt){
+    this.parent = node;
     this.nodeType = "Headline";
     this.repr = _U.trim(txt);
     this.match = _R.headingLine.exec(this.repr) || [];
+    this.titleNode = OM.tokenize(this, this.getTitle());
   };
 
   Headline.prototype = {
@@ -131,7 +134,8 @@ Org.getOutline = function(org, params){
   ** =NodeParser=
      Parsing a whole section
    */
-  var NodeParser = function(txt){
+  var NodeParser = function(node, txt){
+    this.node = node;
     this.content = txt;
   };
 
@@ -142,7 +146,7 @@ Org.getOutline = function(org, params){
     getHeading: function(){
       if(this.heading){return this.heading;}
       var firstLine = _U.firstLine(this.content);
-      this.heading  = new Headline(firstLine);
+      this.heading  = new Headline(this.node, firstLine);
       return this.heading;
     },
 

@@ -8,6 +8,8 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 
 [1] Oh, right again!
 
+# This is a comment!
+
 #+INCLUDE: "../test/include/doc_header.org"
 
 * =Org= : the Main object
@@ -27,5 +29,3 @@ var Org = function(params){
   this.Parser     = Org.getParser(this, params);
   this.Renderers  = Org.getRenderers(this, params);
 };
-/*orgdoc
-*/

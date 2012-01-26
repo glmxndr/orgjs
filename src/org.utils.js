@@ -67,12 +67,65 @@ Org.getUtils = function(org, params){
     };
   }
 
-  /*orgdoc
-  ** =Utils= object to be returned
-  */
   var _R = org.Regexps;
-
+  /*orgdoc
+  ** =Utils= object to be returnedn aliased as =_U=.
+  */
   var _U = {
+
+    /*orgdoc
+         + =extend= is a function to be attached to prototypes, for example, to allow easy
+           addition of features.
+           #+BEGIN_EXAMPLE
+             var Type = function(){};
+             Type.prototype.extend = _U.extend;
+             Type.prototype.extend({
+               some: function(){},
+               neet: function(){}
+             });
+           #+END_EXAMPLE
+    */
+    extend: function(){
+      var key, idx, obj;
+      for(idx in arguments){
+        obj = arguments[idx];
+        for(key in obj){
+          if(obj.hasOwnProperty(key)){ this[key] = obj[key]; }
+        }
+      }
+    },
+
+    /*orgdoc
+         + =merge= is resembles =extend= but allows to merge several objects into a brand new one.
+           #+BEGIN_EXAMPLE
+             var one   = {a:1, b:1};
+             var two   = {a:2, c:3};
+             var three = _U.merge(one, two);
+
+             assertEquals(2, three.a);
+             assertEquals(1, three.b);
+             assertEquals(3, three.c);
+           #+END_EXAMPLE
+    */
+    merge: function(){
+      var result = {};
+      var key, idx, obj;
+      for(idx in arguments){
+        obj = arguments[idx];
+        for(key in obj){
+          if(obj.hasOwnProperty(key)){ result[key] = obj[key]; }
+        }
+      }
+      return result;
+    },
+
+    /*orgdoc
+         + =array= makes an "official" Array out of an array-like object (like function =arguments=)
+    */
+    array: function(arraylike){
+      return Array.prototype.slice.call(arraylike);
+    },
+
     /*orgdoc
          + =root= goes up the chain of =parent= properties, until no finding any parent.
     */
@@ -193,6 +246,19 @@ Org.getUtils = function(org, params){
       this.each(arr, function(val, idx){
         var mapped = fn.call(val, val, idx);
         if (mapped !== null){result.push(mapped);}
+      });
+      return result;
+    },
+
+    /*orgdoc
+         + applies the given function for each element of the given array or
+           object, and returns the array of filtered results
+    */
+    filter: function(arr, fn){
+      var result = [];
+      this.each(arr, function(val, idx){
+        var mapped = fn.call(val, val, idx);
+        if (mapped){result.push(val);}
       });
       return result;
     },
@@ -322,9 +388,124 @@ Org.getUtils = function(org, params){
     /*orgdoc
          + =_U.noop= is (slightly) shorter to write than =function(){}= ...
     */
-    noop: function(){}
+    noop: function(){},
+
+    incrementor: function(i){
+      var idx = i || 0;
+      return function(){return ++idx;};
+    },
+
+    id: function(){
+      return _U.incr();  
+    }
 
   };
+
+  _U.incr = _U.incrementor();
+
+  var TreeNode = function(parent, params){
+    var p          = params || {};
+    this.id        = _U.id();
+    this._parent   = parent || null;
+    this._leaf     = p.leaf || false;
+    this._children = p.leaf ? null : [];
+    if(this._parent){
+      parent.children().push(this);
+    }
+  };
+  TreeNode.prototype = {
+    
+    parent: function(){return this._parent;},
+
+    // Get ancestors array, closest first
+    ancestors: function(){
+      var result = [];
+      var parent = this.parent();
+      while(parent !== null){
+        result.push(parent);
+        parent = parent.parent();
+      }
+      return result;
+    },
+    
+    leaf: function(){return this._leaf;},
+    
+    children: function(){return this._children;},
+    
+    siblings: function(){
+      var all = this.siblingsAll(),
+          id = this.id;
+      return _U.filter(all, function(v){return v.id !== id;});
+    },
+    
+    siblingsAll: function(){
+      return this.parent() ? this.parent().children() : [this];
+    },
+    
+    prev: function(){
+      var idx, candidate, prev = null;
+      var siblings = this.siblingsAll();
+      if(siblings.length == 1){return null;}
+      for(idx in siblings){
+        candidate = siblings[idx];
+        if(candidate.id === this.id){
+          return prev;
+        }
+        prev = candidate;
+      }
+      return null;
+    },
+    
+    prevAll: function(){
+      var idx, candidate, result = [];
+      var siblings = this.siblingsAll();
+      if(siblings.length == 1){return null;}
+      for(idx in siblings){
+        candidate = siblings[idx];
+        if(candidate.id === this.id){
+          return result;
+        } else {
+          result.push(candidate);
+        }
+      }
+      return result;
+    },
+    
+    next: function(){
+      var idx, candidate, ok = false;
+      var siblings = this.siblingsAll();
+      if(siblings.length == 1){return null;}
+      for(idx in siblings){
+        if(ok){return siblings[idx];}
+        else {
+          candidate = siblings[idx];
+          if(candidate.id === this.id){
+           ok = true;
+          }
+        }
+      }
+      return null;
+    },
+    
+    nextAll: function(){
+      var idx, candidate, ok = false, result = [];
+      var siblings = this.siblingsAll();
+      if(siblings.length == 1){return null;}
+      for(idx in siblings){
+        if(ok){result.push(siblings[idx]);}
+        else {
+          candidate = siblings[idx];
+          if(candidate.id === this.id){
+           ok = true;
+          }
+        }
+      }
+      return result;
+    }
+
+  };
+
+  _U.TreeNode = TreeNode;
 
   return _U;
 

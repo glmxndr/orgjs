@@ -7,9 +7,35 @@
   + A tilde: ~\~~
     - A sublist
     - [ ] with a... checkbox?
-** Sample again
+
+** Sample center
    #+BEGIN_CENTER
    Centered text
    #+END_CENTER
 
-  
+** Sample quote
+   #+BEGIN_QUOTE
+   Quoted text
+   #+END_QUOTE
+
+** Sample src
+   #+BEGIN_SRC js
+   Source text
+   #+END_SRC
+
+** Sample comment
+   #+BEGIN_COMMENT
+   Comment text
+   #+END_COMMENT
+
+** Sample html
+   #+BEGIN_HTML
+   <b>HTML bold text</b>
+   #+END_HTML
+
+
+** Sample verse
+   #+BEGIN_VERSE
+   Lorsqu'avec ses enfants vêtus de peaux de bêtes,
+   Echevelé, livide, au mileu des tempêtes
+   #+END_VERSE

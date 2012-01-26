@@ -99,10 +99,11 @@
         + The different kinds of lines encountered when parsing the content
       */
       lineTypes: {
+        blank: /^\s*$/,
         letter: /^\s*[a-z]/i,
         ignored: /^#(?:[^+]|$)/,
-        litem: /^\s+[+*-]\ /,
-        dlitem: RegExp(" ::"),
+        ulitem: /^\s+[+*-]\s+/,
+        dlitem: /^\s+[+*-]\s+.*::/,
         olitem: /^\s*\d+[.)] /,
         fndef: /^\s*\[(\d+|fn:.+?)\]/,
         _bBlk: {},
