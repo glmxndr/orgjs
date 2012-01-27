@@ -1,20 +1,20 @@
+body{
+  font-size: 9pt;
+  font-family: "DejaVu Sans", "Verdana", serif;
+}
 
 section{
   margin-left:1em;
   margin-top:0.5em;
 }
 
-section.level-1 > div.title {font-size: 200%;}
-section.level-2 > div.title {font-size: 150%;}
-section.level-3 > div.title {font-size: 120%;}
-section.level-4 > div.title {font-size: 110%;}
-section.level-5 > div.title {font-size: 100%;}
-section.level-6 > div.title {font-size: 100%;}
+section.level-1 > div.title {font-family: "Georgia", serif; font-size: 200%;}
+section.level-2 > div.title {font-family: "Georgia", serif; font-size: 150%;}
+section.level-3 > div.title {font-family: "Georgia", serif; font-size: 120%;}
+section.level-4 > div.title {font-family: "Georgia", serif; font-size: 110%;}
+section.level-5 > div.title {font-family: "Georgia", serif; font-size: 100%;}
+section.level-6 > div.title {font-family: "Georgia", serif; font-size: 100%;}
 
-
-.org-inline-raw{
-  font-family: "Georgia", serif;
-}
 
 div.title{
   font-family: "Georgia", serif;
@@ -35,7 +35,10 @@ span.tag{
   background-color: #CCC;
   padding:1px;
   margin:2px;
-  font-size: 90%;
+  font-size: 8pt;
+  float: right;
+  display: block;
+  position: relative;
   vertical-align: super;
 }
 
@@ -48,6 +51,6 @@ blockquote{
 pre.src {
   border:1px dotted gray;
   margin-left: 2em;
-  background-color: #dec;
+  background-color: #f0f0f0;
   color: #123;
 }

@@ -116,7 +116,7 @@ Org.getRenderers = function(org){
       },
 
       EmphCode: function(n, r){
-        return "<code class='org-inline-code'>" +
+        return "<code class='org-inline-code prettyprint'>" +
                 r.htmlize(n.content, r) + "</code>";
       },
       
@@ -337,9 +337,9 @@ Org.getRenderers = function(org){
         var content = n.lines.join("\n") + "\n";
         var markup = r.escapeHtml(content);
         var l = n.language;
-        var out = "<pre class='src'><code" +
-                  ( l ? " class='" + l + "'>":">") +
-                  markup + "</code></pre>\n";
+        var out = "<pre class='src prettyprint" +
+                  ( l ? " lang-" + l : "") + "'>" +
+                  markup + "</pre>\n";
         return out;
       },
 

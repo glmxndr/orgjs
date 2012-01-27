@@ -179,49 +179,6 @@ Org.getContent = function(org, params){
   /*orgdoc
   *** Paragraph block
   */
-  /*
-  addBlockType({
-    name: "ParaBlock",
-
-    constr: function(parent){
-      ContentMarkupBlock.call(this, parent, "ParaBlock");
-      this.indent = parent.indent || 0;
-    },
-
-    proto: {
-      parent: Object.create(ContentMarkupBlock.prototype),
-
-      accept: function(line, type){
-        var indent;
-        if(type === LineDef.BLANK.id){
-          if(this.ended){return true;}
-          this.ended = true; return true;
-        }
-        if(type !== LineDef.PARA.id){return false;}
-        if(this.ended){return false;}
-        if(this.indent === 0){return true;}
-        indent = getLineIndent(line);
-        if(indent <= this.indent){
-          return false;
-        }
-        return true;
-      },
-
-      consume: function(line, type){
-        if(type !== LineDef.IGNORED.id){
-          this.lines.push(line);
-        }
-        return this;
-      }
-    },
-
-    linedef: {
-      id:     "PARA",
-      rgx:    RLT.letter
-    }
-  });
-  */
-
 
   var ParaBlock = function(parent){
     ContentMarkupBlock.call(this, parent, "ParaBlock");
@@ -255,7 +212,6 @@ Org.getContent = function(org, params){
     }
     return this;
   };
-
 
   /*orgdoc
   *** Ignored line (starting with a hash)

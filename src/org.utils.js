@@ -409,6 +409,14 @@ Org.getUtils = function(org, params){
 
   _U.incr = _U.incrementor();
 
+
+  /*orgdoc
+      + =_U.TreeNode= is the basic type for the items in the tree of the parsed documents
+        
+        Access the parent with the =.parent= property.
+
+        Access the children with the =.children= property.
+  */
   var TreeNode = function(parent, params){
     var p          = params || {};
     this.nodeType  = p.nodeType || "unknown";
@@ -417,7 +425,9 @@ Org.getUtils = function(org, params){
     this._leaf     = p.leaf || false;
     this.children  = p.leaf ? null : [];
   };
-
+  /*orgdoc
+        Helpers to manipulate / navigate through the tree.
+  */
   TreeNode.prototype = {
 
     // Get ancestors array, closest first

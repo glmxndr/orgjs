@@ -1,0 +1,559 @@
+#+TITLE:     Org-Mode Javascript Parser
+
+This project aims to provide[fn:2] a parser and easily customizable renderer
+for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
+
+[fn:2] Oh, right!
+
+[1] Oh, right again!
+
+* =Org= : the Main object
+
+  The global context[1] is extended with only one object, named =Org=.
+
+* TODO =Org.API= : API
+
+
+* TODO =Org.Config= : configuration
+
+** URL protocols
+
+** Tab width
+    Specifies how much single spaces for each tabulation character. 4 by default.
+
+* =Org.Parser= : the general parser
+
+  This section describes the general =Org= document parser.
+
+** =Parser= : the object to be returned by =Org.getParser=
+   The parser creates a tree of =Org= =Node=s. It includes
+   the referenced external files and generates a tree of nodes,
+   each of them recursively parsed with the =Content= parser.
+
+** Including external files
+   This section deals with the =#\+INCLUDE:= tags, which allow to load another
+   =Org= file into the current file.
+
+*** =Include= object
+
+*** Parsing the include lines
+
+*** Rendering the included content
+
++ Loading the content from the location
+
++ Modifying the headlines levels (if =:minlevel= has been set)
+
++ Generating the included content from the fetched lines
+
++ Enclosing in a =BEGIN/END= block if needed
+
+* =Org.Outline= : the outline/headlines parser
+
+  This section describes the outline parser.
+
+** =Node=
+   Objects representing the headlines and their associated content
+   (including sub-nodes)
+
+*** =Node.tocnum=
+   Counting the documents generated in this page.
+   Helps to generate an ID for the nodes
+   when no docid is given in the root node.
+
+*** =Node.prototype=
+
++ =parseContent()=
+
++ =id()=
+
++ =addFootnoteDef=
+
+** Parsing nodes
+*** =Headline= 
+    Headline embeds the parsing of a heading line (without the subcontent).
+
+** =NodeParser=
+   Parsing a whole section
+
++ Returns the heading object for this node
+
++ Returns the map of headers (defined by "#+META: ..." line definitions)
+
++ Returns the properties as defined in the :PROPERTIES: field
+
++ Returns the whole content without the heading nor the subitems
+
++ Returns the content only : no heading, no properties, no subitems, no clock, etc.
+
++ Extracts all the ""#+HEADER: Content" lines
+ * at the beginning of the given text, and returns a map
+ * of HEADER => Content
+
++ Returns the given text without the "#+HEADER: Content" lines at the beginning
+
+** The returned object
+
+* =Org.Content= : the content parser
+  This section describes the parser for the actual content within the sections
+  of the =org= file.
+
+=Content= is the object returned by this function.
+
+** Types of lines
+  =LineDef= is the object containing line definitions. All lines of the =Org= file
+  will be treated sequencially, and their type will determine what to do with it.
+  Line types are given an =id= property: a number identifying them.
+
++ Function which determines the type from the given line. A minimal caching system is
+    provided, since the function will be called several times for the same line, so
+    we keep the result of the last call for a given input.
+    The function will only compare the line with regexps.
+
++ Function which determines the level of indentation of a line.
+
+** Blocks
+
+*** Container block
+    This kind of block is abstract: many other blocks inherit from it, and it will not be used as is.
+    It provides functionality for blocks which contain other sub-blocks.
+    It contains an array of =children=, containing the children blocks.
+
+*** Root block
+    This block represents the root content under a headline of the document.
+    It is the highest container directly under the headline node.
+
+*** Generic content block
+
+*** Generic content with markup block
+
+*** Paragraph block
+
+*** Ignored line (starting with a hash)
+
+*** Footnote definition block
+
+*** Generic Begin/End block
+
+*** Verse block
+
+*** Quote block
+
+*** Centered-text block
+
+*** Example block
+
+*** Source code block
+
+*** HTML block
+
+*** Comment block
+
+*** Generic List Item block
+
+*** Unordered List block
+    A new list block is created when we encounter a list item line.
+    The logic would be that a list item be created instead, but the list item
+    needs a list block container. So that's actually a list block that the
+    line triggers, and the block is in charge to create a first list item child,
+    and to consume all the other items.
+
+*** Unoredered List Item block
+
+*** Ordered List block
+
+*** Ordered list item block
+
+*** Definition List block
+
+*** DlistItem block
+
+** Parsing the content
+
+* Markup parser
+
+  This file contains the code for the Org-Mode wiki-style markup.
+
+** Link management
+*** Link type definitions
+
+*** =Link= object
+
+** Footnote references
+   Footnotes have definitions as blocks in the =Content= section. This section deals
+   only with footnote references from within the markup.
+
+** Typographic markup
+*** =EmphMarkers= : emphasis marker abstract object
+
+** Inline nodes containing either inline nodes or raw textual content
+*** =makeInline=            :function:
+     + Purpose :: Creates an inline node object
+     + Arguments ::
+       + =constr= :: constructor for the object to build ;
+                     should build an object with a =consume()= property
+       + =parent= :: parent of the node to build
+       + =food= :: textual content the new inline node has to parse as subnodes
+
+*** =EmphInline= : abstract high-level inline node
+
+*** End-point node types
+    Basic inline types containing raw text content.
+    Can not contain anything else than text content.
+**** =EmphRaw= : basic text
+
+**** =EmphCode= : code example
+
+**** =EmphVerbatim= : unedited content
+
+*** Recursing nodes
+    These nodes contain other sub nodes (either =EmphRaw=,
+    other =EmphInline= subtypes, =Link=s, etc.).
+**** =EmphItalic= : recursing node
+
+**** =EmphBold= : recursing node
+
+**** =EmphUnderline= : recursing node
+
+**** =EmphStrike= : recursing node
+
+* =Org.Regexps= : the regexp bank
+
+  The parser needs a lot of regular expressions.
+  Non trivial regexps will be found in the file =org.regexps.js=,
+  and accessible under the object =Org.Regexps=.
+
++ A new line declaration, either windows or unix-like
+
++ Captures the first line of the string
+
++ Selects anything in the given string until the next heading, or the end.
+   Example :
+   #+BEGIN_EXAMPLE
+   some content
+   * next heading
+   #+END_EXAMPLE
+   would match "some content\n\n*"
+          Captures everything except the star of the following heading.
+
++ Parses a heading line, capturing :
+   - the stars
+   - the TODO status
+   - the priority
+   - the heading title
+   - the tags, if any, separated by colons
+
++ How a meta information begins ( =#\+META_KEY:= )
+
++ A meta information line, capturing:
+   - the meta key,
+   - the meta value
+   Example:
+   #+BEGIN_EXAMPLE
+      #+TITLE: The title
+   #+END_EXAMPLE
+   captures: "TITLE", "The title"
+
++ The property section. Captures the content of the section.
+
++ Property line. Captures the KEY and the value.
+
++ Clock section when several clock lines are defined.
+
++ Matches a clock line, either started only, or finished.
+   Captures:
+    - start date (yyyy-MM-dd)
+    - start time (hh:mm)
+    - end date (yyyy-MM-dd)
+    - end time (hh:mm)
+    - duration (hh:mm)
+
++ Scheduled
+
++ Deadline
+
++ The different kinds of lines encountered when parsing the content
+
+* =Org.Utils= : useful functions
+
+  Many functionalities are used throughout the parser, mainly to process
+  strings. The =Org.Utils= object contains these functions.
+
+** Testing for presence of Node =fs= module
+
+** Built-in object modifications
+   We try to remain as light as possible, only adding functionalities
+   that may already be present in certain versions of Javascript.
+
+*** =Object.create= implementation if not present
+
+*** =Array.prototype.indexOf= implementation if not present
+
+** =Utils= object to be returnedn aliased as =_U=.
+
++ =extend= is a function to be attached to prototypes, for example, to allow easy
+       addition of features.
+       #+BEGIN_EXAMPLE
+         var Type = function(){};
+         Type.prototype.extend = _U.extend;
+         Type.prototype.extend({
+           some: function(){},
+           neet: function(){}
+         });
+       #+END_EXAMPLE
+
++ =merge= is resembles =extend= but allows to merge several objects into a brand new one.
+       #+BEGIN_EXAMPLE
+         var one   = {a:1, b:1};
+         var two   = {a:2, c:3};
+         var three = _U.merge(one, two);
+
+         assertEquals(2, three.a);
+         assertEquals(1, three.b);
+         assertEquals(3, three.c);
+       #+END_EXAMPLE
+
++ =array= makes an "official" Array out of an array-like object (like function =arguments=)
+
++ =root= goes up the chain of =parent= properties, until no finding any parent.
+
++ =range= returns an array of numbers, built depending on the arguments
+       - 1 argument : 0 to the argument, incrementing if positive, decrementing if negative
+       - 2 arguments : =arg[0]= to =arg[1]=, incrementing or decrementing,
+       - 3 arguments:  =arg[0]= to =arg[1]=, incrementing by =arg[3]=
+
++ trimming a string, always returning a string (never return null or unusable output)
+
++ if the input is inserted in quotes (='=) or double quotes (="=), remove them ; return
+       input if enclosing quotes not found.
+
++ tells if a given string or array is empty
+       (more exactly, tells if the length property of the argument is falsy)
+
++ inverse of =empty=
+
++ tells if the given string has only blank characters
+
++ inverse of =blank=
+
++ repeats the given string n times
+
++ applies a function for each element of the given array or object
+
++ applies the given function for each element of the given array or
+       object, and returns the array of results
+
++ applies the given function for each element of the given array or
+       object, and returns the array of filtered results
+
++ logs the given argument (relies on =console.log=, does nothing if
+       not present)
+
++ returns the first line of the given string
+
++ splits the given string in lines, returns the array of lines
+       without the trailing line feed
+
++ returns a random string of given length
+
++ returns an array of the keys of the given object
+
++ returns the keys of the given object joined with the given delimiter
+
++ returns a random token not present in the given string
+
++ URI-style path utilities
+
++ gets the parent of the given path
+
++ concatenates path pieces into a valid path
+         (normalizing path separators)
+
++ gets the content from a given location :
+       + through AJAX if jQuery is detected,
+       + through node.js filesystem if node.js is detected,
+       + returning null if nothing found
+
++ =_U.noop= is (slightly) shorter to write than =function(){}= ...
+
++ =_U.TreeNode= is the basic type for the items in the tree of the parsed documents
+      
+      Access the parent with the =.parent= property.
+
+      Access the children with the =.children= property.
+
+Helpers to manipulate / navigate through the tree.
+
+* =OrgPath=
+  An XPath-like language to select items in the =Org= document tree.
+
+  This allows to provide a selection mechanism to apply templates to nodes
+  at rendering time.
+
+** Path examples 
+   Just to give a feeling of the selecting language, here are a few examples:
+
+   + =*= :: any item whatsoever
+   + =node=, =node{*}= :: any node, an any level
+   + =n{*}=, =n= :: any node, 'n' being shortcut for 'node'
+   + =n3=, =n{3}= :: any node of level 3
+   + =n{1-3}=, =n3[level~1-3]= :: any node of level 1 to 3
+   + =n3:tag= :: any node of level 3 with a tag "tag" (possibly implied by parents)
+   + =n3!tag= :: any node of level 3 with a tag "tag" defined at this node
+   + =n3[position\=2]= :: any second node of level 3 within its parent
+   + =n3\[2\]=  :: any second node of level 3 within its parent
+   + =n3[todo\=DONE]= :: any node of level 3 with a "DONE" todo-marker
+   + =n3/src1=, =n3/src{1}=, =n3/src[level~1-3]= :: any =BEGIN_SRC= item right under a node of level 3
+   + =n3/src= :: any =BEGIN_SRC= item within the content a node of level 3
+   + =n3//src= :: any =BEGIN_SRC= item anywhere under a node of level 3
+   + =src= :: any =BEGIN_SRC= item anywhere
+   + =src[lang\=js]= :: any =BEGIN_SRC= item anywhere whith language set as 'js'
+   + =src>p= :: first paragraph following a =BEGIN_SRC= item
+   + =src>>p= :: any paragraph following a =BEGIN_SRC= item
+   + =src<p= :: first paragraph preceding a =BEGIN_SRC= item
+   + =src<<p= :: any paragraph preceding a =BEGIN_SRC= item
+   + =src/..= :: parent of a =BEGIN_SRC= item
+
+* Default Rendering
+
+  This section provides a default HTML renderer for the parsed tree.
+
+  It is intended to provide an example of how to attach rendering
+  functions to the =Outline.Node='s and the different
+  =Content.Block='s prototypes.
+
+** Initialisations
+    Working in the context of the =Org= object. We will need, as
+    usual, some shortcuts to the =Utils=, and to =Org.Content= and
+    =Org.Outline=.
+
+*** renderChildren                                                 :function:
+     + Purpose :: provides a utility function to render all the
+                  children of a =Node= or a =Block=.
+     + Arguments :: none
+     + Usage :: must be called with =.call(obj)= to provide the value
+                for =this=. =this= must have an enumerable =children=
+                property.
+
+** Utility functions
+*** escapeHtml(str)                                                :function:
+     + Purpose :: The =escapeHtml= function escapes the forbidden
+                  characters in HTML/XML: =&=, =>=, =<=, ='= and ="=,
+                  which are all translated to their corresponding
+                  entity.
+     + Arguments ::
+       + =str= :: any value, converted into a string at the beginning
+                  of the function.
+
+** Rendering blocks
+   This sections contains the code for the different types of
+   instanciable blocks defined in
+
+   We will attach a, until now undefined, =render= property to these
+   block prototypes. None of these function take any argument, all
+   the information they need being in the block object they will act
+   upon through the =this= value.
+
+   The container blocks (those whose constructor calls the
+   =ContainerBlock= constructor) all use the =renderChildren=
+   function.
+
+   The content blocks (those whose constructor calls the
+   =ContentBlock= constructor) should use their =this.lines=
+   array.
+
+*** Rendering =RootBlock=
+     =RootBlock=s are rendered with a =div= tag, with class
+     =org_content=.
+
+*** Rendering =UlistBlock=
+     =UlistBlock=s are rendered with a simple =ul= tag.
+
+*** Rendering =OlistBlock=
+     =OlistBlock=s are rendered with a simple =ol= tag.
+
+     If the block has a =start= property different from =1=, it is
+     inserted in the =start= attribute of the tag.
+
+*** Rendering =DlistBlock=
+     =DlistBlock=s are rendered with a =dl= tag.
+
+     =DlistItemBlock=s will have to use =dt=/=dd= structure
+     accordingly.
+
+*** Rendering =UlistItemBlock= and =OlistItemBlocks=
+     =UlistItemBlock=s and =0listItemBlocks= are rendered with a
+     #simple =li= tag.
+
+*** Rendering =DlistItemBlock=
+     =DlistItemBlock=s are rendered with a =dt=/=dl= tag structure.
+
+     The content of the =dt= is the =title= attribute of the block.
+
+     The content of the =dd= is the rendering of this block's children.
+
+*** Rendering =ParaBlock=
+     =ParaBlock=s are rendered with a =p= tag.
+
+     The content of the tag is the concatenation of this block's
+     =this.lines=, passed to the =renderMarkup= function.
+
+*** Rendering =VerseBlock=
+     =VerseBlock=s are rendered with a =p= tag, with class
+     =verse=.
+
+     All spaces are converted to unbreakable spaces.
+
+     All new lines are replaced by a =br= tag.
+
+*** Rendering =QuoteBlock=
+     =QuoteBlock=s are rendered with a =blockquote= tag.
+
+     If the quote contains an author declaration (after a double dash),
+     this declaration is put on a new line.
+
+*** Rendering =CenterBlock=
+     =CenterBlock=s are rendered with a simple =center= tag.
+
+*** Rendering =ExampleBlock=
+     =ExampleBlock=s are rendered with a simple =pre= tag.
+
+     The content is not processed with the =renderMarkup= function, only
+     with the =escapeHtml= function.
+
+*** Rendering =SrcBlock=
+     =SrcBlock=s are rendered with a =pre.src= tag with a =code= tag within.
+     The =code= tag may have a class attribute if the language of the
+     block is known. In case there is, the class would take the language
+     identifier.
+
+     The content is not processed with the =renderMarkup= function, only
+     with the =escapeHtml= function.
+
+*** Rendering =HtmlBlock=
+     =HtmlBlock=s are rendered by simply outputting the HTML content
+     verbatim, with no modification whatsoever.
+
+*** Rendering =CommentBlock=
+     =CommentBlock=s are ignored.
+
+** Rendering headlines
+
+    Here we render headlines, represented by =Outline.Node= objects.
+
+    A =section= tag is used, with class orgnode, and a level.
+    The =id= attribute is the computed id corresponding to a unique TOC
+    identifier.
+
+    The title is in a =div.title= element. Each tag is represented at the
+    end of this element by a =span.tag= element.
+
+    The content of the node (the RootBlock associated to this headline)
+    is rendered.
+
+    Then the subheadlines are rendered using the =renderChildren= function.
+
+** Conclusion
+
+    This is the end of the function creating the default renderer.
+

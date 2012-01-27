@@ -13,6 +13,8 @@ $(function(){
     var root = org.Parser.parse(data);
     var renderer = org.Renderers.html();
     $('#doc').html(renderer.render(root));
+    prettyPrint();
+  
     console.log(root);
   });
   /*/

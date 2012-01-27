@@ -7,6 +7,7 @@ var fs  = require('fs'),
 
 var srcFiles = [
   './src/org.main.js',
+  './src/org.path.js',
   './src/org.config.js',
   './src/org.regexps.coffee',
   './src/org.utils.js',
@@ -20,9 +21,11 @@ var srcFiles = [
 
 var isBuildingSrc = false;
 var isBuildingDoc = false;
-var isBuilding = function(){return isBuildingSrc || isBuildingDoc;};
+var isBuildingReadme = false;
+var isBuilding = function(){return isBuildingSrc || isBuildingDoc || isBuildingReadme;};
 var release = function(type){
   if(type === "doc"){isBuildingDoc = false;}
+  if(type === "readme"){isBuildingReadme = false;}
   if(type === "src"){isBuildingSrc = false;}
   if(!isBuilding()){
     log("Done building all.");
@@ -106,11 +109,27 @@ function buildSrc(){
   }
 }
 
+
+var docFiles = [
+  './src/org.main.js',
+  './src/org.api.js',
+  './src/org.config.js',
+  './src/org.parser.js',
+  './src/org.outline.js',
+  './src/org.content.js',
+  './src/org.markup.js',
+  './src/org.regexps.coffee',
+  './src/org.utils.js',
+  './src/org.path.js',
+  './src/org.render.js'
+];
+
 function buildDoc(){
 
   var out = "", fileContent;
   var filename = 'doc/org-js.org';
-  var files = srcFiles.slice(0);
+  var readmename = 'README.org';
+  var files = docFiles.slice(0);
 
   readFile();
   
@@ -222,6 +241,11 @@ function buildDoc(){
   }
 
   function writeFile(){
+    var readme = out.replace(/\s+#\+BEGIN_SRC js[\S\s]*?#\+END_SRC\s+/mg, "\n\n");
+    fs.writeFile(readmename, readme, function(){
+      log("DOC Wrote " + readmename);
+      release("readme");
+    });
     fs.writeFile(filename, out, function(){
       log("DOC Wrote " + filename);
       release("doc");
