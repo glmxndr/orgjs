@@ -31,23 +31,28 @@ Org.getRenderers = function(org){
                       for =this=. =this= must have an enumerable =children=
                       property.
       */
-      renderChildren: function(n){
+      renderChildren: function(n, r){
         var i, out = "";
-        for(i in n.children){
-          out += this.render(n.children[i]);
+        var arr = n.children;
+        if((typeof arr) === "function"){
+          arr = arr();
         }
+        _U.each(arr, function(v){
+          out += r.render(v, r);
+        });
         return out;
       },
 
-      render: function(n){
+      render: function(n, r){
+        r = r || this;
         var type = n.nodeType;
-        var renderFn = this[type];
+        var renderFn = r[type];
         if(!renderFn){
           _U.log("Not found render fn:");
           _U.log(n);
           renderFn = _U.noop;
         }
-        return renderFn(n, this);
+        return renderFn(n, r);
       },
 
       /*orgdoc
@@ -99,12 +104,12 @@ Org.getRenderers = function(org){
       },
 
       EmphInline: function(n, r){
-        return r.renderChildren(n);
+        return r.renderChildren(n, r);
       },
 
       EmphRaw: function(n, r){
         if(n.children.length){
-          return r.renderChildren(n);
+          return r.renderChildren(n, r);
         }
         return "<span class='org-inline-raw'>" +
                 r.typo(r.htmlize(n.content, r)) + "</span>";
@@ -122,22 +127,22 @@ Org.getRenderers = function(org){
 
       EmphItalic: function(n, r){
         return "<em class='org-inline-italic'>" +
-                r.renderChildren(n) + "</em>";
+                r.renderChildren(n, r) + "</em>";
       },
 
       EmphBold: function(n, r){
         return "<strong class='org-inline-bold'>" +
-                r.renderChildren(n) + "</strong>";
+                r.renderChildren(n, r) + "</strong>";
       },
 
       EmphUnderline: function(n, r){
         return "<u class='org-inline-underline'>" +
-                r.renderChildren(n) + "</u>";
+                r.renderChildren(n, r) + "</u>";
       },
 
       EmphStrike: function(n, r){
         return "<del class='org-inline-strike'>" +
-                r.renderChildren(n) + "</del>";
+                r.renderChildren(n, r) + "</del>";
       },
 
       Link: function(n, r){
@@ -179,7 +184,7 @@ Org.getRenderers = function(org){
       */
       RootBlock: function(n, r){
         var out = "<div class='org_content'>\n";
-        out += r.renderChildren(n);
+        out += r.renderChildren(n, r);
         out += "</div>\n";
         return out;
       },
@@ -190,7 +195,7 @@ Org.getRenderers = function(org){
       */
       UlistBlock: function(n, r){
         var out = "<ul>\n";
-        out += r.renderChildren(n);
+        out += r.renderChildren(n, r);
         out += "</ul>\n";
         return out;
       },
@@ -205,7 +210,7 @@ Org.getRenderers = function(org){
       OlistBlock: function(n, r){
         var s = n.start;
         var out = "<ol" + (s === 1 ? ">\n" : " start='" + r.escapeHtml(s) + "'>\n");
-        out += r.renderChildren(n);
+        out += r.renderChildren(n, r);
         out += "</ol>\n";
         return out;
       },
@@ -219,7 +224,7 @@ Org.getRenderers = function(org){
       */
       DlistBlock: function(n, r){
         var out = "<dl>\n";
-        out += r.renderChildren(n);
+        out += r.renderChildren(n, r);
         out += "</dl>\n";
         return out;
       },
@@ -231,14 +236,14 @@ Org.getRenderers = function(org){
       */
       UlistItemBlock: function(n, r){
         var out = "<li>\n";
-        out += r.renderChildren(n);
+        out += r.renderChildren(n, r);
         out += "</li>\n";
         return out;
       },
 
       OlistItemBlock: function(n, r){
         var out = "<li>\n";
-        out += r.renderChildren(n);
+        out += r.renderChildren(n, r);
         out += "</li>\n";
         return out;
       },
@@ -252,8 +257,8 @@ Org.getRenderers = function(org){
            The content of the =dd= is the rendering of this block's children.
       */
       DlistItemBlock: function(n, r){
-        var out = "<dt>" + r.render(n.titleInline) + "</dt>\n<dd>\n";
-        out += r.renderChildren(n);
+        var out = "<dt>" + r.render(n.titleInline, r) + "</dt>\n<dd>\n";
+        out += r.renderChildren(n, r);
         out += "</dd>\n";
         return out;
       },
@@ -266,7 +271,7 @@ Org.getRenderers = function(org){
            =this.lines=, passed to the =renderMarkup= function.
       */
       ParaBlock: function(n, r){
-        return "<p>\n" + r.renderChildren(n) + "</p>\n";
+        return "<p>\n" + r.renderChildren(n, r) + "</p>\n";
       },
 
       /*orgdoc
@@ -279,7 +284,7 @@ Org.getRenderers = function(org){
            All new lines are replaced by a =br= tag.
       */
       VerseBlock: function(n, r){
-        var out = "<pre class='verse'>\n" + r.renderChildren(n) + "</pre>\n";
+        var out = "<pre class='verse'>\n" + r.renderChildren(n, r) + "</pre>\n";
         out = out.replace(/ /g, "&nbsp;");
         return out;
       },
@@ -292,7 +297,7 @@ Org.getRenderers = function(org){
            this declaration is put on a new line.
       */
       QuoteBlock: function(n, r){
-        var out = "<blockquote>\n" + r.renderChildren(n) + "</blockquote>\n";
+        var out = "<blockquote>\n" + r.renderChildren(n, r) + "</blockquote>\n";
         return out;
       },
 
@@ -301,7 +306,7 @@ Org.getRenderers = function(org){
            =CenterBlock=s are rendered with a simple =center= tag.
       */
       CenterBlock: function(n, r){
-        return "<center>\n" + r.renderChildren(n) + "</center>\n";
+        return "<center>\n" + r.renderChildren(n, r) + "</center>\n";
       },
 
       /*orgdoc
@@ -380,10 +385,10 @@ Org.getRenderers = function(org){
       */
       Node: function(n, r){
         var headline = n.level === 0 ? n.meta["TITLE"] : n.heading.getTitle();
-        var headInline = r.render(n.heading.titleNode);
+        var headInline = r.render(n.heading.titleNode, r);
 
-        var html = "<section id='%ID%' class='orgnode level-%LEVEL%'>";
-        html = html.replace(/%ID%/, n.id());
+        var html = "<section id='%REPR%' class='orgnode level-%LEVEL%'>";
+        html = html.replace(/%REPR%/, n.repr());
         html = html.replace(/%LEVEL%/, n.level);
 
         var title = "<div class='title'>%HEADLINE%%TAGS%</div>";
@@ -398,10 +403,7 @@ Org.getRenderers = function(org){
 
         html += title;
 
-        var contentHtml = r.render(n.contentNode);
-        html += contentHtml;
-
-        var childrenHtml = r.renderChildren(n);
+        var childrenHtml = r.renderChildren(n, r);
         html += childrenHtml;
 
         if(_U.notEmpty(n.fnNameByNum)){

@@ -107,13 +107,13 @@ Org.getRegexps = (org, params) ->
       + The different kinds of lines encountered when parsing the content
     ###
     lineTypes:
-      blank: /^\s*$/                 # Blank line
-      letter: /^\s*[a-z]/i           # Line starting with a letter character
-      ignored: /^#(?:[^+]|$)/        # Ignored lines (comments...)
-      ulitem: /^\s+[+*-]\s+/         # List item
-      dlitem: /^\s+[+*-]\s+.*::/     # Definition item must contain '::' in the item line
-      olitem: /^\s*\d+[.)] /         # An ordered list item has a number optionnally followed by '.' or ')'
-      fndef: /^\s*\[(\d+|fn:.+?)\]/  # Footnote definition 
+      blank: /^\s*$/                             # Blank line
+      letter: /^\s*[a-z]/i                       # Line starting with a letter character
+      ignored: /^#(?:[^+]|$)/                    # Ignored lines (comments...)
+      ulitem: /^(?:\s*[+-]|\s+\*)\s+/            # List item
+      dlitem: /^(?:\s*[+-]|\s+\*)\s+(.*?)\s*::/  # Definition item must contain '::' in the item line
+      olitem: /^\s*\d+[.)] /                     # An ordered list item has a number optionnally followed by '.' or ')'
+      fndef: /^\s*\[(\d+|fn:.+?)\]/              # Footnote definition 
       _bBlk: {}
       beginBlock: (type) ->
         @_bBlk[type] or (@_bBlk[type] = new RegExp("^\\s*#\\+BEGIN_" + type + "(\\s|$)", "i"))

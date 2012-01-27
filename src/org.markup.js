@@ -41,14 +41,15 @@ Org.getMarkup = function(org, params){
   *** =Link= object
   */
   var Link = function(parent, raw, url, desc, token){
-    this.nodeType = "Link";
+    _U.TreeNode.call(this, parent, {"nodeType": "Link", leaf: true});
     this.raw = raw;
-    this.parent = parent;
     this.url = url;
     this.desc = desc;
     this.token = token;
     this.type = getLinkType(this);
   };
+  Link.prototype = Object.create(_U.TreeNode.prototype);
+  Link.prototype.replaceTokens = function(){};
   Markup.Link = Link;
 
   /*orgdoc
@@ -57,12 +58,13 @@ Org.getMarkup = function(org, params){
      only with footnote references from within the markup.
   */
   var FootNoteRef = function(parent, raw, name, token){
-    this.nodeType = "FootNoteRef";
+    _U.TreeNode.call(this, parent, {"nodeType": "FootNoteRef", leaf: true});
     this.raw = raw;
-    this.parent = parent;
     this.name = name;
     this.token = token;
   };
+  FootNoteRef.prototype = Object.create(_U.TreeNode.prototype);
+  FootNoteRef.prototype.replaceTokens = function(){};
   Markup.FootNoteRef = FootNoteRef;
 
   /*orgdoc
@@ -118,12 +120,12 @@ Org.getMarkup = function(org, params){
        + Arguments ::
          + =constr= :: constructor for the object to build ;
                        should build an object with a =consume()= property
-         + =parent= :: parent of the node to build ; ust have an =adopt= method
+         + =parent= :: parent of the node to build
          + =food= :: textual content the new inline node has to parse as subnodes
   */
   function makeInline(constr, parent, food){
     var inline = new constr(parent);
-    parent.adopt(inline);
+    parent.append(inline);
     if(food){inline.consume(food);}
     return inline;
   }
@@ -131,18 +133,16 @@ Org.getMarkup = function(org, params){
   /*orgdoc
   *** =EmphInline= : abstract high-level inline node
   */
-  var EmphInline = function(parent){
-    this.nodeType = "EmphInline";
-    this.parent = parent;
-    this.children = [];
+  var EmphInline = function(parent, nodeType){
+    nodeType = nodeType || "EmphInline";
+    _U.TreeNode.call(this, parent, {"nodeType": nodeType});
   };
-  EmphInline.prototype.adopt = function(child){
-    this.children.push(child);
-    child.parent = this;
-  };
+  EmphInline.prototype = Object.create(_U.TreeNode.prototype);
   EmphInline.prototype.replaceTokens = function(tokens){
     if(this.children.length){
-      _U.each(this.children, function(v){v.replaceTokens(tokens);});
+      _U.each(this.children, function(v){
+        v.replaceTokens(tokens);
+      });
     }
     if(this.content && this.content.length){
       var content = this.content;
@@ -155,14 +155,14 @@ Org.getMarkup = function(org, params){
       while(match){
         pre = match[1]; token = match[2]; rest = match[3];
         if(_U.notBlank(pre)){ makeInline(EmphRaw, inline, pre); }
-        inline.adopt(tokens[token]);
+        inline.append(tokens[token]);
         content = rest;
         match = rgx.exec(content);
       }
       if(inline.children.length){
         if(_U.notBlank(rest)){ makeInline(EmphRaw, inline, rest); }
         this.content = "";
-        this.adopt(inline);
+        this.append(inline);
       }
     }
   };
@@ -195,9 +195,9 @@ Org.getMarkup = function(org, params){
       Can not contain anything else than text content.
   **** =EmphRaw= : basic text
   */
-  var EmphRaw = function(parent){
-    EmphInline.call(this, parent);
-    this.nodeType = "EmphRaw";
+  var EmphRaw = function(parent, nodeType){
+    nodeType = nodeType || "EmphRaw";
+    EmphInline.call(this, parent, nodeType);
     this.recurse = false;
   };
   EmphRaw.prototype = Object.create(EmphInline.prototype);
@@ -210,8 +210,7 @@ Org.getMarkup = function(org, params){
   **** =EmphCode= : code example
   */
   var EmphCode = function(parent){
-    EmphRaw.call(this, parent);
-    this.nodeType = "EmphCode";
+    EmphRaw.call(this, parent, "EmphCode");
   };
   EmphCode.prototype = Object.create(EmphRaw.prototype);
   EmphMarkers["="].constr = EmphCode;
@@ -221,8 +220,7 @@ Org.getMarkup = function(org, params){
   **** =EmphVerbatim= : unedited content
   */
   var EmphVerbatim = function(parent){
-    EmphRaw.call(this, parent);
-    this.nodeType = "EmphVerbatim";
+    EmphRaw.call(this, parent, "EmphVerbatim");
   };
   EmphVerbatim.prototype = Object.create(EmphRaw.prototype);
   EmphMarkers["~"].constr = EmphVerbatim;
@@ -235,8 +233,7 @@ Org.getMarkup = function(org, params){
   **** =EmphItalic= : recursing node
   */
   var EmphItalic = function(parent){
-    EmphInline.call(this, parent);
-    this.nodeType = "EmphItalic";
+    EmphInline.call(this, parent, "EmphItalic");
     this.recurse = true;
   };
   EmphItalic.prototype = Object.create(EmphInline.prototype);
@@ -247,8 +244,7 @@ Org.getMarkup = function(org, params){
   **** =EmphBold= : recursing node
   */
   var EmphBold = function(parent){
-    EmphInline.call(this, parent);
-    this.nodeType = "EmphBold";
+    EmphInline.call(this, parent, "EmphBold");
     this.recurse = true;
   };
   EmphBold.prototype = Object.create(EmphInline.prototype);
@@ -259,8 +255,7 @@ Org.getMarkup = function(org, params){
   **** =EmphUnderline= : recursing node
   */
   var EmphUnderline = function(parent){
-    EmphInline.call(this, parent);
-    this.nodeType = "EmphUnderline";
+    EmphInline.call(this, parent, "EmphUnderline");
     this.recurse = true;
   };
   EmphUnderline.prototype = Object.create(EmphInline.prototype);
@@ -271,8 +266,7 @@ Org.getMarkup = function(org, params){
   **** =EmphStrike= : recursing node
   */
   var EmphStrike = function(parent){
-    EmphInline.call(this, parent);
-    this.nodeType = "EmphStrike";
+    EmphInline.call(this, parent, "EmphStrike");
     this.recurse = true;
   };
   EmphStrike.prototype = Object.create(EmphInline.prototype);

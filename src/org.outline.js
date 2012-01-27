@@ -21,11 +21,9 @@ Org.getOutline = function(org, params){
   var Node = function(whole, params){
     params          = params || {};
     
-    this.nodeType = "Node";
+    _U.TreeNode.call(this, params.parent, {"nodeType": "Node"});
 
     this.docid      = params.docid;
-    this.parent     = params.parent;
-    this.children   = params.children || [];
     
     this.whole      = whole;
     this.parser     = new NodeParser(this, this.whole);
@@ -49,29 +47,24 @@ Org.getOutline = function(org, params){
   /*orgdoc
   *** =Node.prototype=
   */
-  Node.prototype = {
+  Node.prototype = _U.merge(_U.TreeNode.prototype, {
     /*orgdoc
          + =parseContent()=
     */
     parseContent: function(){
       var lines = _U.lines(this.content);
-      this.contentNode = OC.parse(this, lines);
-    },
-    /*orgdoc
-         + =siblings()=
-    */
-    siblings: function(){
-      return this.parent ? this.parent.children : [];
+      var child = OC.parse(this, lines);
+      this.prepend(child);
     },
 
     /*orgdoc
          + =id()=
     */
-    id: function(){
+    repr: function(){
       if (!this.parent){
         return this.docid || "doc#" + (Node.tocnum++) + "/";
       }
-      return this.parent.id() + "" + this.siblings().indexOf(this) + "/";
+      return this.parent.repr() + "" + this.siblings().indexOf(this) + "/";
     },
 
     /*orgdoc
@@ -95,7 +88,7 @@ Org.getOutline = function(org, params){
         return this.fnNextNum - 1;
       }
     }
-  };
+  });
 
 
   /*orgdoc

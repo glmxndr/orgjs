@@ -396,7 +396,13 @@ Org.getUtils = function(org, params){
     },
 
     id: function(){
-      return _U.incr();  
+      return _U.incr();
+    },
+
+    bind: function(fn, obj){
+      return function(){
+        fn.apply(fn, arguments);
+      };
     }
 
   };
@@ -405,32 +411,27 @@ Org.getUtils = function(org, params){
 
   var TreeNode = function(parent, params){
     var p          = params || {};
+    this.nodeType  = p.nodeType || "unknown";
     this.id        = _U.id();
-    this._parent   = parent || null;
+    this.parent    = parent || null;
     this._leaf     = p.leaf || false;
-    this._children = p.leaf ? null : [];
-    if(this._parent){
-      parent.children().push(this);
-    }
+    this.children  = p.leaf ? null : [];
   };
+
   TreeNode.prototype = {
-    
-    parent: function(){return this._parent;},
 
     // Get ancestors array, closest first
     ancestors: function(){
       var result = [];
-      var parent = this.parent();
+      var parent = this.parent;
       while(parent !== null){
         result.push(parent);
-        parent = parent.parent();
+        parent = parent.parent;
       }
       return result;
     },
     
     leaf: function(){return this._leaf;},
-    
-    children: function(){return this._children;},
     
     siblings: function(){
       var all = this.siblingsAll(),
@@ -439,7 +440,7 @@ Org.getUtils = function(org, params){
     },
     
     siblingsAll: function(){
-      return this.parent() ? this.parent().children() : [this];
+      return this.parent ? this.parent.children : [this];
     },
     
     prev: function(){
@@ -501,6 +502,16 @@ Org.getUtils = function(org, params){
         }
       }
       return result;
+    },
+
+    append: function(child){
+      this.children.push(child);
+      child.parent = this;
+    },
+
+    prepend: function(child){
+      this.children.unshift(child);
+      child.parent = this;
     }
 
   };

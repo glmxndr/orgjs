@@ -13,6 +13,7 @@ $(function(){
     var root = org.Parser.parse(data);
     var renderer = org.Renderers.html();
     $('#doc').html(renderer.render(root));
+    console.log(root);
   });
   /*/
   var location = "test/include/test_include.org";

@@ -74,8 +74,7 @@ Org.getParser = function(org, params){
           j = j - 1;
           if(j < 0){break;}
           if(nodes[j].level < level){
-            nodes[i].parent = nodes[j];
-            nodes[j].children.push(nodes[i]);
+            nodes[j].append(nodes[i]);
             done = true;
           }
         }
