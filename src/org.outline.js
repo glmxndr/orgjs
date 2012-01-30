@@ -101,7 +101,7 @@ Org.getOutline = function(org, params){
     this.nodeType = "Headline";
     this.repr = _U.trim(txt);
     this.match = _R.headingLine.exec(this.repr) || [];
-    this.titleNode = OM.tokenize(this, this.getTitle());
+    this.titleNode = OM.parse(this, this.getTitle());
   };
 
   Headline.prototype = {

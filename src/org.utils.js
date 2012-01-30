@@ -320,7 +320,7 @@ Org.getUtils = function(org, params){
     */
     getAbsentToken: function(str, prefix){
       prefix = prefix || "";
-      var token, start = prefix + "_";
+      var token, start = prefix;
       if(str.indexOf(start) === -1){return start;}
       token = start + this.randomStr(5);
       while(str.indexOf(token) !== -1){
@@ -390,28 +390,50 @@ Org.getUtils = function(org, params){
     */
     noop: function(){},
 
+    /*orgdoc
+         + =incrementor= provides an incrementor function, starting from 0 or the given argument
+    */
     incrementor: function(i){
       var idx = i || 0;
       return function(){return ++idx;};
     },
 
+    /*orgdoc
+         + =id= returns a unique identifier
+    */
     id: function(){
       return _U.incr();
     },
 
+    /*orgdoc
+         + =bind= mimics the =Function.bind=
+    */
     bind: function(fn, obj){
       return function(){
         fn.apply(fn, arguments);
       };
+    },
+
+    pad: function(num, length, char){
+      char = char || "0";
+      length = length || 2;
+      var str = "" + num;
+      while(str.length < length){
+        str = "0" + str;
+      }
+      return str;
     }
 
   };
 
+    /*orgdoc
+         + =incr= is the default incrementor
+    */
   _U.incr = _U.incrementor();
 
 
   /*orgdoc
-      + =_U.TreeNode= is the basic type for the items in the tree of the parsed documents
+  *** =_U.TreeNode= is the basic type for the items in the tree of the parsed documents
         
         Access the parent with the =.parent= property.
 
@@ -426,10 +448,13 @@ Org.getUtils = function(org, params){
     this.children  = p.leaf ? null : [];
   };
   /*orgdoc
-        Helpers to manipulate / navigate through the tree.
+  **** Helpers to manipulate / navigate through the tree.
   */
   TreeNode.prototype = {
 
+    /*orgdoc
+         + =ancestors= provides the array of the ancestors of the current node, closest first
+    */
     // Get ancestors array, closest first
     ancestors: function(){
       var result = [];
@@ -441,18 +466,30 @@ Org.getUtils = function(org, params){
       return result;
     },
     
+    /*orgdoc
+         + =leaf= tells if the node has children or not
+    */
     leaf: function(){return this._leaf;},
     
+    /*orgdoc
+         + =siblings= provides all the siblings (this node excluded)
+    */
     siblings: function(){
       var all = this.siblingsAll(),
           id = this.id;
       return _U.filter(all, function(v){return v.id !== id;});
     },
     
+    /*orgdoc
+         + =siblingsAll= provides all the siblings (this node included)
+    */
     siblingsAll: function(){
       return this.parent ? this.parent.children : [this];
     },
-    
+
+    /*orgdoc
+         + =prev= provides the previous item, or null
+    */
     prev: function(){
       var idx, candidate, prev = null;
       var siblings = this.siblingsAll();
@@ -467,6 +504,10 @@ Org.getUtils = function(org, params){
       return null;
     },
     
+    /*orgdoc
+         + =prevAll= provides all the previous items
+               (in the same order as siblings, closest last)
+    */
     prevAll: function(){
       var idx, candidate, result = [];
       var siblings = this.siblingsAll();
@@ -482,6 +523,9 @@ Org.getUtils = function(org, params){
       return result;
     },
     
+    /*orgdoc
+         + =next= provides the next item, or null
+    */
     next: function(){
       var idx, candidate, ok = false;
       var siblings = this.siblingsAll();
@@ -498,6 +542,10 @@ Org.getUtils = function(org, params){
       return null;
     },
     
+    /*orgdoc
+         + =lastAll= provides all the next items
+               (in the same order as siblings, closest first)
+    */
     nextAll: function(){
       var idx, candidate, ok = false, result = [];
       var siblings = this.siblingsAll();
@@ -514,11 +562,17 @@ Org.getUtils = function(org, params){
       return result;
     },
 
+    /*orgdoc
+         + =append= adds a new child at the end of the children array
+    */
     append: function(child){
       this.children.push(child);
       child.parent = this;
     },
 
+    /*orgdoc
+         + =prepend= adds a new child at the beginning of the children array
+    */
     prepend: function(child){
       this.children.unshift(child);
       child.parent = this;
@@ -527,6 +581,53 @@ Org.getUtils = function(org, params){
   };
 
   _U.TreeNode = TreeNode;
+
+
+  var Timestamp = function(str){
+    this.raw = str;
+    this.parse(str);
+    this.date = new Date();
+  };
+
+  Timestamp.prototype = {
+    parse: function(str){
+      var regexp          = /^(\d{4}-\d{2}-\d{2})(?: [a-z.]+)?(?: (\d{2}:\d{2}))?$/;
+      var match           = regexp.exec(str); if(!match){return;}
+      var datestr         = match[1].split('-');
+      this.year           = datestr[0];
+      this.month          = datestr[1];
+      this.day            = datestr[2];
+      var timestr         = (match[2] || "00:00").split(":");
+      this.hour           = timestr[0]; 
+      this.minute         = timestr[1];
+      this.date           = new Date(this.year, this.month - 1, this.day, this.hour, this.minute);
+    },
+
+    format: function(str){
+      var d = this;
+      str = str.replace(/%([HkIlMSCymde])/g, function(){
+        var a = arguments;
+        var c = a[1];
+        switch(c){
+          case 'H': return "" + _U.pad(d.hour);
+          case 'k': return "" + d.hour;
+          case 'I': return "" + _U.pad((d.hour % 12) + 1);
+          case 'l': return "" + ((d.hour % 12) + 1);
+          case 'M': return "" + _U.pad(d.minute);
+          case 'S': return "" + _U.pad(d.second);
+          case 'C': return "" + _U.pad(d.year % 100);
+          case 'y': return "" + d.year;
+          case 'm': return "" + _U.pad(d.month);
+          case 'd': return "" + _U.pad(d.day);
+          case 'e': return "" + d.day;
+        }
+      });
+      return str;
+    }
+  };
+
+  _U.Timestamp = Timestamp;
+
 
   return _U;
 

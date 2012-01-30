@@ -54,8 +54,8 @@ Org.getMarkup = function(org, params){
 
   /*orgdoc
   ** Footnote references
-     Footnotes have definitions as blocks in the =Content= section. This section deals
-     only with footnote references from within the markup.
+     Footnotes have definitions as blocks in the =Content= section. This section
+     deals only with footnote references from within the markup.
   */
   var FootNoteRef = function(parent, raw, name, token){
     _U.TreeNode.call(this, parent, {"nodeType": "FootNoteRef", leaf: true});
@@ -66,6 +66,39 @@ Org.getMarkup = function(org, params){
   FootNoteRef.prototype = Object.create(_U.TreeNode.prototype);
   FootNoteRef.prototype.replaceTokens = function(){};
   Markup.FootNoteRef = FootNoteRef;
+
+  /*orgdoc
+  ** Sub/sup markup
+  */
+  var SubInline = function(parent, raw, token){
+    _U.TreeNode.call(this, parent, {"nodeType": "SubInline"});
+    this.content = raw;
+    this.token = token;
+  };
+  SubInline.prototype = Object.create(_U.TreeNode.prototype);
+  SubInline.prototype.replaceTokens = function(){};
+  Markup.SubInline = SubInline;
+
+  var SupInline = function(parent, raw, token){
+    _U.TreeNode.call(this, parent, {"nodeType": "SupInline"});
+    this.content = raw;
+    this.token = token;
+  };
+  SupInline.prototype = Object.create(_U.TreeNode.prototype);
+  SupInline.prototype.replaceTokens = function(){};
+  Markup.SupInline = SupInline;
+
+  /*orgdoc
+  ** Sub/sup markup
+  */
+  var TimestampInline = function(parent, raw, token){
+    _U.TreeNode.call(this, parent, {"nodeType": "TimestampInline"});
+    this.content = raw;
+    this.token = token;
+  };
+  TimestampInline.prototype = Object.create(_U.TreeNode.prototype);
+  TimestampInline.prototype.replaceTokens = function(){};
+  Markup.TimestampInline = TimestampInline;
 
   /*orgdoc
   ** Typographic markup
@@ -83,7 +116,8 @@ Org.getMarkup = function(org, params){
   // space POSTMATCH, the stars MARKERS, \"s\" and \"d\" are BORDER characters
   // and \"trong wor\" is the body.  The different components in this variable
   // specify what is allowed/forbidden in each part:
-  // pre          Chars allowed as prematch.  Beginning of line will be allowed too.
+  // pre          Chars allowed as prematch.  Beginning of line will be allowed
+  //              too.
   // post         Chars allowed as postmatch.  End of line will be allowed too.
   // border       The chars *forbidden* as border characters.
   // body-regexp  A regexp like \".\" to match a body character.  Don't use
@@ -101,14 +135,14 @@ Org.getMarkup = function(org, params){
   //     (option (boolean :tag "Please ignore this button"))))
 
   var EmphMarkers = {};
-  _U.each("/*~=+_".split(""), function(t){EmphMarkers[t] = {};});
+  _U.each("/*+_".split(""), function(t){EmphMarkers[t] = {};});
 
   EmphMarkers.getInline = function(token, parent){
     var constr = this[token].constr;
     return new constr(parent);
   };
   EmphMarkers.getRegexpAll = function(){
-    return (/(^(?:.|\n)*?)(([\/*~=+_])([^\s].*?[^\s\\]|[^\s\\])\3)/);
+    return (/(^(?:.|\n)*?)(([\/*+_])([^\s].*?[^\s\\]|[^\s\\])\3)/);
   };
   Markup.EmphMarkers = EmphMarkers;
 
@@ -121,7 +155,8 @@ Org.getMarkup = function(org, params){
          + =constr= :: constructor for the object to build ;
                        should build an object with a =consume()= property
          + =parent= :: parent of the node to build
-         + =food= :: textual content the new inline node has to parse as subnodes
+         + =food= :: textual content the new inline node has to parse as
+                     subnodes
   */
   function makeInline(constr, parent, food){
     var inline = new constr(parent);
@@ -137,7 +172,9 @@ Org.getMarkup = function(org, params){
     nodeType = nodeType || "EmphInline";
     _U.TreeNode.call(this, parent, {"nodeType": nodeType});
   };
+
   EmphInline.prototype = Object.create(_U.TreeNode.prototype);
+  
   EmphInline.prototype.replaceTokens = function(tokens){
     if(this.children.length){
       _U.each(this.children, function(v){
@@ -166,6 +203,7 @@ Org.getMarkup = function(org, params){
       }
     }
   };
+  
   EmphInline.prototype.consume = function(content){
     var regexp = EmphMarkers.getRegexpAll();
     var match;
@@ -173,13 +211,13 @@ Org.getMarkup = function(org, params){
     var pre, hasEmph, type, inner, length;
     var raw, sub;
     while((_U.trim(rest).length > 0) && (match = regexp.exec(rest))){
-      pre = match[1];
+      pre     = match[1];
       hasEmph = match[2];
-      token = match[3] || "";
-      inner = match[4] || "";
-      length = pre.length + inner.length + (hasEmph ? 2 : 0);
+      token   = match[3] || "";
+      inner   = match[4] || "";
+      length  = pre.length + inner.length + (hasEmph ? 2 : 0);
       if(length === 0){break;}
-      rest = rest.substr(length);
+      rest    = rest.substr(length);
       if(_U.notBlank(pre)){ makeInline(EmphRaw, this, pre); }
       if(hasEmph !== void(0)){
         makeInline(EmphMarkers[token].constr, this, inner);
@@ -205,26 +243,6 @@ Org.getMarkup = function(org, params){
     this.content = content;
   };
   Markup.EmphRaw = EmphRaw;
-
-  /*orgdoc
-  **** =EmphCode= : code example
-  */
-  var EmphCode = function(parent){
-    EmphRaw.call(this, parent, "EmphCode");
-  };
-  EmphCode.prototype = Object.create(EmphRaw.prototype);
-  EmphMarkers["="].constr = EmphCode;
-  Markup.EmphCode = EmphCode;
-
-  /*orgdoc
-  **** =EmphVerbatim= : unedited content
-  */
-  var EmphVerbatim = function(parent){
-    EmphRaw.call(this, parent, "EmphVerbatim");
-  };
-  EmphVerbatim.prototype = Object.create(EmphRaw.prototype);
-  EmphMarkers["~"].constr = EmphVerbatim;
-  Markup.EmphVerbatim = EmphVerbatim;
 
   /*orgdoc
   *** Recursing nodes
@@ -273,30 +291,174 @@ Org.getMarkup = function(org, params){
   EmphMarkers["+"].constr = EmphStrike;
   Markup.EmphStrike = EmphStrike;
 
+  /*orgdoc
+  **** =LaTeXInline= : non-recursing node
+  */
+  var LaTeXInline = function(parent){
+    EmphRaw.call(this, parent, "LaTeXInline");
+  };
+  LaTeXInline.prototype = Object.create(EmphRaw.prototype);
+  Markup.LaTeXInline = LaTeXInline;
 
-  ///////////////////////////////////////////////////////////////////////////////
-  // PARSE
+  /*orgdoc
+  **** =EmphCode= : code example
+  */
+  var EmphCode = function(parent){
+    EmphRaw.call(this, parent, "EmphCode");
+  };
+  EmphCode.prototype = Object.create(EmphRaw.prototype);
+  Markup.EmphCode = EmphCode;
 
-  var _linkTokenId = 0;
+  /*orgdoc
+  **** =EmphVerbatim= : unedited content
+  */
+  var EmphVerbatim = function(parent){
+    EmphRaw.call(this, parent, "EmphVerbatim");
+  };
+  EmphVerbatim.prototype = Object.create(EmphRaw.prototype);
+  Markup.EmphVerbatim = EmphVerbatim;
 
-  Markup.tokenize = function tokenize(parent, str){
+  /*orgdoc
+  *** Parsing the paragraph content
+  */
+  Markup.parse = function parse(parent, str){
     str = "" + (str || "");
     var initStr = str;
 
-    var links = {};
-    var linkTokenPrefix = uniqToken("LINK");
-
+    /*orgdoc
+    **** Replacing code/verbatim parts with unique tokens
+         Before dealing with emphasis markup, we replace the code/verbatim parts
+         with textual tokens which will be replaced in the end by their
+         corresponding tree item. These tokens are stored in the =tokens=
+         local variable.
+    */
+    var tokens = {};
     function uniqToken(p){return _U.getAbsentToken(initStr, p);}
 
-    ///////////////////////////////////////////////////////////////////////////////
-    //     LINKS
-    function linkToken(){return linkTokenPrefix + (++_linkTokenId);}
+    /*orgdoc
+    ***** Replacing \LaTeX inline markup
+          These inline items are possibly:
+          + enclosed in dollar signs (~\$~)
+          + enclosed in backslash-parens (~\\(...\\)~)
+          + enclosed in backslash-brackets (~\\[...\\]~)
+    */
+    var latexTokenPrefix = uniqToken("LATEX");
+
+    function latexToken(){return latexTokenPrefix + _U.incr();}
+
+    function latexReplacer(){
+      var t     = latexToken();
+      var a     = arguments;
+      var latex = new LaTeXInline(parent);
+      latex.consume(a[2]);
+      tokens[t] = latex;
+      return a[1] + t;
+    }
+
+    var latexParenRegex   = /(^|[^\\])\\\(([\s\S]*?)\\\)/gm;
+    str = str.replace(latexParenRegex, latexReplacer);
+    var latexBracketRegex = /(^|[^\\])\\\[([\s\S]*?)\\\]/gm;
+    str = str.replace(latexBracketRegex, latexReplacer);
+    var latexDollarRegex  = /(^|[^\\])\$([\s\S]*?)\$/gm;
+    str = str.replace(latexDollarRegex, latexReplacer);
+
+
+    /*orgdoc
+    ***** Replacing code/verbatim markup
+          These inline items are possibly:
+          + for code :: enclosed in ~\=~ signs
+          + for verbatim :: enclosed in ~\~~ signs
+    */
+    var codeTokenPrefix = uniqToken("CODE");
+
+    function codeToken(){return codeTokenPrefix + _U.incr();}
+
+    function codeReplacer(){
+      var t       = codeToken();
+      var a       = arguments;
+      var delim   = a[3];
+      var constr  = (a[3] === "=") ? EmphCode : EmphVerbatim;
+      var code    = new constr(parent);
+      // We replace all the escaped delimiters by themselves
+      var content = a[4].replace(new RegExp("\\\\" + delim, "g"), delim);
+      code.consume(content);
+      tokens[t]   = code;
+      return a[1] + t;
+    }
+
+    var codeRegexp = /(^|[^\\])(([=~])([^\s\\]|[^\s].*?[^\s\\])\3)/gm;
+    str = str.replace(codeRegexp, codeReplacer);
+
+
+    /*orgdoc
+    ***** Replacing timestamp markup
+          These items are possibly:
+          + activated :: ~<yyyy-MM-dd (weekday.)? (hh:mm)?>~
+          + deactivated :: ~[yyyy-MM-dd (weekday.)? (hh:mm)?]~
+    */
+    var timestampTokenPrefix = uniqToken("TIMESTAMP");
+
+    function timestampToken(){return timestampTokenPrefix + _U.incr();}
+
+    function timestampReplacer(activated){
+      return function(){
+        var t            = timestampToken();
+        var a            = arguments;
+        var timestamp    = new _U.Timestamp(a[1]);
+        var inline       = new TimestampInline(parent, a[1], t);
+        inline.activated = activated;
+        inline.timestamp = timestamp;
+        inline.date      = timestamp.date;
+        tokens[t]        = inline;
+        return t;
+      };
+    }
+
+    var timestampRegexAngle  = /<(\d{4}-\d{2}-\d{2}(?: [a-z.]+)?(?: \d{2}:\d{2})?)>/gim;
+    str = str.replace(timestampRegexAngle, timestampReplacer(true));
+    var timestampRegexSquare = /\[(\d{4}-\d{2}-\d{2}(?: [a-z.]+)?(?: \d{2}:\d{2})?)\]/gim;
+    str = str.replace(timestampRegexSquare, timestampReplacer(false));
+
+    /*orgdoc
+    ***** Replacing sub/sup markup
+          These items are possibly:
+          + for sub :: defined by underscore and cury braces (~\_{...}~)
+          + for sup :: defined by caret and cury braces (~\^{...}~)
+          This behaviour should evolve to deal with the possiblity to skip the
+          curly braces. For now, since it may conflict with the underscore
+          markup, this part is left for later. Consider the org-option
+          ~#+OPTIONS: ^:{}~ to be mandatory.
+    */
+    var subsupTokenPrefix = uniqToken("SUBSUP");
+
+    function subsupToken(){return subsupTokenPrefix + _U.incr();}
+
+    function subsupReplacer(){
+      var t      = subsupToken();
+      var a      = arguments;
+      var constr = (a[2] === "_") ? SubInline : SupInline;
+      tokens[t]  = new constr(parent, a[3], t);
+      return a[1] + t;
+    }
+
+    var subsupRegexBrace = /([^\s\\])(_|\^)\{([^\}]+?)\}/gm;
+    str = str.replace(subsupRegexBrace, subsupReplacer);
+    // Repeat the treatment, since a sub followed by a sup are not treated in
+    // the previous line...
+    str = str.replace(subsupRegexBrace, subsupReplacer);
+
+    /*orgdoc
+    ***** Replacing links
+    */
+    var linkTokenPrefix = uniqToken("LINK");
+
+    function linkToken(){return linkTokenPrefix + _U.incr();}
 
     function linkReplacer(urlIdx, descIdx){
       return function(){
         var t = linkToken();
         var a = arguments;
-        links[t] = new Link(parent, a[0], a[urlIdx], a[descIdx], t);
+        tokens[t] = new Link(parent, a[0], a[urlIdx], a[descIdx], t);
         return t;
       };
     }
@@ -315,32 +477,39 @@ Org.getMarkup = function(org, params){
                       '):[^\\s),;]+', "gi");
     str = str.replace(urlRegex, linkReplacer(0, 0));
 
-    ///////////////////////////////////////////////////////////////////////////////
-    //     FOOTNOTES
-
+    /*orgdoc
+    ***** Replacing footnote definitions
+    */
     var refFootnoteRegex = /\[(?:(\d+)|fn:([^:]*)(?::((?:.|\s)+?))?)\]/g;
     str = str.replace(refFootnoteRegex, function(){
-      var a = arguments;
-      var raw = a[0], name = a[2], def = a[3];
+      var a    = arguments;
+      var raw  = a[0];
+      var name = a[2];
+      var def  = a[3];
       if(!name){name = a[1];}
       if(!name){name = "anon_" + _U.root(parent).fnNextNum;}
-      var t = linkToken();
+      var t  = linkToken();
       var fn = new FootNoteRef(parent, raw, name, t);
       if(def){
-        var root = _U.root(parent);
-        console.log("FROM MARKUP::::");
-        console.log(root);
+        var root   = _U.root(parent);
         var inline = new EmphInline(root);
         inline.consume(def);
         root.addFootnoteDef(inline, name);
       }
-      links[t] = fn;
+      tokens[t] = fn;
       return t;
     });
 
+    /*orgdoc
+    ***** Processing emphasis markup (*bold*, /italic/, etc.)
+    */
     var iObj = new EmphInline(parent);
     iObj.consume(str);
-    iObj.replaceTokens(links);
+
+    /*orgdoc
+    ***** Reinjecting saved tokens
+    */
+    iObj.replaceTokens(tokens);
     return iObj;
   };
 
@@ -348,5 +517,3 @@ Org.getMarkup = function(org, params){
   return Markup;
 
 };
-/*orgdoc
-*/

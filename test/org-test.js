@@ -1,12 +1,17 @@
 // Load the document and parse it
 $(function(){
+  
+  $('section.orgnode > div.title').live('click', function(){
+    $(this).next('.org_content').slideToggle();
+  });
+
   /*///
   $.get("test/document.org", function(data){
     var root = Org.Outline.parse(data);
     $('#sample').html(root.render());
     Org.Utils.log(root);
   });
-  //*/
+  */
 
   $.get("doc/org-js.org", function(data){
     var org = new Org();
@@ -14,9 +19,10 @@ $(function(){
     var renderer = org.Renderers.html();
     $('#doc').html(renderer.render(root));
     prettyPrint();
-  
+    jsMath.Process(document);
     console.log(root);
   });
+
   /*/
   var location = "test/include/test_include.org";
   $.get(location, function(data){
@@ -25,7 +31,6 @@ $(function(){
     var renderer = org.Renderers.html();
     $('#doc').html(renderer.render(root));
   });
-
-  //*/
+  */
 
 });

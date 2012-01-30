@@ -78,7 +78,7 @@ Org.getRenderers = function(org){
 
       unBackslash: function(str){
         str = "" + str;
-        str = str.replace(/\\\\/g, "<br/>");
+        str = str.replace(/\\\\\n/g, "<br/>");
         str = str.replace(/\\ /g, "&nbsp;");
         str = str.replace(/\\(.)/g, "$1");
         str = str.replace(/\s--\s/g, " &#151; ");
@@ -89,13 +89,15 @@ Org.getRenderers = function(org){
         return r.unBackslash(r.escapeHtml(str));
       },
 
-      typo: function(str){
-        str = "" + str;
+      typo: function(str, r){
+        str = "" + r.htmlize(str, r);
         str = str.replace(/\s*(,|\.|\)|\])\s*/g, "$1 ");
         str = str.replace(/\s*(\(|\[)\s*/g, " $1");
         str = str.replace(/\s*(;|!|\?|:)\s+/g, "&nbsp;$1 ");
         str = str.replace(/\s*(«)\s*/g, " $1&nbsp;");
         str = str.replace(/\s*(»)\s*/g, "&nbsp;$1 ");
+        // Restore entities broken by the ';' typo rule...
+        str = str.replace(/(&[a-z]+)&nbsp;;/g, "$1;");
         return str;
       },
 
@@ -112,12 +114,12 @@ Org.getRenderers = function(org){
           return r.renderChildren(n, r);
         }
         return "<span class='org-inline-raw'>" +
-                r.typo(r.htmlize(n.content, r)) + "</span>";
+                r.typo(n.content, r) + "</span>";
       },
 
       EmphCode: function(n, r){
         return "<code class='org-inline-code prettyprint'>" +
-                r.htmlize(n.content, r) + "</code>";
+                r.escapeHtml(n.content, r) + "</code>";
       },
       
       EmphVerbatim: function(n, r){
@@ -144,6 +146,11 @@ Org.getRenderers = function(org){
         return "<del class='org-inline-strike'>" +
                 r.renderChildren(n, r) + "</del>";
       },
+      
+      LaTeXInline: function(n, r){
+        return "<span class='math'>" +
+                r.escapeHtml(n.content, r) + "</span>";
+      },
 
       Link: function(n, r){
         return "<a class='org-inline-link' href='" + n.url + "'>" +
@@ -158,6 +165,22 @@ Org.getRenderers = function(org){
         return "<a name='fnref_" + n.name + "'/>" +
                 "<a class='org-inline-fnref' href='#fndef_" + n.name + "'><sup>" +
                 num + "</sup></a>";
+      },
+
+      SubInline: function(n, r){
+        return "<sub>" +
+                r.htmlize(n.content, r) + "</sub>";
+      },
+
+      SupInline: function(n, r){
+        return "<sup>" +
+                r.htmlize(n.content, r) + "</sup>";
+      },
+
+      TimestampInline: function(n, r){
+        var ts     = n.timestamp;
+        return "<span class='org-inline-timestamp'>" +
+                ts.format("%y/%m/%d %H:%M") + "</span>";
       },
 
       /*orgdoc
@@ -285,7 +308,6 @@ Org.getRenderers = function(org){
       */
       VerseBlock: function(n, r){
         var out = "<pre class='verse'>\n" + r.renderChildren(n, r) + "</pre>\n";
-        out = out.replace(/ /g, "&nbsp;");
         return out;
       },
 

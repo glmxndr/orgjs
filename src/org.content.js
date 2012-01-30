@@ -152,7 +152,7 @@ Org.getContent = function(org, params){
   };
   ContentMarkupBlock.prototype.finalize = function(){
     var content = this.lines.join("\n");
-    var inline = OM.tokenize(this, content);
+    var inline = OM.parse(this, content);
     this.children.push(inline);
   };
 
@@ -288,7 +288,7 @@ Org.getContent = function(org, params){
     var root = _U.root(this);
     var content = this.lines.join("\n");
     content = content.replace(/^(\s*)\[.*?\]/, "$1");
-    var inline = OM.tokenize(this, content);
+    var inline = OM.parse(this, content);
     root.addFootnoteDef(inline, this.name);
   };
 
@@ -587,7 +587,7 @@ Org.getContent = function(org, params){
   var DlistItemBlock = function(parent, line){
     ListItemBlock.call(this, parent, line, "DlistItemBlock");
     var title = (RLT.dlitem).exec(line)[1];
-    this.titleInline = OM.tokenize(this, title);
+    this.titleInline = OM.parse(this, title);
   };
   Content.DlistItemBlock = DlistItemBlock;
   DlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
