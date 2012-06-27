@@ -58,13 +58,13 @@ Org.getOutline = function(org, params){
     },
 
     /*orgdoc
-         + =id()=
+         + =repr()= provides a representation of the node's path
     */
     repr: function(){
       if (!this.parent){
         return this.docid || "doc#" + (Node.tocnum++) + "/";
       }
-      return this.parent.repr() + "" + this.siblings().indexOf(this) + "/";
+      return this.parent.repr() + "" + this.siblingsAll().indexOf(this) + "/";
     },
 
     /*orgdoc
@@ -106,13 +106,13 @@ Org.getOutline = function(org, params){
 
   Headline.prototype = {
     getStars: function(){
-      return this.match[1];
+      return this.match[1] || "";
     },
     getTodo: function(){
-      return this.match[2];
+      return this.match[2] || "";
     },
     getPriority: function(){
-      return this.match[3];
+      return this.match[3] || "";
     },
     getTitle: function(){
       return this.match[4] || "";

@@ -1,7 +1,14 @@
 /*orgdoc
 * Markup parser
 
-  This file contains the code for the Org-Mode wiki-style markup.
+  This file describes the =OrgMode= wiki-style markup parsing.
+
+  The parsing strategy differs in some ways from the original =Org=:
+  + emphasis markup (bold, italic, underline, strike-through) are recursive,
+    and can be embedded one in  (they can also contain code/verbatim inline items)
+  + the delimiting characters for the emphasis/code/verbatim markup are
+    not configurable as they are in the =OrgMode= implementation
+  + subscript and superscript are mandatorily used with curly braces
 */
 Org.getMarkup = function(org, params){
 
@@ -89,7 +96,7 @@ Org.getMarkup = function(org, params){
   Markup.SupInline = SupInline;
 
   /*orgdoc
-  ** Sub/sup markup
+  ** Timestamp markup
   */
   var TimestampInline = function(parent, raw, token){
     _U.TreeNode.call(this, parent, {"nodeType": "TimestampInline"});
@@ -160,7 +167,7 @@ Org.getMarkup = function(org, params){
   */
   function makeInline(constr, parent, food){
     var inline = new constr(parent);
-    parent.append(inline);
+    //parent.append(inline);
     if(food){inline.consume(food);}
     return inline;
   }
@@ -176,7 +183,7 @@ Org.getMarkup = function(org, params){
   EmphInline.prototype = Object.create(_U.TreeNode.prototype);
   
   EmphInline.prototype.replaceTokens = function(tokens){
-    if(this.children.length){
+    if(this.children && this.children.length){
       _U.each(this.children, function(v){
         v.replaceTokens(tokens);
       });
@@ -187,19 +194,22 @@ Org.getMarkup = function(org, params){
       if(_U.blank(pipedKeys)){return;}
       var rgx = new RegExp('^((?:.|\n)*?)(' + pipedKeys + ')((?:.|\n)*)$');
       var match, pre, token, rest;
-      var inline = new EmphInline(this);
       match = rgx.exec(content);
+      var created = [];
       while(match){
         pre = match[1]; token = match[2]; rest = match[3];
-        if(_U.notBlank(pre)){ makeInline(EmphRaw, inline, pre); }
-        inline.append(tokens[token]);
+        if(_U.notBlank(pre)){ created.push(makeInline(EmphRaw, this.parent, pre)); }
+        var tokinline = tokens[token];
+        tokinline.parent = this.parent;
+        created.push(tokinline);
         content = rest;
         match = rgx.exec(content);
       }
-      if(inline.children.length){
-        if(_U.notBlank(rest)){ makeInline(EmphRaw, inline, rest); }
-        this.content = "";
-        this.append(inline);
+      if(_U.notBlank(rest)){
+        if(_U.notBlank(rest)){ created.push(makeInline(EmphRaw, this.parent, rest)); }
+      }
+      if(created.length){
+        this.parent.replace(this, created);
       }
     }
   };
@@ -218,12 +228,12 @@ Org.getMarkup = function(org, params){
       length  = pre.length + inner.length + (hasEmph ? 2 : 0);
       if(length === 0){break;}
       rest    = rest.substr(length);
-      if(_U.notBlank(pre)){ makeInline(EmphRaw, this, pre); }
-      if(hasEmph !== void(0)){
-        makeInline(EmphMarkers[token].constr, this, inner);
+      if(_U.notBlank(pre)){ this.append(makeInline(EmphRaw, this, pre)); }
+      if(hasEmph !== void 0){
+        this.append(makeInline(EmphMarkers[token].constr, this, inner));
       }
     }
-    if(_U.notBlank(rest)){ makeInline(EmphRaw, this, rest); }
+    if(_U.notBlank(rest)){ this.append(makeInline(EmphRaw, this, rest)); }
   };
   Markup.EmphInline = EmphInline;
 
@@ -236,6 +246,7 @@ Org.getMarkup = function(org, params){
   var EmphRaw = function(parent, nodeType){
     nodeType = nodeType || "EmphRaw";
     EmphInline.call(this, parent, nodeType);
+    this.children = null;
     this.recurse = false;
   };
   EmphRaw.prototype = Object.create(EmphInline.prototype);
@@ -296,17 +307,28 @@ Org.getMarkup = function(org, params){
   */
   var LaTeXInline = function(parent){
     EmphRaw.call(this, parent, "LaTeXInline");
+    this.children = null;
   };
   LaTeXInline.prototype = Object.create(EmphRaw.prototype);
+  LaTeXInline.prototype.replaceTokens = _U.noop;
+  LaTeXInline.prototype.consume = function(content){
+    this.content = content;
+  };
   Markup.LaTeXInline = LaTeXInline;
+
 
   /*orgdoc
   **** =EmphCode= : code example
   */
   var EmphCode = function(parent){
     EmphRaw.call(this, parent, "EmphCode");
+    this.children = null;
   };
   EmphCode.prototype = Object.create(EmphRaw.prototype);
+  EmphCode.prototype.replaceTokens = _U.noop;
+  EmphCode.prototype.consume = function(content){
+    this.content = content;
+  };
   Markup.EmphCode = EmphCode;
 
   /*orgdoc
@@ -314,8 +336,13 @@ Org.getMarkup = function(org, params){
   */
   var EmphVerbatim = function(parent){
     EmphRaw.call(this, parent, "EmphVerbatim");
+    this.children = null;
   };
   EmphVerbatim.prototype = Object.create(EmphRaw.prototype);
+  EmphVerbatim.prototype.replaceTokens = _U.noop;
+  EmphVerbatim.prototype.consume = function(content){
+    this.content = content;
+  };
   Markup.EmphVerbatim = EmphVerbatim;
 
   /*orgdoc
@@ -487,11 +514,11 @@ Org.getMarkup = function(org, params){
       var name = a[2];
       var def  = a[3];
       if(!name){name = a[1];}
-      if(!name){name = "anon_" + _U.root(parent).fnNextNum;}
+      if(!name){name = "anon_" + parent.root().fnNextNum;}
       var t  = linkToken();
       var fn = new FootNoteRef(parent, raw, name, t);
       if(def){
-        var root   = _U.root(parent);
+        var root   = parent.root();
         var inline = new EmphInline(root);
         inline.consume(def);
         root.addFootnoteDef(inline, name);

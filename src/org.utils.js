@@ -73,8 +73,45 @@ Org.getUtils = function(org, params){
   */
   var _U = {
 
+    // Mimics the M-q function in Emacs (fill-paragraph)
+    fillParagraph: function(str, length){
+      var words = str.split(/\s/g);
+      var lines = [];
+      var curline = "";
+      var curword = words.shift();
+      while(curword){
+        var testline = (_U.notBlank(curline) ? curline + " " : "") + curword;
+        if(testline.length <= length){
+          curline = testline;
+        } else {
+          lines.push(curline);
+          curline = curword;
+        }
+        curword = words.shift();
+      }
+      if(_U.notBlank(curline)){lines.push(curline);}
+      return lines.join("\n");
+    },
+
+    // Indents the content (each line gets prepended an indentation)
+    indent: function(str, length, prefix){
+      var indent = _U.repeat(" ", length);
+      prefix = prefix || indent;
+      var first = true;
+      var lines = _U.lines(str);
+      var indented = _U.map(lines, function(l){
+        if(first){
+          first = false;
+          return prefix + l; 
+        } else {
+          return indent + l;
+        }
+      });
+      return indented.join("\n");
+    },
+
     /*orgdoc
-         + =extend= is a function to be attached to prototypes, for example, to allow easy
+         + =extend()= is a function to be attached to prototypes, for example, to allow easy
            addition of features.
            #+BEGIN_EXAMPLE
              var Type = function(){};
@@ -96,7 +133,7 @@ Org.getUtils = function(org, params){
     },
 
     /*orgdoc
-         + =merge= is resembles =extend= but allows to merge several objects into a brand new one.
+         + =merge()= resembles =extend()= but allows to merge several objects into a brand new one.
            #+BEGIN_EXAMPLE
              var one   = {a:1, b:1};
              var two   = {a:2, c:3};
@@ -120,23 +157,14 @@ Org.getUtils = function(org, params){
     },
 
     /*orgdoc
-         + =array= makes an "official" Array out of an array-like object (like function =arguments=)
+         + =array(o)= makes an "official" Array out of an array-like object (like function =arguments=)
     */
-    array: function(arraylike){
-      return Array.prototype.slice.call(arraylike);
+    array: function(o){
+      return Array.prototype.slice.call(o);
     },
 
     /*orgdoc
-         + =root= goes up the chain of =parent= properties, until no finding any parent.
-    */
-    root: function(obj){
-      var result = obj;
-      while(result.parent){result = result.parent;}
-      return result;
-    },
-
-    /*orgdoc
-         + =range= returns an array of numbers, built depending on the arguments
+         + =range()= returns an array of numbers, built depending on the arguments
            - 1 argument : 0 to the argument, incrementing if positive, decrementing if negative
            - 2 arguments : =arg[0]= to =arg[1]=, incrementing or decrementing,
            - 3 arguments:  =arg[0]= to =arg[1]=, incrementing by =arg[3]=
@@ -157,14 +185,14 @@ Org.getUtils = function(org, params){
     },
 
     /*orgdoc
-          + trimming a string, always returning a string (never return null or unusable output)
+          + =trim(str)= : trimming a string, always returning a string (never return null or unusable output)
     */
     trim: function(str){
       return str && str.length ? str.replace(/^\s*|\s*$/g, "") : "";
     },
 
     /*orgdoc
-         + if the input is inserted in quotes (='=) or double quotes (="=), remove them ; return
+         + =unquote(str)= : if the input is inserted in quotes (='=) or double quotes (="=), remove them ; return
            input if enclosing quotes not found.
     */
     unquote: function(str){
@@ -177,7 +205,7 @@ Org.getUtils = function(org, params){
     },
 
     /*orgdoc
-         + tells if a given string or array is empty
+         + =empty(o)= tells if a given string or array is empty
            (more exactly, tells if the length property of the argument is falsy)
     */
     empty: function(o){
@@ -186,7 +214,7 @@ Org.getUtils = function(org, params){
     },
 
     /*orgdoc
-         + inverse of =empty=
+         + =notEmpty(o)= is the inverse of =empty=
     */
     notEmpty: function(o){
       // Valid only for strings and arrays
@@ -194,7 +222,7 @@ Org.getUtils = function(org, params){
     },
 
     /*orgdoc
-         + tells if the given string has only blank characters
+         + =blank(str)= tells if the given string has only blank characters
     */
     blank: function(str){
       // Valid only for strings and arrays
@@ -202,7 +230,7 @@ Org.getUtils = function(org, params){
     },
 
     /*orgdoc
-         + inverse of =blank=
+         + =notBlank(str)= is the inverse of =blank=
     */
     notBlank: function(str){
       // Valid only for strings and arrays
@@ -210,7 +238,7 @@ Org.getUtils = function(org, params){
     },
 
     /*orgdoc
-         + repeats the given string n times
+         + =repeat(str, times)= repeats the given string n times
     */
     repeat: function(str, times){
       var result = [];
@@ -221,7 +249,7 @@ Org.getUtils = function(org, params){
     },
 
     /*orgdoc
-         + applies a function for each element of the given array or object
+         + =each(arr, fn)=applies a function for each element of the given array or object
     */
     each: function(arr, fn){
       var name, length = arr.length, i = 0, isObj = length === undefined;
@@ -238,7 +266,7 @@ Org.getUtils = function(org, params){
     },
 
     /*orgdoc
-         + applies the given function for each element of the given array or
+         + =map(arr, fn)=applies the given function for each element of the given array or
            object, and returns the array of results
     */
     map: function(arr, fn){
@@ -251,7 +279,7 @@ Org.getUtils = function(org, params){
     },
 
     /*orgdoc
-         + applies the given function for each element of the given array or
+         + =filter(arr, fn)= applies the given function for each element of the given array or
            object, and returns the array of filtered results
     */
     filter: function(arr, fn){
@@ -264,7 +292,7 @@ Org.getUtils = function(org, params){
     },
 
     /*orgdoc
-         + logs the given argument (relies on =console.log=, does nothing if
+         + =log(obj)= logs the given argument (relies on =console.log=, does nothing if
            not present)
     */
     log: function(o){
@@ -272,7 +300,7 @@ Org.getUtils = function(org, params){
     },
 
     /*orgdoc
-         + returns the first line of the given string
+         + =firstLine(str)= returns the first line of the given string
     */
     firstLine: function(str){
       var match = _R.firstLine.exec(str);
@@ -280,7 +308,7 @@ Org.getUtils = function(org, params){
     },
 
     /*orgdoc
-         + splits the given string in lines, returns the array of lines
+         + =lines(str)= splits the given string in lines, returns the array of lines
            without the trailing line feed
     */
     lines: function(str){
@@ -289,7 +317,7 @@ Org.getUtils = function(org, params){
     },
 
     /*orgdoc
-         + returns a random string of given length
+         + =randomStr(length, chars)= returns a random string of given length
     */
     randomStr: function(length, chars){
       var str = "";
@@ -300,7 +328,7 @@ Org.getUtils = function(org, params){
     },
 
     /*orgdoc
-         + returns an array of the keys of the given object
+         + =keys(obj)= returns an array of the keys of the given object
     */
     keys: function(obj){
       var result = [];
@@ -316,7 +344,7 @@ Org.getUtils = function(org, params){
     },
 
     /*orgdoc
-         + returns a random token not present in the given string
+         + =getAbsentToken(str, prefix)= returns a random token not present in the given string
     */
     getAbsentToken: function(str, prefix){
       prefix = prefix || "";
@@ -335,7 +363,7 @@ Org.getUtils = function(org, params){
     path: {
 
       /*orgdoc
-             + gets the parent of the given path
+             + =parent(path)= gets the parent of the given path
       */
       parent: function(path){
         path = _U.trim("" + path);
@@ -347,7 +375,7 @@ Org.getUtils = function(org, params){
       },
 
       /*orgdoc
-             + concatenates path pieces into a valid path
+             + =concat= concatenates path pieces into a valid path
                (normalizing path separators)
       */
       concat: function(){
@@ -360,7 +388,7 @@ Org.getUtils = function(org, params){
     },
 
     /*orgdoc
-         + gets the content from a given location :
+         + =get()= gets the content from a given location :
            + through AJAX if jQuery is detected,
            + through node.js filesystem if node.js is detected,
            + returning null if nothing found
@@ -386,12 +414,12 @@ Org.getUtils = function(org, params){
     },
 
     /*orgdoc
-         + =_U.noop= is (slightly) shorter to write than =function(){}= ...
+         + =_U.noop()= is (slightly) shorter to write than =function(){}= ...
     */
     noop: function(){},
 
     /*orgdoc
-         + =incrementor= provides an incrementor function, starting from 0 or the given argument
+         + =incrementor()= provides an incrementor function, starting from 0 or the given argument
     */
     incrementor: function(i){
       var idx = i || 0;
@@ -399,14 +427,14 @@ Org.getUtils = function(org, params){
     },
 
     /*orgdoc
-         + =id= returns a unique identifier
+         + =id()= returns a unique identifier
     */
     id: function(){
       return _U.incr();
     },
 
     /*orgdoc
-         + =bind= mimics the =Function.bind=
+         + =bind()= mimics the =Function.bind=
     */
     bind: function(fn, obj){
       return function(){
@@ -448,14 +476,13 @@ Org.getUtils = function(org, params){
     this.children  = p.leaf ? null : [];
   };
   /*orgdoc
-  **** Helpers to manipulate / navigate through the tree.
+  **** Helper functions to manipulate / navigate through the tree.
   */
   TreeNode.prototype = {
 
     /*orgdoc
-         + =ancestors= provides the array of the ancestors of the current node, closest first
+         + =ancestors()= provides the array of the ancestors of the current node, closest first
     */
-    // Get ancestors array, closest first
     ancestors: function(){
       var result = [];
       var parent = this.parent;
@@ -467,12 +494,26 @@ Org.getUtils = function(org, params){
     },
     
     /*orgdoc
-         + =leaf= tells if the node has children or not
+         + =root()= provides the root of the tree (last of ancestors)
+    */
+    root: function(){
+      var result = [];
+      var parent = this.parent;
+      while(parent !== null){
+        result.push(parent);
+        if(!parent.parent){return parent;}
+        parent = parent.parent;
+      }
+      return parent;
+    },
+
+    /*orgdoc
+         + =leaf()= tells if the node has children or not
     */
     leaf: function(){return this._leaf;},
     
     /*orgdoc
-         + =siblings= provides all the siblings (this node excluded)
+         + =siblings()= provides all the siblings (this node excluded)
     */
     siblings: function(){
       var all = this.siblingsAll(),
@@ -481,14 +522,14 @@ Org.getUtils = function(org, params){
     },
     
     /*orgdoc
-         + =siblingsAll= provides all the siblings (this node included)
+         + =siblingsAll()= provides all the siblings (this node included)
     */
     siblingsAll: function(){
       return this.parent ? this.parent.children : [this];
     },
 
     /*orgdoc
-         + =prev= provides the previous item, or null
+         + =prev()= provides the previous item, or null
     */
     prev: function(){
       var idx, candidate, prev = null;
@@ -505,7 +546,7 @@ Org.getUtils = function(org, params){
     },
     
     /*orgdoc
-         + =prevAll= provides all the previous items
+         + =prevAll()= provides all the previous items
                (in the same order as siblings, closest last)
     */
     prevAll: function(){
@@ -524,7 +565,7 @@ Org.getUtils = function(org, params){
     },
     
     /*orgdoc
-         + =next= provides the next item, or null
+         + =next()= provides the next item, or null
     */
     next: function(){
       var idx, candidate, ok = false;
@@ -543,7 +584,7 @@ Org.getUtils = function(org, params){
     },
     
     /*orgdoc
-         + =lastAll= provides all the next items
+         + =lastAll()= provides all the next items
                (in the same order as siblings, closest first)
     */
     nextAll: function(){
@@ -563,7 +604,7 @@ Org.getUtils = function(org, params){
     },
 
     /*orgdoc
-         + =append= adds a new child at the end of the children array
+         + =append()= adds a new child at the end of the children array
     */
     append: function(child){
       this.children.push(child);
@@ -571,26 +612,58 @@ Org.getUtils = function(org, params){
     },
 
     /*orgdoc
-         + =prepend= adds a new child at the beginning of the children array
+         + =prepend()= adds a new child at the beginning of the children array
     */
     prepend: function(child){
       this.children.unshift(child);
       child.parent = this;
+    },
+
+    replace: function(child, nodearr){
+      var position = this.children.indexOf(child);
+      var siblings = this.children;
+      var result = [];
+      result = result.concat(siblings.slice(0, position), nodearr, siblings.slice(position + 1));
+      this.children = result;
     }
 
   };
 
   _U.TreeNode = TreeNode;
 
-
+  /*orgdoc
+  *** =_U.Timestamp= : wrapper around Javascript =Date=
+      This object allows to parse and format dates. Only the parameters actually
+      provided by the =Org= timestamps are parsed/formatted for now, and only as
+      numbers (no locale management for textual output of weekdays or months).
+  **** TODO Add configuration entry to deal with textual repr. of weekdays and months
+  **** TODO Add text-formatting options for weekdays and months
+  **** Wrapper around date
+       This object is a wrapper around the Javascript =Date= object. Access the =Date=
+       instance through the =date= property.
+  */
   var Timestamp = function(str){
-    this.raw = str;
     this.parse(str);
-    this.date = new Date();
+    this.date = this.date || new Date();
   };
-
+  /*orgdoc
+  **** Proprieties
+        + =date= :: the corresponding Javascript date
+        + =year= :: the year
+        + =month= :: the month (1-12)
+        + =day= :: the day (1-31)
+        + =hour= :: the hour (0-23)
+        + =minute= :: the minute (0-59)
+  **** Prototype functions
+  */
   Timestamp.prototype = {
+    /*orgdoc
+    ***** =parse()=
+           Parses a timestamp at the =Org= format (for instance ~2010-01-30 12:34~).
+           This function is called by the constructor.
+    */
     parse: function(str){
+      this.raw = str;
       var regexp          = /^(\d{4}-\d{2}-\d{2})(?: [a-z.]+)?(?: (\d{2}:\d{2}))?$/;
       var match           = regexp.exec(str); if(!match){return;}
       var datestr         = match[1].split('-');
@@ -598,27 +671,63 @@ Org.getUtils = function(org, params){
       this.month          = datestr[1];
       this.day            = datestr[2];
       var timestr         = (match[2] || "00:00").split(":");
-      this.hour           = timestr[0]; 
+      this.hour           = timestr[0];
       this.minute         = timestr[1];
       this.date           = new Date(this.year, this.month - 1, this.day, this.hour, this.minute);
     },
-
+    /*orgdoc
+    ***** =format()=
+      Formats the timestamp in the Unix-date fashion. Only a few flags are supported.
+    */
     format: function(str){
       var d = this;
-      str = str.replace(/%([HkIlMSCymde])/g, function(){
+      str = str.replace(/%([HkIlMSYymde])/g, function(){
         var a = arguments;
         var c = a[1];
         switch(c){
+          /*orgdoc
+            + ~%H~ : the 2-digit hour (00-23)
+          */
           case 'H': return "" + _U.pad(d.hour);
+          /*orgdoc
+            + ~%k~ : the hour (0-23)
+          */
           case 'k': return "" + d.hour;
+          /*orgdoc
+            + ~%I~ : the 2-digit hour (01-12)
+          */
           case 'I': return "" + _U.pad((d.hour % 12) + 1);
+          /*orgdoc
+            + ~%l~ : the hour (1-12)
+          */
           case 'l': return "" + ((d.hour % 12) + 1);
+          /*orgdoc
+            + ~%M~ : the 2-digit minutes (00-59)
+          */
           case 'M': return "" + _U.pad(d.minute);
+          /*orgdoc
+            + ~%S~ : the 2-digit seconds (00-59)
+          */
           case 'S': return "" + _U.pad(d.second);
-          case 'C': return "" + _U.pad(d.year % 100);
-          case 'y': return "" + d.year;
+          /*orgdoc
+            + ~%y~ : the 2-digit year
+          */
+          case 'y': return "" + _U.pad(d.year % 100, 2);
+          /*orgdoc
+            + ~%Y~ : the 4-digit year
+          */
+          case 'Y': return "" + d.year;
+          /*orgdoc
+            + ~%m~ : the 2-digit month (01-12)
+          */
           case 'm': return "" + _U.pad(d.month);
+          /*orgdoc
+            + ~%d~ : the 2-digit day (01-31)
+          */
           case 'd': return "" + _U.pad(d.day);
+          /*orgdoc
+            + ~%e~ : the day (1-31)
+          */
           case 'e': return "" + d.day;
         }
       });

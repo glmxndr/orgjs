@@ -7,6 +7,10 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 
 [1] Oh, right again!
 
+# This is a comment!
+
+#+INCLUDE: "../test/include/doc_header.org"
+
 * =Org= : the Main object
 
   The global context[1] is extended with only one object, named =Org=.
@@ -33,6 +37,17 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 ** Including external files
    This section deals with the =#\+INCLUDE:= tags, which allow to load another
    =Org= file into the current file.
+
+   There are basically two strategies to include a file: 
+   - ~HTTP GET~ :: if we detect that
+     we're in a browser with jQuery, we use that to get the content from the
+     included file with a GET request to the server, using the path in the include
+     tag as a relative path to the current file being processed.
+   - File system read :: if we detect that we're in Node.js (presence 
+     of the 'fs' module), we read the file having a relative path to the current
+     =Org= file given in the include tag.
+   This behaviour is not coded here, though, it relies on the behaviour of the
+   =_U.get()= function.
 
 *** =Include= object
 
@@ -65,7 +80,7 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 
 + =parseContent()=
 
-+ =id()=
++ =repr()= provides a representation of the node's path
 
 + =addFootnoteDef=
 
@@ -172,7 +187,14 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 
 * Markup parser
 
-  This file contains the code for the Org-Mode wiki-style markup.
+  This file describes the =OrgMode= wiki-style markup parsing.
+
+  The parsing strategy differs in some ways from the original =Org=:
+  + emphasis markup (bold, italic, underline, strike-through) are recursive,
+    and can be embedded one in  (they can also contain code/verbatim inline items)
+  + the delimiting characters for the emphasis/code/verbatim markup are
+    not configurable as they are in the =OrgMode= implementation
+  + subscript and superscript are mandatorily used with curly braces
 
 ** Link management
 *** Link type definitions
@@ -180,8 +202,12 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 *** =Link= object
 
 ** Footnote references
-   Footnotes have definitions as blocks in the =Content= section. This section deals
-   only with footnote references from within the markup.
+   Footnotes have definitions as blocks in the =Content= section. This section
+   deals only with footnote references from within the markup.
+
+** Sub/sup markup
+
+** Timestamp markup
 
 ** Typographic markup
 *** =EmphMarkers= : emphasis marker abstract object
@@ -193,7 +219,8 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
        + =constr= :: constructor for the object to build ;
                      should build an object with a =consume()= property
        + =parent= :: parent of the node to build
-       + =food= :: textual content the new inline node has to parse as subnodes
+       + =food= :: textual content the new inline node has to parse as
+                   subnodes
 
 *** =EmphInline= : abstract high-level inline node
 
@@ -201,10 +228,6 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
     Basic inline types containing raw text content.
     Can not contain anything else than text content.
 **** =EmphRaw= : basic text
-
-**** =EmphCode= : code example
-
-**** =EmphVerbatim= : unedited content
 
 *** Recursing nodes
     These nodes contain other sub nodes (either =EmphRaw=,
@@ -216,6 +239,53 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 **** =EmphUnderline= : recursing node
 
 **** =EmphStrike= : recursing node
+
+**** =LaTeXInline= : non-recursing node
+
+**** =EmphCode= : code example
+
+**** =EmphVerbatim= : unedited content
+
+*** Parsing the paragraph content
+
+**** Replacing code/verbatim parts with unique tokens
+     Before dealing with emphasis markup, we replace the code/verbatim parts
+     with textual tokens which will be replaced in the end by their
+     corresponding tree item. These tokens are stored in the =tokens=
+     local variable.
+
+***** Replacing \LaTeX inline markup
+      These inline items are possibly:
+      + enclosed in dollar signs (~\$~)
+      + enclosed in backslash-parens (~\\(...\\)~)
+      + enclosed in backslash-brackets (~\\[...\\]~)
+
+***** Replacing code/verbatim markup
+      These inline items are possibly:
+      + for code :: enclosed in ~\=~ signs
+      + for verbatim :: enclosed in ~\~~ signs
+
+***** Replacing timestamp markup
+      These items are possibly:
+      + activated :: ~<yyyy-MM-dd (weekday.)? (hh:mm)?>~
+      + deactivated :: ~[yyyy-MM-dd (weekday.)? (hh:mm)?]~
+
+***** Replacing sub/sup markup
+      These items are possibly:
+      + for sub :: defined by underscore and cury braces (~\_{...}~)
+      + for sup :: defined by caret and cury braces (~\^{...}~)
+      This behaviour should evolve to deal with the possiblity to skip the
+      curly braces. For now, since it may conflict with the underscore
+      markup, this part is left for later. Consider the org-option
+      ~#+OPTIONS: ^:{}~ to be mandatory.
+
+***** Replacing links
+
+***** Replacing footnote definitions
+
+***** Processing emphasis markup (*bold*, /italic/, etc.)
+
+***** Reinjecting saved tokens
 
 * =Org.Regexps= : the regexp bank
 
@@ -291,7 +361,7 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 
 ** =Utils= object to be returnedn aliased as =_U=.
 
-+ =extend= is a function to be attached to prototypes, for example, to allow easy
++ =extend()= is a function to be attached to prototypes, for example, to allow easy
        addition of features.
        #+BEGIN_EXAMPLE
          var Type = function(){};
@@ -302,7 +372,7 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
          });
        #+END_EXAMPLE
 
-+ =merge= is resembles =extend= but allows to merge several objects into a brand new one.
++ =merge()= resembles =extend()= but allows to merge several objects into a brand new one.
        #+BEGIN_EXAMPLE
          var one   = {a:1, b:1};
          var two   = {a:2, c:3};
@@ -313,76 +383,154 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
          assertEquals(3, three.c);
        #+END_EXAMPLE
 
-+ =array= makes an "official" Array out of an array-like object (like function =arguments=)
++ =array(o)= makes an "official" Array out of an array-like object (like function =arguments=)
 
-+ =root= goes up the chain of =parent= properties, until no finding any parent.
-
-+ =range= returns an array of numbers, built depending on the arguments
++ =range()= returns an array of numbers, built depending on the arguments
        - 1 argument : 0 to the argument, incrementing if positive, decrementing if negative
        - 2 arguments : =arg[0]= to =arg[1]=, incrementing or decrementing,
        - 3 arguments:  =arg[0]= to =arg[1]=, incrementing by =arg[3]=
 
-+ trimming a string, always returning a string (never return null or unusable output)
++ =trim(str)= : trimming a string, always returning a string (never return null or unusable output)
 
-+ if the input is inserted in quotes (='=) or double quotes (="=), remove them ; return
++ =unquote(str)= : if the input is inserted in quotes (='=) or double quotes (="=), remove them ; return
        input if enclosing quotes not found.
 
-+ tells if a given string or array is empty
++ =empty(o)= tells if a given string or array is empty
        (more exactly, tells if the length property of the argument is falsy)
 
-+ inverse of =empty=
++ =notEmpty(o)= is the inverse of =empty=
 
-+ tells if the given string has only blank characters
++ =blank(str)= tells if the given string has only blank characters
 
-+ inverse of =blank=
++ =notBlank(str)= is the inverse of =blank=
 
-+ repeats the given string n times
++ =repeat(str, times)= repeats the given string n times
 
-+ applies a function for each element of the given array or object
++ =each(arr, fn)=applies a function for each element of the given array or object
 
-+ applies the given function for each element of the given array or
++ =map(arr, fn)=applies the given function for each element of the given array or
        object, and returns the array of results
 
-+ applies the given function for each element of the given array or
++ =filter(arr, fn)= applies the given function for each element of the given array or
        object, and returns the array of filtered results
 
-+ logs the given argument (relies on =console.log=, does nothing if
++ =log(obj)= logs the given argument (relies on =console.log=, does nothing if
        not present)
 
-+ returns the first line of the given string
++ =firstLine(str)= returns the first line of the given string
 
-+ splits the given string in lines, returns the array of lines
++ =lines(str)= splits the given string in lines, returns the array of lines
        without the trailing line feed
 
-+ returns a random string of given length
++ =randomStr(length, chars)= returns a random string of given length
 
-+ returns an array of the keys of the given object
++ =keys(obj)= returns an array of the keys of the given object
 
 + returns the keys of the given object joined with the given delimiter
 
-+ returns a random token not present in the given string
++ =getAbsentToken(str, prefix)= returns a random token not present in the given string
 
 + URI-style path utilities
 
-+ gets the parent of the given path
++ =parent(path)= gets the parent of the given path
 
-+ concatenates path pieces into a valid path
++ =concat= concatenates path pieces into a valid path
          (normalizing path separators)
 
-+ gets the content from a given location :
++ =get()= gets the content from a given location :
        + through AJAX if jQuery is detected,
        + through node.js filesystem if node.js is detected,
        + returning null if nothing found
 
-+ =_U.noop= is (slightly) shorter to write than =function(){}= ...
++ =_U.noop()= is (slightly) shorter to write than =function(){}= ...
 
-+ =_U.TreeNode= is the basic type for the items in the tree of the parsed documents
++ =incrementor()= provides an incrementor function, starting from 0 or the given argument
+
++ =id()= returns a unique identifier
+
++ =bind()= mimics the =Function.bind=
+
++ =incr= is the default incrementor
+
+*** =_U.TreeNode= is the basic type for the items in the tree of the parsed documents
       
       Access the parent with the =.parent= property.
 
       Access the children with the =.children= property.
 
-Helpers to manipulate / navigate through the tree.
+**** Helper functions to manipulate / navigate through the tree.
+
++ =ancestors()= provides the array of the ancestors of the current node, closest first
+
++ =root()= provides the root of the tree (last of ancestors)
+
++ =leaf()= tells if the node has children or not
+
++ =siblings()= provides all the siblings (this node excluded)
+
++ =siblingsAll()= provides all the siblings (this node included)
+
++ =prev()= provides the previous item, or null
+
++ =prevAll()= provides all the previous items
+           (in the same order as siblings, closest last)
+
++ =next()= provides the next item, or null
+
++ =lastAll()= provides all the next items
+           (in the same order as siblings, closest first)
+
++ =append()= adds a new child at the end of the children array
+
++ =prepend()= adds a new child at the beginning of the children array
+
+*** =_U.Timestamp= : wrapper around Javascript =Date=
+    This object allows to parse and format dates. Only the parameters actually
+    provided by the =Org= timestamps are parsed/formatted for now, and only as
+    numbers (no locale management for textual output of weekdays or months).
+**** TODO Add configuration entry to deal with textual repr. of weekdays and months
+**** TODO Add text-formatting options for weekdays and months
+**** Wrapper around date
+     This object is a wrapper around the Javascript =Date= object. Access the =Date=
+     instance through the =date= property.
+
+**** Proprieties
+      + =date= :: the corresponding Javascript date
+      + =year= :: the year
+      + =month= :: the month (1-12)
+      + =day= :: the day (1-31)
+      + =hour= :: the hour (0-23)
+      + =minute= :: the minute (0-59)
+**** Prototype functions
+
+***** =parse()=
+       Parses a timestamp at the =Org= format (for instance ~2010-01-30 12:34~).
+       This function is called by the constructor.
+
+***** =format()=
+  Formats the timestamp in the Unix-date fashion. Only a few flags are supported.
+
++ ~%H~ : the 2-digit hour (00-23)
+
++ ~%k~ : the hour (0-23)
+
++ ~%I~ : the 2-digit hour (01-12)
+
++ ~%l~ : the hour (1-12)
+
++ ~%M~ : the 2-digit minutes (00-59)
+
++ ~%S~ : the 2-digit seconds (00-59)
+
++ ~%y~ : the 2-digit year
+
++ ~%Y~ : the 4-digit year
+
++ ~%m~ : the 2-digit month (01-12)
+
++ ~%d~ : the 2-digit day (01-31)
+
++ ~%e~ : the day (1-31)
 
 * =OrgPath=
   An XPath-like language to select items in the =Org= document tree.
@@ -401,7 +549,7 @@ Helpers to manipulate / navigate through the tree.
    + =n3:tag= :: any node of level 3 with a tag "tag" (possibly implied by parents)
    + =n3!tag= :: any node of level 3 with a tag "tag" defined at this node
    + =n3[position\=2]= :: any second node of level 3 within its parent
-   + =n3\[2\]=  :: any second node of level 3 within its parent
+   + =n3[2]=  :: any second node of level 3 within its parent
    + =n3[todo\=DONE]= :: any node of level 3 with a "DONE" todo-marker
    + =n3/src1=, =n3/src{1}=, =n3/src[level~1-3]= :: any =BEGIN_SRC= item right under a node of level 3
    + =n3/src= :: any =BEGIN_SRC= item within the content a node of level 3
@@ -427,13 +575,158 @@ Helpers to manipulate / navigate through the tree.
     usual, some shortcuts to the =Utils=, and to =Org.Content= and
     =Org.Outline=.
 
-*** renderChildren                                                 :function:
+*** =renderChildren=                                               :function:
      + Purpose :: provides a utility function to render all the
                   children of a =Node= or a =Block=.
-     + Arguments :: none
+     + Arguments :: node, renderer
      + Usage :: must be called with =.call(obj)= to provide the value
                 for =this=. =this= must have an enumerable =children=
                 property.
+
+*** =render=                                               :function:
+     + Purpose :: provides a utility function to renders a node with the given
+                  renderer
+     + Arguments :: node, renderer
+
+** Rendering inline items
+*** =IgnoredLine=
+
+*** =EmphInline=
+    Should not be used, EmphInline is abstract...
+
+*** =EmphRaw=
+
+*** =EmphCode=
+
+*** =EmphVerbatim=
+
+*** =EmphItalic=
+
+*** =EmphBold=
+
+*** =EmphUnderline=
+
+*** =EmphStrike=
+
+*** =LaTeXInline=
+
+*** =Link=
+
+*** =FootNoteRef=
+
+*** =SubInline=
+
+*** =SupInline=
+
+*** =TimestampInline=
+
+** Rendering blocks
+   This sections contains the code for the different types of
+   instanciable blocks defined in
+
+   We will attach a, until now undefined, =render= property to these
+   block prototypes. None of these function take any argument, all
+   the information they need being in the block object they will act
+   upon through the =this= value.
+
+   The container blocks (those whose constructor calls the
+   =ContainerBlock= constructor) all use the =renderChildren=
+   function.
+
+   The content blocks (those whose constructor calls the
+   =ContentBlock= constructor) should use their =this.lines=
+   array.
+
+*** Rendering =RootBlock=
+     =RootBlock=s are rendered with a =div= tag, with class
+     =org_content=.
+
+*** Rendering =UlistBlock=
+     =UlistBlock=s are rendered with a simple =ul= tag.
+
+*** Rendering =OlistBlock=
+     =OlistBlock=s are rendered with a simple =ol= tag.
+
+     If the block has a =start= property different from =1=, it is
+     inserted in the =start= attribute of the tag.
+
+*** Rendering =DlistBlock=
+     =DlistBlock=s are rendered with a =dl= tag.
+
+     =DlistItemBlock=s will have to use =dt=/=dd= structure
+     accordingly.
+
+*** Rendering =UlistItemBlock= and =OlistItemBlocks=
+     =UlistItemBlock=s and =0listItemBlocks= are rendered with a
+     #simple =li= tag.
+
+*** Rendering =DlistItemBlock=
+     =DlistItemBlock=s are rendered with a =dt=/=dl= tag structure.
+
+     The content of the =dt= is the =title= attribute of the block.
+
+     The content of the =dd= is the rendering of this block's children.
+
+*** Rendering =ParaBlock=
+     =ParaBlock=s are rendered with a =p= tag.
+
+     The content of the tag is the concatenation of this block's
+     =this.lines=, passed to the =renderMarkup= function.
+
+*** Rendering =VerseBlock=
+     =VerseBlock=s are rendered with a =p= tag, with class
+     =verse=.
+
+     All spaces are converted to unbreakable spaces.
+
+     All new lines are replaced by a =br= tag.
+
+*** Rendering =QuoteBlock=
+     =QuoteBlock=s are rendered with a =blockquote= tag.
+
+     If the quote contains an author declaration (after a double dash),
+     this declaration is put on a new line.
+
+*** Rendering =CenterBlock=
+     =CenterBlock=s are rendered with a simple =center= tag.
+
+*** Rendering =ExampleBlock=
+     =ExampleBlock=s are rendered with a simple =pre= tag.
+
+     The content is not processed with the =renderMarkup= function, only
+     with the =escapeHtml= function.
+
+*** Rendering =SrcBlock=
+     =SrcBlock=s are rendered with a =pre.src= tag with a =code= tag within.
+     The =code= tag may have a class attribute if the language of the
+     block is known. In case there is, the class would take the language
+     identifier.
+
+     The content is not processed with the =renderMarkup= function, only
+     with the =escapeHtml= function.
+
+*** Rendering =HtmlBlock=
+     =HtmlBlock=s are rendered by simply outputting the HTML content
+     verbatim, with no modification whatsoever.
+
+*** Rendering =CommentBlock=
+     =CommentBlock=s are ignored.
+
+** Rendering headlines
+
+    Here we render headlines, represented by =Outline.Node= objects.
+
+    A =section= tag is used, with class orgnode, and a level.
+    The =id= attribute is the computed id corresponding to a unique TOC
+    identifier.
+
+    The title is in a =div.title= element. Each tag is represented at the
+    end of this element by a =span.tag= element.
+
+    The content of the node (the RootBlock associated to this headline)
+    is rendered.
+
+    Then the subheadlines are rendered using the =renderChildren= function.
 
 ** Utility functions
 *** escapeHtml(str)                                                :function:
@@ -444,6 +737,54 @@ Helpers to manipulate / navigate through the tree.
      + Arguments ::
        + =str= :: any value, converted into a string at the beginning
                   of the function.
+
+*** =unBackslash(str)=                                                :function:
+     + Purpose :: Utility to unescape the characters of the given raw content
+     + Arguments ::
+       + =str= :: any value, converted into a string at the beginning
+                  of the function.
+
+*** =htmlize(str, renderer)=                                                :function:
+     + Purpose :: Unbackslash after having escaped HTML
+     + Arguments ::
+       + =str= :: any value, converted into a string at the beginning
+                  of the function.
+
+*** =typo(str, renderer)=                                                :function:
+     + Purpose :: Applies light typographical preferences for French language
+     + Arguments :: str, renderer
+
+** Rendering inline items
+*** =IgnoredLine=
+
+*** =EmphInline=
+    Should not be used, EmphInline is abstract...
+
+*** =EmphRaw=
+
+*** =EmphCode=
+
+*** =EmphVerbatim=
+
+*** =EmphItalic=
+
+*** =EmphBold=
+
+*** =EmphUnderline=
+
+*** =EmphStrike=
+
+*** =LaTeXInline=
+
+*** =Link=
+
+*** =FootNoteRef=
+
+*** =SubInline=
+
+*** =SupInline=
+
+*** =TimestampInline=
 
 ** Rendering blocks
    This sections contains the code for the different types of

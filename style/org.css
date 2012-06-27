@@ -8,6 +8,14 @@ section{
   margin-top:0.5em;
 }
 
+.todo{
+  margin-left: 0.5em;
+  margin-right: 0.5em;
+  font-size: 9pt;
+  font-family: "DejaVu Sans", "Verdana", serif;
+  color: red;
+}
+
 section.level-1 > div.title {font-family: "Georgia", serif; font-size: 200%;}
 section.level-2 > div.title {font-family: "Georgia", serif; font-size: 150%;}
 section.level-3 > div.title {font-family: "Georgia", serif; font-size: 120%;}
@@ -52,4 +60,27 @@ pre.src {
   margin-left: 2em;
   background-color: #f0f0f0;
   color: #123;
+}
+
+.org-struct{
+  padding: 2px;
+  padding-left: 0.25em;
+  margin: 2px;
+  margin-left: 0.25em;
+  border: 1px dotted gray;
+}
+
+section.org-struct{
+  background-color: #FFE;
+}
+
+div.org-struct{
+  background-color: #FEE;
+}
+
+span.org-struct{
+  background-color: #EEE;
+  display: inline-block;
+  margin: 2px;
+  margin-left: 0.25em;
 }

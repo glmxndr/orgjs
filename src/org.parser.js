@@ -96,6 +96,17 @@ Org.getParser = function(org, params){
      This section deals with the =#\+INCLUDE:= tags, which allow to load another
      =Org= file into the current file.
 
+     There are basically two strategies to include a file: 
+     - ~HTTP GET~ :: if we detect that
+       we're in a browser with jQuery, we use that to get the content from the
+       included file with a GET request to the server, using the path in the include
+       tag as a relative path to the current file being processed.
+     - File system read :: if we detect that we're in Node.js (presence 
+       of the 'fs' module), we read the file having a relative path to the current
+       =Org= file given in the include tag.
+     This behaviour is not coded here, though, it relies on the behaviour of the
+     =_U.get()= function.
+
   *** =Include= object
   */
   var Include = function(line, basepath){

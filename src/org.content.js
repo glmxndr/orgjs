@@ -110,6 +110,7 @@ Org.getContent = function(org, params){
     this.parent = parent;
     this.isContainer = true;
   };
+  ContainerBlock.prototype = Object.create(_U.TreeNode.prototype);
   ContainerBlock.prototype.finalize = function(){};
 
 
@@ -140,6 +141,7 @@ Org.getContent = function(org, params){
     this.isContent = true;
     this.lines = [];
   };
+  ContentBlock.prototype = Object.create(_U.TreeNode.prototype);
   ContentBlock.prototype.finalize = function(){};
 
 
@@ -150,6 +152,7 @@ Org.getContent = function(org, params){
     ContentBlock.call(this, parent, nodeType);
     this.hasMarkup = true;
   };
+  ContentMarkupBlock.prototype = Object.create(ContentBlock.prototype);
   ContentMarkupBlock.prototype.finalize = function(){
     var content = this.lines.join("\n");
     var inline = OM.parse(this, content);
@@ -285,7 +288,7 @@ Org.getContent = function(org, params){
     return this;
   };
   FndefBlock.prototype.finalize = function(line){
-    var root = _U.root(this);
+    var root = this.root();
     var content = this.lines.join("\n");
     content = content.replace(/^(\s*)\[.*?\]/, "$1");
     var inline = OM.parse(this, content);

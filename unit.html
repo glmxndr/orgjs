@@ -22,6 +22,32 @@
 var _U = new Org().Utils;
 $(function(){
   
+  test("UTILS - fillParagraph", function(){
+    var test = "After reviewing the comments, I finally made it without enclosing each character in span tag. I have made two spans. One for typed characters and other for current character. On each keyup event, I update the div content by replacing the current HTML with updated HTML. Below is the basic logic I am using:";
+    var width = 50;
+    var result = _U.fillParagraph(test, width);
+    var lines = _U.lines(result);
+    equal(7, lines.length, "Number of split lines");
+    equal("After reviewing the comments, I finally made it", lines[0], "First line");
+    equal("am using:", lines[6], "Last line");
+    _U.each(lines, function(l){
+      ok(l.length <= width, "Line less than "+width+" chars long: " + l.length);
+    });
+  });
+
+  test("UTILS - indent", function(){
+    var test = _U.fillParagraph("After reviewing the comments, I finally made it without enclosing each character in span tag. I have made two spans. One for typed characters and other for current character. On each keyup event, I update the div content by replacing the current HTML with updated HTML. Below is the basic logic I am using:", 50);
+    var result = _U.indent(test, 4, "  + ");
+    console.log(result);
+    var lines = _U.lines(result);
+    equal("  + After reviewing the comments, I finally made it", lines[0], "First line");
+    equal("    am using:", lines[6], "Last line");
+    _U.each(lines, function(l, idx){
+      if(idx === 0){return;}
+      ok(/^ {4}/.exec(l), "Line is indented with 4 spaces");
+    });
+  });
+
   test("UTILS - each", function(){
     var arr = [1,2,3];
     var resultArr = [];
