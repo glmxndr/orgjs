@@ -294,8 +294,6 @@ Org.getMarkup = function(org, params){
       var fn = new FootNoteRef(parent, raw, name, t);
       if(def){
         var root = _U.root(parent);
-        console.log("FROM MARKUP::::");
-        console.log(root);
         var inline = new EmphInline(root);
         inline.consume(def);
         root.addFootnoteDef(inline, name);

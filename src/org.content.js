@@ -77,7 +77,6 @@ Org.getContent = function(org, params){
 
     var k;
     for(k in BeginEndBlocks){
-      console.log(RGX.beginBlock(k).toString());
       if(RGX.beginBlock(k).exec(line)){
         return LineType[k];
       }
@@ -486,9 +485,6 @@ Org.getContent = function(org, params){
         } else {
           if(current.finalize){
             current.finalize();
-          }
-          else {
-            console.log("no finalize...", current);
           }
           current = current.parent;
         }

@@ -125,7 +125,6 @@ Org.getRenderers = function(org){
 
       FootNoteRef: function(n, r){
         var root = _U.root(n);
-        console.log(n, root.fnByName[n.name]);
         var num = (root.fnByName[n.name] || {}).num;
         return {
           "type": "fnref",  
@@ -251,14 +250,16 @@ Org.getRenderers = function(org){
         var headline = n.level === 0 ? n.meta["TITLE"] : n.heading.getTitle();
         var headInline = r.render(OM.tokenize(n, headline));
 
+        var children = [];
+        children.push(r.render(n.contentNode));
+        children = children.concat(r.renderChildrenAsArray(n));
         var result = {
           "type": "node",
           "id": n.id(),
           "level": n.level,
           "headline": headInline,
           "tags": n.heading.getTags(),
-          "content": r.render(n.contentNode),
-          "children": r.renderChildrenAsArray(n)
+          "children": children
         };
 
         if(_U.notEmpty(n.fnNameByNum)){
