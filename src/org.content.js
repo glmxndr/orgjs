@@ -58,7 +58,7 @@ Org.getContent = function(org, params){
     if(_U.blank(line)){
       return LineType.BLANK;
     }
-    if(/^#/.exec(line)){
+    if(/^#[^+]/.exec(line)){
       return LineType.IGNORED;
     }
     // Then test all the other cases
@@ -75,15 +75,14 @@ Org.getContent = function(org, params){
       return LineType.FNDEF;
     }
 
-    //if(/^\s*$/.exec(line)){
-    //  return LineType.BLANK;
-    //}
     var k;
     for(k in BeginEndBlocks){
+      console.log(RGX.beginBlock(k).toString());
       if(RGX.beginBlock(k).exec(line)){
         return LineType[k];
       }
     }
+
     return LineType.PARA;
   }
 
@@ -269,7 +268,7 @@ Org.getContent = function(org, params){
   };
   LineDef.VERSE.constr = Content.VerseBlock = VerseBlock;
   VerseBlock.prototype = Object.create(BeginEndBlock.prototype);
-  VerseBlock.prototype.finalize = ContentMarkupBlock.finalize;
+  VerseBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
 
   ////////////////////////////////////////////////////////////////////////////////
   //  QUOTEBLOCK
@@ -280,7 +279,7 @@ Org.getContent = function(org, params){
   };
   LineDef.QUOTE.constr = Content.QuoteBlock = QuoteBlock;
   QuoteBlock.prototype = Object.create(BeginEndBlock.prototype);
-  QuoteBlock.prototype.finalize = ContentMarkupBlock.finalize;
+  QuoteBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
 
   ////////////////////////////////////////////////////////////////////////////////
   //  CENTERBLOCK
@@ -291,7 +290,7 @@ Org.getContent = function(org, params){
   };
   LineDef.CENTER.constr = Content.CenterBlock = CenterBlock;
   CenterBlock.prototype = Object.create(BeginEndBlock.prototype);
-  CenterBlock.prototype.finalize = ContentMarkupBlock.finalize;
+  CenterBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
 
   ////////////////////////////////////////////////////////////////////////////////
   //  EXAMPLEBLOCK
@@ -485,7 +484,12 @@ Org.getContent = function(org, params){
           current = current.consume(line);
           break;
         } else {
-          current.finalize();
+          if(current.finalize){
+            current.finalize();
+          }
+          else {
+            console.log("no finalize...", current);
+          }
           current = current.parent;
         }
       }

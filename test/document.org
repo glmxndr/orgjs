@@ -27,6 +27,11 @@ Some tricky stuff... /+/ oh and /+/.
   deadline: /DEADLINE: <(\d{4}-\d\d-\d\d) [A-Za-z]{3}>$/
   #+END_EXAMPLE
 
+#+BEGIN_SRC js
+  var test = 1;
+  window.incr = function (n) { return 1 + n; };
+#+END_SRC
+
 * Head again
 
 ** Some headline

@@ -101,7 +101,7 @@ Org.getMarkup = function(org, params){
   EmphMarkers.getRegexpAll = function(){
     // TODO : refactor to :
     //    - take the real pre/post/border char sets in config
-    return (/(^(?:.|\n)*?)(([\/*~=+_])([^\s].*?[^\s\\]|[^\s\\])\3)/);        //*/
+    return (/(^(?:.|\n)*?)(([\/*~=+_])([^\s](?:.|\n)*?[^\s\\]|[^\s\\])\3)/);        //*/
   };
   Markup.EmphMarkers = EmphMarkers;
 

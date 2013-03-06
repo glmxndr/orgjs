@@ -1,7 +1,7 @@
 /*orgdoc+++/
 * Default Rendering
 
-  This section provides a default HTML renderer for the parsed tree.
+  This section provides a default JSON and HTML renderer for the parsed tree.
 
   It is intended to provide an example of how to attach rendering
   functions to the =Outline.Node='s and the different
@@ -21,7 +21,269 @@ Org.getRenderers = function(org){
   var OO = org.Outline;
   var _U = org.Utils;
 
-  var DefaultHTMLRenderer = function(){
+  // minified json2.js ; Public Domain. See http://www.JSON.org/js.html
+  var JSON;if(!JSON){JSON={}}(function(){function f(n){return n<10?"0"+n:n}if(typeof Date.prototype.toJSON!=="function"){Date.prototype.toJSON=function(key){return isFinite(this.valueOf())?this.getUTCFullYear()+"-"+f(this.getUTCMonth()+1)+"-"+f(this.getUTCDate())+"T"+f(this.getUTCHours())+":"+f(this.getUTCMinutes())+":"+f(this.getUTCSeconds())+"Z":null};String.prototype.toJSON=Number.prototype.toJSON=Boolean.prototype.toJSON=function(key){return this.valueOf()}}var cx=/[\u0000\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,escapable=/[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,gap,indent,meta={"\b":"\\b","\t":"\\t","\n":"\\n","\f":"\\f","\r":"\\r",'"':'\\"',"\\":"\\\\"},rep;function quote(string){escapable.lastIndex=0;return escapable.test(string)?'"'+string.replace(escapable,function(a){var c=meta[a];return typeof c==="string"?c:"\\u"+("0000"+a.charCodeAt(0).toString(16)).slice(-4)})+'"':'"'+string+'"'}function str(key,holder){var i,k,v,length,mind=gap,partial,value=holder[key];if(value&&typeof value==="object"&&typeof value.toJSON==="function"){value=value.toJSON(key)}if(typeof rep==="function"){value=rep.call(holder,key,value)}switch(typeof value){case"string":return quote(value);case"number":return isFinite(value)?String(value):"null";case"boolean":case"null":return String(value);case"object":if(!value){return"null"}gap+=indent;partial=[];if(Object.prototype.toString.apply(value)==="[object Array]"){length=value.length;for(i=0;i<length;i+=1){partial[i]=str(i,value)||"null"}v=partial.length===0?"[]":gap?"[\n"+gap+partial.join(",\n"+gap)+"\n"+mind+"]":"["+partial.join(",")+"]";gap=mind;return v}if(rep&&typeof rep==="object"){length=rep.length;for(i=0;i<length;i+=1){if(typeof rep[i]==="string"){k=rep[i];v=str(k,value);if(v){partial.push(quote(k)+(gap?": ":":")+v)}}}}else{for(k in value){if(Object.prototype.hasOwnProperty.call(value,k)){v=str(k,value);if(v){partial.push(quote(k)+(gap?": ":":")+v)}}}}v=partial.length===0?"{}":gap?"{\n"+gap+partial.join(",\n"+gap)+"\n"+mind+"}":"{"+partial.join(",")+"}";gap=mind;return v}}if(typeof JSON.stringify!=="function"){JSON.stringify=function(value,replacer,space){var i;gap="";indent="";if(typeof space==="number"){for(i=0;i<space;i+=1){indent+=" "}}else{if(typeof space==="string"){indent=space}}rep=replacer;if(replacer&&typeof replacer!=="function"&&(typeof replacer!=="object"||typeof replacer.length!=="number")){throw new Error("JSON.stringify")}return str("",{"":value})}}if(typeof JSON.parse!=="function"){JSON.parse=function(text,reviver){var j;function walk(holder,key){var k,v,value=holder[key];if(value&&typeof value==="object"){for(k in value){if(Object.prototype.hasOwnProperty.call(value,k)){v=walk(value,k);if(v!==undefined){value[k]=v}else{delete value[k]}}}}return reviver.call(holder,key,value)}text=String(text);cx.lastIndex=0;if(cx.test(text)){text=text.replace(cx,function(a){return"\\u"+("0000"+a.charCodeAt(0).toString(16)).slice(-4)})}if(/^[\],:{}\s]*$/.test(text.replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g,"@").replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g,"]").replace(/(?:^|:|,)(?:\s*\[)+/g,""))){j=eval("("+text+")");return typeof reviver==="function"?walk({"":j},""):j}throw new SyntaxError("JSON.parse")}}}());
+
+  var DefaultJSONRenderer = function (options) {
+    var o = options || {};
+
+    return {
+
+      renderChildren: function(n){
+        var i, out = "";
+        for(i in n.children){
+          out += this.render(n.children[i]);
+        }
+        return out;
+      },
+
+      renderChildrenAsArray: function (n) {
+        var i, out = [];
+        for(i in n.children){
+          out.push(this.render(n.children[i]));
+        }
+        return out;
+      },
+
+      render: function(n){
+        var type = n.nodeType;
+        var renderFn = this[type];
+        if(!renderFn){
+          _U.log("Not found render fn:");
+          _U.log(n);
+          renderFn = _U.noop;
+        }
+        return renderFn(n, this);
+      },
+
+      EmphInline: function(n, r){
+        return {
+          "type": "inline", 
+          "children": r.renderChildrenAsArray(n)
+        };
+      },
+
+      EmphRaw: function(n, r){
+        if(n.children.length){
+          return r.EmphInline(n,r);
+        }
+        return {
+          "type":"raw", 
+          "content": n.content
+        };
+      },
+
+      EmphCode: function(n, r){
+        return {
+          "type":"code", 
+          "content": n.content
+        };
+      },
+      
+      EmphVerbatim: function(n, r){
+        return {
+          "type":"verbatim", 
+          "content": n.content
+        };
+      },
+
+      EmphItalic: function(n, r){
+        return {
+          "type":"italic", 
+          "content": n.content
+        };
+      },
+
+      EmphBold: function(n, r){
+        return {
+          "type":"bold", 
+          "content": n.content
+        };
+      },
+
+      EmphUnderline: function(n, r){
+        return {
+          "type":"underline", 
+          "content": n.content
+        };
+      },
+
+      EmphStrike: function(n, r){
+        return {
+          "type":"strike", 
+          "content": n.content
+        };
+      },
+
+      Link: function(n, r){
+        return {
+          "type":"link",
+          "content":n.content,
+          "url": n.url
+        };
+      },
+
+      FootNoteRef: function(n, r){
+        var root = _U.root(n);
+        console.log(n, root.fnByName[n.name]);
+        var num = (root.fnByName[n.name] || {}).num;
+        return {
+          "type": "fnref",  
+          "name": n.name,
+          "num": num
+        };
+      },
+
+      RootBlock: function(n, r){
+        return {
+          "type":"block", 
+          "children": r.renderChildrenAsArray(n)
+        };
+      },
+
+      UlistBlock: function(n, r){
+        return {
+          "type":"ulist", 
+          "children": r.renderChildrenAsArray(n)
+        };
+      },
+
+      OlistBlock: function(n, r){
+        return {
+          "type":"olist", 
+          "start": n.start,
+          "children": r.renderChildrenAsArray(n)
+        };
+      },
+
+      DlistBlock: function(n, r){
+        return {
+          "type":"dlist", 
+          "children": r.renderChildrenAsArray(n)
+        };
+      },
+
+      UlistItemBlock: function(n, r){
+        return {
+          "type":"uitem", 
+          "children": r.renderChildrenAsArray(n)
+        };
+      },
+
+      OlistItemBlock: function(n, r){
+        return {
+          "type":"oitem", 
+          "children": r.renderChildrenAsArray(n)
+        };
+      },
+
+      DlistItemBlock: function(n, r){
+        return {
+          "type":"ditem", 
+          "title": r.render(n.titleInline),
+          "children": r.renderChildrenAsArray(n)
+        };
+      },
+
+      ParaBlock: function(n, r){
+        return {
+          "type":"para", 
+          "children": r.renderChildrenAsArray(n)
+        };
+      },
+
+      VerseBlock: function(n, r){
+        return {
+          "type":"verse", 
+          "children": r.renderChildrenAsArray(n)
+        };
+      },
+
+      QuoteBlock: function(n, r){
+        return {
+          "type":"quote", 
+          "children": r.renderChildrenAsArray(n)
+        };
+      },
+
+      CenterBlock: function(n, r){
+        return {
+          "type":"center", 
+          "children": r.renderChildrenAsArray(n)
+        };
+      },
+
+      ExampleBlock: function(n, r){
+        var content = n.lines.join("\n");
+        return {
+          "type":"example", 
+          "content": content
+        };
+      },
+
+      SrcBlock: function(n, r){
+        var l = n.language || null;
+        var content = n.lines.join("\n");
+        return {
+          "type":"source",
+          "language" : l,
+          "content": content
+        };
+      },
+
+      HtmlBlock: function(n, r){
+        var content = n.lines.join("\n");
+        return {
+          "type":"html", 
+          "content": content
+        };
+      },
+
+      FndefBlock: function(n, r){
+        return "";
+      },
+
+      CommentBlock : function(n, r){
+        return "";
+      },
+
+      Node: function(n, r){
+        var headline = n.level === 0 ? n.meta["TITLE"] : n.heading.getTitle();
+        var headInline = r.render(OM.tokenize(n, headline));
+
+        var result = {
+          "type": "node",
+          "id": n.id(),
+          "level": n.level,
+          "headline": headInline,
+          "tags": n.heading.getTags(),
+          "content": r.render(n.contentNode),
+          "children": r.renderChildrenAsArray(n)
+        };
+
+        if(_U.notEmpty(n.fnNameByNum)){
+          var fns = [];
+          var root = n;
+          _U.each(root.fnNameByNum, function(name, idx){
+            if(!name){return;}
+            var fn = root.fnByName[name];
+            fns.push({
+              "name": name,
+              "inline": r.render(fn.inline),
+              "num": fn.num
+            });
+          });
+          result.footnotes = fns;
+        }
+        
+        return result;
+      }
+    };
+
+  };
+
+
+  var DefaultHTMLRenderer = function () {
     return {
 
 /*orgdoc+/
@@ -151,7 +413,7 @@ Org.getRenderers = function(org){
 
       FootNoteRef: function(n, r){
         var root = _U.root(n);
-        var num = root.fnByName[n.name].num;
+        var num = (root.fnByName[n.name] || {}).num;
         return "<a name='fnref_" + n.name + "'/>" +
                 "<a class='org-inline-fnref' href='#fndef_" + n.name + "'><sup>" +
                 num + "</sup></a>";
@@ -379,7 +641,7 @@ Org.getRenderers = function(org){
 #+BEGIN_SRC js
 /-orgdoc*/
       SrcBlock: function(n, r){
-        var content = n.lines.join("\n") + "\n";
+        var content = n.lines.join("\n").replace(/\n[\n\s]*$/, '');
         var markup = r.escapeHtml(content);
         var l = n.language;
         var out = "<pre class='src'><code" +
@@ -490,7 +752,8 @@ Org.getRenderers = function(org){
 
 
   return {
-    html: DefaultHTMLRenderer
+    html: DefaultHTMLRenderer,
+    json: DefaultJSONRenderer
   };
 };
 

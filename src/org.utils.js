@@ -75,7 +75,7 @@ Org.getUtils = function(org, params){
     },
 
     trim: function(str){
-      return str && str.length ? str.replace(/^\s*|\s*$/g, "") : "";
+      return str && str.length ? str.replace(/^[\n\s]*|[\n\s]*$/g, "") : "";
     },
 
     empty: function(o){
@@ -166,7 +166,7 @@ Org.getUtils = function(org, params){
     },
 
     getAbsentToken: function(str, prefix){
-      var token, start = prefix + "_";
+      var token, start = prefix + "§";
       if(str.indexOf(start) === -1){return start;}
       token = start + this.randomStr(5);
       while(str.indexOf(token) !== -1){
