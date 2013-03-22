@@ -40,13 +40,15 @@
          - the tags, if any, separated by colons
       */
       headingLine: (function() {
-        var str;
-        str = "(\\**)\\s*";
-        str += "(?:(" + _C.todoMarkers.join('|') + ")\\s+)?";
-        str += "(?:\\[\\#([A-Z])\\]\\s+)?";
-        str += "(.*?)\\s*";
-        str += "(?:\\s+:([A-Za-z0-9:]+):\\s*)?";
+        var str = "(\\**)%s*";
+        str += "(?:(%TODO)%s+)?";
+        str += "(?:\\[\\#([A-Z])\\]%s+)?";
+        str += "(.*?)%s*";
+        str += "(?:%s+:([A-Za-z0-9:]+):%s*)?";
         str += "(?:\n|$)";
+
+        str = str.replace(/%TODO/, _C.todoMarkers.join('|'));
+        str = str.replace(/%s/g, '[ \\t]');
         return RegExp(str);
       })(),
       /*orgdoc
