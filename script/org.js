@@ -2098,7 +2098,7 @@ Org.getContent = function(org, params){
   Content.OlistItemBlock = OlistItemBlock;
   OlistItemBlock.prototype = Object.create(ListItemBlock.prototype);
   OlistItemBlock.prototype.preprocess = function(line){
-    return line.replace(/^(\s+)\d+[.)](?:\s+\[@\d+\])? /, "$1  ");
+    return line.replace(/^(\s*)\d+[.)](?:\s+\[@\d+\])? /, "$1  ");
   };
 
 

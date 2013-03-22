@@ -17,7 +17,7 @@ $(function(){
   });
 
   /*/
-  var location = "doc/org-js.org";//"test/include/test_include.org";
+  var location = "test/include/test.org";//"test/include/test_include.org";
   $.get(location, function(data){
     var org = new Org();
     var root = org.Parser.parse(data, location);
