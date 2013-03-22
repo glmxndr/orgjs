@@ -30,6 +30,7 @@ Org.getContent = function(org, params){
     "ULITEM",
     "OLITEM",
     "FNDEF",
+    "SEXAMPLE",
     "VERSE",
     "QUOTE",
     "CENTER",
@@ -144,7 +145,6 @@ Org.getContent = function(org, params){
   ContentBlock.prototype = Object.create(_U.TreeNode.prototype);
   ContentBlock.prototype.finalize = function(){};
 
-
   /*orgdoc
   *** Generic content with markup block
   */
@@ -212,6 +212,44 @@ Org.getContent = function(org, params){
   ParaBlock.prototype.consume = function(line, type){
     if(type !== LineDef.IGNORED.id){
       this.lines.push(line);
+    }
+    return this;
+  };
+
+  /*orgdoc
+  *** Simple example blocks
+      These are blocks with lines prepended with a colon:
+      : : This is a simple example.
+      : : <- here are the colons...
+  */
+  var SimpleExampleBlock = function (parent) {
+    ContentBlock.call(this, parent, "SimpleExampleBlock");
+    this.indent = parent.indent || 0;
+  }
+  LineDef.SEXAMPLE = {
+    id:     "SEXAMPLE",
+    rgx:    RLT.sexample,
+    constr: SimpleExampleBlock
+  };
+  Content.SimpleExampleBlock = SimpleExampleBlock;
+  SimpleExampleBlock.prototype = Object.create(ContentBlock.prototype);
+  SimpleExampleBlock.prototype.accept  = function(line, type){
+    if(type === LineDef.BLANK.id){
+      if(this.ended){return true;}
+      this.ended = true; return true;
+    }
+    if(type !== LineDef.SEXAMPLE.id){return false;}
+    if(this.ended){return false;}
+    if(this.indent === 0){return true;}
+    indent = getLineIndent(line);
+    if(indent <= this.indent){
+      return false;
+    }
+    return true;
+  };
+  SimpleExampleBlock.prototype.consume = function(line, type){
+    if(type !== LineDef.IGNORED.id){
+      this.lines.push(line.replace(/^\s*: /, ''));
     }
     return this;
   };
@@ -606,6 +644,7 @@ Org.getContent = function(org, params){
     var root = new RootBlock(parent);
     var current = root;
     var line = lines.shift();
+    var old;
     // Ignore first blank lines...
     var type;
     while(line !== undefined && (type = getLineType(line)) === LineDef.BLANK.id){
@@ -614,12 +653,19 @@ Org.getContent = function(org, params){
     while(line !== undefined){
       type = getLineType(line);
       while(current){
+        old = current;
         if(current.accept(line, type)){
           current = current.consume(line, type);
+          if(!current.accept){
+            console.log(current, old);
+          }
           break;
         } else {
           current.finalize();
           current = current.parent;
+          if(!current.accept){
+            console.log(current, old);
+          }
         }
       }
       line = lines.shift();

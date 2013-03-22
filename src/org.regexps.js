@@ -107,6 +107,7 @@
         dlitem: /^(?:\s*[+-]|\s+\*)\s+(.*?)\s*::/,
         olitem: /^\s*\d+[.)] /,
         fndef: /^\s*\[(\d+|fn:.+?)\]/,
+        sexample: /^\s*: /,
         _bBlk: {},
         beginBlock: function(type) {
           return this._bBlk[type] || (this._bBlk[type] = new RegExp("^\\s*#\\+BEGIN_" + type + "(\\s|$)", "i"));

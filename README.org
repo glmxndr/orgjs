@@ -148,6 +148,11 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 
 *** Paragraph block
 
+*** Simple example blocks
+    These are blocks with lines prepended with a colon:
+    : : This is a simple example.
+    : : <- here are the colons...
+
 *** Ignored line (starting with a hash)
 
 *** Footnote definition block

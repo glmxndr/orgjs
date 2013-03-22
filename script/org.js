@@ -238,6 +238,7 @@ Org.getConfig = function(org, params){
         dlitem: /^(?:\s*[+-]|\s+\*)\s+(.*?)\s*::/,
         olitem: /^\s*\d+[.)] /,
         fndef: /^\s*\[(\d+|fn:.+?)\]/,
+        sexample: /^\s*: /,
         _bBlk: {},
         beginBlock: function(type) {
           return this._bBlk[type] || (this._bBlk[type] = new RegExp("^\\s*#\\+BEGIN_" + type + "(\\s|$)", "i"));
@@ -1576,6 +1577,7 @@ Org.getContent = function(org, params){
     "ULITEM",
     "OLITEM",
     "FNDEF",
+    "SEXAMPLE",
     "VERSE",
     "QUOTE",
     "CENTER",
@@ -1690,7 +1692,6 @@ Org.getContent = function(org, params){
   ContentBlock.prototype = Object.create(_U.TreeNode.prototype);
   ContentBlock.prototype.finalize = function(){};
 
-
   /*orgdoc
   *** Generic content with markup block
   */
@@ -1758,6 +1759,44 @@ Org.getContent = function(org, params){
   ParaBlock.prototype.consume = function(line, type){
     if(type !== LineDef.IGNORED.id){
       this.lines.push(line);
+    }
+    return this;
+  };
+
+  /*orgdoc
+  *** Simple example blocks
+      These are blocks with lines prepended with a colon:
+      : : This is a simple example.
+      : : <- here are the colons...
+  */
+  var SimpleExampleBlock = function (parent) {
+    ContentBlock.call(this, parent, "SimpleExampleBlock");
+    this.indent = parent.indent || 0;
+  }
+  LineDef.SEXAMPLE = {
+    id:     "SEXAMPLE",
+    rgx:    RLT.sexample,
+    constr: SimpleExampleBlock
+  };
+  Content.SimpleExampleBlock = SimpleExampleBlock;
+  SimpleExampleBlock.prototype = Object.create(ContentBlock.prototype);
+  SimpleExampleBlock.prototype.accept  = function(line, type){
+    if(type === LineDef.BLANK.id){
+      if(this.ended){return true;}
+      this.ended = true; return true;
+    }
+    if(type !== LineDef.SEXAMPLE.id){return false;}
+    if(this.ended){return false;}
+    if(this.indent === 0){return true;}
+    indent = getLineIndent(line);
+    if(indent <= this.indent){
+      return false;
+    }
+    return true;
+  };
+  SimpleExampleBlock.prototype.consume = function(line, type){
+    if(type !== LineDef.IGNORED.id){
+      this.lines.push(line.replace(/^\s*: /, ''));
     }
     return this;
   };
@@ -2152,6 +2191,7 @@ Org.getContent = function(org, params){
     var root = new RootBlock(parent);
     var current = root;
     var line = lines.shift();
+    var old;
     // Ignore first blank lines...
     var type;
     while(line !== undefined && (type = getLineType(line)) === LineDef.BLANK.id){
@@ -2160,12 +2200,19 @@ Org.getContent = function(org, params){
     while(line !== undefined){
       type = getLineType(line);
       while(current){
+        old = current;
         if(current.accept(line, type)){
           current = current.consume(line, type);
+          if(!current.accept){
+            console.log(current, old);
+          }
           break;
         } else {
           current.finalize();
           current = current.parent;
+          if(!current.accept){
+            console.log(current, old);
+          }
         }
       }
       line = lines.shift();
@@ -3016,6 +3063,13 @@ Org.getRenderers = function(org){
         return out;
       },
 
+      SimpleExampleBlock: function(n, r){
+        var lines = _U.map(n.lines, function (l) {return ': ' + l;});
+        var content = lines.join("\n") + "\n";
+        var out = content;
+        return out;
+      },
+
       /*orgdoc
       *** Rendering =SrcBlock=
            =SrcBlock=s are rendered with a =pre.src= tag with a =code= tag within.
@@ -3209,6 +3263,13 @@ Org.getRenderers = function(org){
       QuoteBlock: typedChildren('quote'),
       CenterBlock: typedChildren('center'),
       ExampleBlock: function(n, r){
+        var content = n.lines.join("\n");
+        return {
+          "type":"example", 
+          "content": content
+        };
+      },
+      SimpleExampleBlock: function(n, r){
         var content = n.lines.join("\n");
         return {
           "type":"example", 
@@ -3627,6 +3688,12 @@ Org.getRenderers = function(org){
            with the =escapeHtml= function.
       */
       ExampleBlock: function(n, r){
+        var content = n.lines.join("\n") + "\n";
+        var markup = r.escapeHtml(content);
+        var out = "<pre>\n" + markup + "</pre>\n";
+        return out;
+      },
+      SimpleExampleBlock: function(n, r){
         var content = n.lines.join("\n") + "\n";
         var markup = r.escapeHtml(content);
         var out = "<pre>\n" + markup + "</pre>\n";

@@ -352,6 +352,13 @@ Org.getRenderers = function(org){
         return out;
       },
 
+      SimpleExampleBlock: function(n, r){
+        var lines = _U.map(n.lines, function (l) {return ': ' + l;});
+        var content = lines.join("\n") + "\n";
+        var out = content;
+        return out;
+      },
+
       /*orgdoc
       *** Rendering =SrcBlock=
            =SrcBlock=s are rendered with a =pre.src= tag with a =code= tag within.
@@ -545,6 +552,13 @@ Org.getRenderers = function(org){
       QuoteBlock: typedChildren('quote'),
       CenterBlock: typedChildren('center'),
       ExampleBlock: function(n, r){
+        var content = n.lines.join("\n");
+        return {
+          "type":"example", 
+          "content": content
+        };
+      },
+      SimpleExampleBlock: function(n, r){
         var content = n.lines.join("\n");
         return {
           "type":"example", 
@@ -963,6 +977,12 @@ Org.getRenderers = function(org){
            with the =escapeHtml= function.
       */
       ExampleBlock: function(n, r){
+        var content = n.lines.join("\n") + "\n";
+        var markup = r.escapeHtml(content);
+        var out = "<pre>\n" + markup + "</pre>\n";
+        return out;
+      },
+      SimpleExampleBlock: function(n, r){
         var content = n.lines.join("\n") + "\n";
         var markup = r.escapeHtml(content);
         var out = "<pre>\n" + markup + "</pre>\n";
