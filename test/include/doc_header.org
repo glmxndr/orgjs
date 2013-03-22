@@ -1,0 +1,42 @@
+* Showcasing
+** TODO [#A] =Test \= header=                          :some:tags:
+   This ~is~ an =example= with some =sample code= and some ~sample verbatim~.
+
+   Here are timestamps: 
+   * activated (~<2012-01-28 mon. 12:34>~) :: time<2012-01-28 mon. 12:34>stamp
+   * deactivated (~[2012-01-28 mon. 12:34]~) :: time([2012-01-28 mon. 12:34])stamp
+
+** DONE [#B] Test header 2                        :some:tags:
+*** Sample
+    This is a /sample _paragraph_/. With some_{sub}^{sup}^{sup2}_{sub2} formatting (see http://google.com/).
+    + A *\*bold\** word
+    + A tilde: ~\~~
+      - A sublist
+      - [ ] with a... checkbox?
+        * A LaTeX equation : $E = m.c^{2}$ 
+        * Another one: \(between parens\) and \[between brackets\]
+
+    #+BEGIN_CENTER
+    Centered text
+    #+END_CENTER
+
+    #+BEGIN_QUOTE
+    Quoted text
+    #+END_QUOTE
+
+   #+BEGIN_SRC js
+   Source text
+   #+END_SRC
+
+   #+BEGIN_COMMENT
+   Comment text
+   #+END_COMMENT
+
+   #+BEGIN_HTML
+   <b>HTML bold text</b>
+   #+END_HTML
+
+   #+BEGIN_VERSE
+   Lorsqu'avec ses enfants vêtus de peaux de bêtes,
+   Echevelé, livide, au mileu des tempêtes
+   #+END_VERSE

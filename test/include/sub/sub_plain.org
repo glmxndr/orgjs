@@ -1,0 +1,8 @@
+* Just a sample file
+** With two headlines
+   And with not much in it,
+   + really,
+   + not much.
+** Got it ?
+*** Good.
+    Bye.
