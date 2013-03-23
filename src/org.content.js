@@ -10,12 +10,10 @@ Org.getContent = function(org, params){
   var _R = org.Regexps;
   var RLT = _R.lineTypes;
 
-
   /*orgdoc
     =Content= is the object returned by this function.
   */
   var Content = {};
-
 
   /*orgdoc
   ** Types of lines
@@ -644,7 +642,6 @@ Org.getContent = function(org, params){
     var root = new RootBlock(parent);
     var current = root;
     var line = lines.shift();
-    var old;
     // Ignore first blank lines...
     var type;
     while(line !== undefined && (type = getLineType(line)) === LineDef.BLANK.id){
@@ -653,19 +650,12 @@ Org.getContent = function(org, params){
     while(line !== undefined){
       type = getLineType(line);
       while(current){
-        old = current;
         if(current.accept(line, type)){
           current = current.consume(line, type);
-          if(!current.accept){
-            console.log(current, old);
-          }
           break;
         } else {
           current.finalize();
           current = current.parent;
-          if(!current.accept){
-            console.log(current, old);
-          }
         }
       }
       line = lines.shift();

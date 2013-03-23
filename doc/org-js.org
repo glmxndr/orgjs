@@ -582,12 +582,10 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
       var _R = org.Regexps;
       var RLT = _R.lineTypes;
     
-    
     #+END_SRC
   =Content= is the object returned by this function.
       #+BEGIN_SRC js
         var Content = {};
-      
       
       #+END_SRC
 ** Types of lines
@@ -1216,7 +1214,6 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
         var root = new RootBlock(parent);
         var current = root;
         var line = lines.shift();
-        var old;
         // Ignore first blank lines...
         var type;
         while(line !== undefined && (type = getLineType(line)) === LineDef.BLANK.id){
@@ -1225,19 +1222,12 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
         while(line !== undefined){
           type = getLineType(line);
           while(current){
-            old = current;
             if(current.accept(line, type)){
               current = current.consume(line, type);
-              if(!current.accept){
-                console.log(current, old);
-              }
               break;
             } else {
               current.finalize();
               current = current.parent;
-              if(!current.accept){
-                console.log(current, old);
-              }
             }
           }
           line = lines.shift();
@@ -1412,13 +1402,12 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
        + =constr= :: constructor for the object to build ;
                      should build an object with a =consume()= property
        + =parent= :: parent of the node to build
-       + =food= :: textual content the new inline node has to parse as
+       + =inner= :: textual content the new inline node has to parse as
                    subnodes
                        #+BEGIN_SRC js
-                         function makeInline(constr, parent, food){
+                         function makeInline(constr, parent, inner){
                            var inline = new constr(parent);
-                           //parent.append(inline);
-                           if(food){inline.consume(food);}
+                           if(inner){inline.consume(inner);}
                            return inline;
                          }
                        
@@ -1440,6 +1429,7 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
         }
         if(this.content && this.content.length){
           var content = this.content;
+          console.log(this, this.content, content);
           var pipedKeys =  _U.joinKeys(tokens, "|");
           if(_U.blank(pipedKeys)){return;}
           var rgx = new RegExp('^((?:.|\n)*?)(' + pipedKeys + ')((?:.|\n)*)$');
@@ -1776,6 +1766,11 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
             tokens[t] = fn;
             return t;
           });
+      
+      #+END_SRC
+***** Normalizing spaces
+      #+BEGIN_SRC js
+          str = str.replace(/\s+/g, ' ');
       
       #+END_SRC
 ***** Processing emphasis markup (*bold*, /italic/, etc.)
@@ -3784,19 +3779,25 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
                     var todo = n.heading.getTodo();
             
                     var html = "<section id='%REPR%' class='orgnode level-%LEVEL%'>";
-                    html = html.replace(/%REPR%/, n.repr());
-                    html = html.replace(/%LEVEL%/, n.level);
-            
-                    var title = "<div class='title'>%TODO%%HEADLINE%%TAGS%</div>";
-                    title = title.replace(/%HEADLINE%/, headInline);
+                    html = html.replace(/%REPR%/g, n.repr());
+                    html = html.replace(/%LEVEL%/g, n.level);
+                    var lvl = n.level + 1;
+                    var title;
+                    if (lvl <= 6) {
+                      var tag = 'h' + lvl;
+                      title = "<%H%>%TODO%%HEADLINE%%TAGS%</%H%>".replace(/%H%/g, tag);
+                    } else {
+                      title = "<div class='heading lvl" + lvl + "'>%TODO%%HEADLINE%%TAGS%</div>";
+                    }
+                    title = title.replace(/%HEADLINE%/g, headInline);
                     var tags = "";
                     _U.each(n.heading.getTags(), function(tag, idx){
                       if(tag.length){
                         tags += " <span class='tag'>" + tag + "</span>";
                       }
                     });
-                    title = title.replace(/%TODO%/, todo ? " <span class='todo'>" + todo + "</span> " : "");
-                    title = title.replace(/%TAGS%/, tags);
+                    title = title.replace(/%TODO%/g, todo ? " <span class='todo'>" + todo + "</span> " : "");
+                    title = title.replace(/%TAGS%/g, tags);
             
                     html += title;
             

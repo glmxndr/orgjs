@@ -228,7 +228,7 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
        + =constr= :: constructor for the object to build ;
                      should build an object with a =consume()= property
        + =parent= :: parent of the node to build
-       + =food= :: textual content the new inline node has to parse as
+       + =inner= :: textual content the new inline node has to parse as
                    subnodes
 
 *** =EmphInline= : abstract high-level inline node
@@ -291,6 +291,8 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 ***** Replacing links
 
 ***** Replacing footnote definitions
+
+***** Normalizing spaces
 
 ***** Processing emphasis markup (*bold*, /italic/, etc.)
 

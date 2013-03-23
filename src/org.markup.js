@@ -162,13 +162,12 @@ Org.getMarkup = function(org, params){
          + =constr= :: constructor for the object to build ;
                        should build an object with a =consume()= property
          + =parent= :: parent of the node to build
-         + =food= :: textual content the new inline node has to parse as
+         + =inner= :: textual content the new inline node has to parse as
                      subnodes
   */
-  function makeInline(constr, parent, food){
+  function makeInline(constr, parent, inner){
     var inline = new constr(parent);
-    //parent.append(inline);
-    if(food){inline.consume(food);}
+    if(inner){inline.consume(inner);}
     return inline;
   }
 
@@ -190,6 +189,7 @@ Org.getMarkup = function(org, params){
     }
     if(this.content && this.content.length){
       var content = this.content;
+      console.log(this, this.content, content);
       var pipedKeys =  _U.joinKeys(tokens, "|");
       if(_U.blank(pipedKeys)){return;}
       var rgx = new RegExp('^((?:.|\n)*?)(' + pipedKeys + ')((?:.|\n)*)$');
@@ -526,6 +526,11 @@ Org.getMarkup = function(org, params){
       tokens[t] = fn;
       return t;
     });
+
+    /*orgdoc
+    ***** Normalizing spaces
+    */
+    str = str.replace(/\s+/g, ' ');
 
     /*orgdoc
     ***** Processing emphasis markup (*bold*, /italic/, etc.)

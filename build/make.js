@@ -3,7 +3,8 @@
 var fs  = require('fs'),
     path = require('path'),
     spawn = require('child_process').spawn,
-    exec = require('child_process').exec;
+    exec = require('child_process').exec,
+    _ = require('underscore');
 
 var srcFiles = [
   './src/org.main.js',
@@ -64,7 +65,10 @@ function buildAll(){
 
 function buildSrc(){
   var out = "";
-  var filename = 'script/org.js';
+  var filenames = [
+    '/home/subtenante/code/blorg/site/js/org.js',
+    'script/org.js'
+  ]; // Destinations for the built js file
   var files = srcFiles.slice(0);
 
   readFile();
@@ -102,10 +106,13 @@ function buildSrc(){
     out = out.replace(/\s*\*\/\s*\/\*orgdoc/gi, "");
     // Remove empty comments
     out = out.replace(/\s*\/\*orgdoc\s*\*\//gi, "");
-    fs.writeFile(filename, out, function(){
-      log("SRC Wrote " + filename);
-      release("src");
-    });
+    var writeOne = function (path) {
+      fs.writeFile(path, out, function(){
+        log("SRC Wrote " + path);
+        release("src");
+      });
+    };
+    _.each(filenames, writeOne);
   }
 }
 

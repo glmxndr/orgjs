@@ -1055,19 +1055,25 @@ Org.getRenderers = function(org){
         var todo = n.heading.getTodo();
 
         var html = "<section id='%REPR%' class='orgnode level-%LEVEL%'>";
-        html = html.replace(/%REPR%/, n.repr());
-        html = html.replace(/%LEVEL%/, n.level);
-
-        var title = "<div class='title'>%TODO%%HEADLINE%%TAGS%</div>";
-        title = title.replace(/%HEADLINE%/, headInline);
+        html = html.replace(/%REPR%/g, n.repr());
+        html = html.replace(/%LEVEL%/g, n.level);
+        var lvl = n.level + 1;
+        var title;
+        if (lvl <= 6) {
+          var tag = 'h' + lvl;
+          title = "<%H%>%TODO%%HEADLINE%%TAGS%</%H%>".replace(/%H%/g, tag);
+        } else {
+          title = "<div class='heading lvl" + lvl + "'>%TODO%%HEADLINE%%TAGS%</div>";
+        }
+        title = title.replace(/%HEADLINE%/g, headInline);
         var tags = "";
         _U.each(n.heading.getTags(), function(tag, idx){
           if(tag.length){
             tags += " <span class='tag'>" + tag + "</span>";
           }
         });
-        title = title.replace(/%TODO%/, todo ? " <span class='todo'>" + todo + "</span> " : "");
-        title = title.replace(/%TAGS%/, tags);
+        title = title.replace(/%TODO%/g, todo ? " <span class='todo'>" + todo + "</span> " : "");
+        title = title.replace(/%TAGS%/g, tags);
 
         html += title;
 

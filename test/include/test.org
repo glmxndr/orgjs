@@ -366,7 +366,8 @@ In the Org-mode file, the function looks like this:
 Now we use the source block:
 
 : #+call: square(x=6)
-(/for information on the/ =call= /syntax see/ library-of-babel)
+(/for information on the/ =call= /syntax 
+see/ library-of-babel)
 
 #+call: square(x=6)
 

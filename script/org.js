@@ -1163,13 +1163,12 @@ Org.getMarkup = function(org, params){
          + =constr= :: constructor for the object to build ;
                        should build an object with a =consume()= property
          + =parent= :: parent of the node to build
-         + =food= :: textual content the new inline node has to parse as
+         + =inner= :: textual content the new inline node has to parse as
                      subnodes
   */
-  function makeInline(constr, parent, food){
+  function makeInline(constr, parent, inner){
     var inline = new constr(parent);
-    //parent.append(inline);
-    if(food){inline.consume(food);}
+    if(inner){inline.consume(inner);}
     return inline;
   }
 
@@ -1191,6 +1190,7 @@ Org.getMarkup = function(org, params){
     }
     if(this.content && this.content.length){
       var content = this.content;
+      console.log(this, this.content, content);
       var pipedKeys =  _U.joinKeys(tokens, "|");
       if(_U.blank(pipedKeys)){return;}
       var rgx = new RegExp('^((?:.|\n)*?)(' + pipedKeys + ')((?:.|\n)*)$');
@@ -1529,6 +1529,11 @@ Org.getMarkup = function(org, params){
     });
 
     /*orgdoc
+    ***** Normalizing spaces
+    */
+    str = str.replace(/\s+/g, ' ');
+
+    /*orgdoc
     ***** Processing emphasis markup (*bold*, /italic/, etc.)
     */
     var iObj = new EmphInline(parent);
@@ -1557,12 +1562,10 @@ Org.getContent = function(org, params){
   var _R = org.Regexps;
   var RLT = _R.lineTypes;
 
-
   /*orgdoc
     =Content= is the object returned by this function.
   */
   var Content = {};
-
 
   /*orgdoc
   ** Types of lines
@@ -2191,7 +2194,6 @@ Org.getContent = function(org, params){
     var root = new RootBlock(parent);
     var current = root;
     var line = lines.shift();
-    var old;
     // Ignore first blank lines...
     var type;
     while(line !== undefined && (type = getLineType(line)) === LineDef.BLANK.id){
@@ -2200,19 +2202,12 @@ Org.getContent = function(org, params){
     while(line !== undefined){
       type = getLineType(line);
       while(current){
-        old = current;
         if(current.accept(line, type)){
           current = current.consume(line, type);
-          if(!current.accept){
-            console.log(current, old);
-          }
           break;
         } else {
           current.finalize();
           current = current.parent;
-          if(!current.accept){
-            console.log(current, old);
-          }
         }
       }
       line = lines.shift();
@@ -3766,19 +3761,25 @@ Org.getRenderers = function(org){
         var todo = n.heading.getTodo();
 
         var html = "<section id='%REPR%' class='orgnode level-%LEVEL%'>";
-        html = html.replace(/%REPR%/, n.repr());
-        html = html.replace(/%LEVEL%/, n.level);
-
-        var title = "<div class='title'>%TODO%%HEADLINE%%TAGS%</div>";
-        title = title.replace(/%HEADLINE%/, headInline);
+        html = html.replace(/%REPR%/g, n.repr());
+        html = html.replace(/%LEVEL%/g, n.level);
+        var lvl = n.level + 1;
+        var title;
+        if (lvl <= 6) {
+          var tag = 'h' + lvl;
+          title = "<%H%>%TODO%%HEADLINE%%TAGS%</%H%>".replace(/%H%/g, tag);
+        } else {
+          title = "<div class='heading lvl" + lvl + "'>%TODO%%HEADLINE%%TAGS%</div>";
+        }
+        title = title.replace(/%HEADLINE%/g, headInline);
         var tags = "";
         _U.each(n.heading.getTags(), function(tag, idx){
           if(tag.length){
             tags += " <span class='tag'>" + tag + "</span>";
           }
         });
-        title = title.replace(/%TODO%/, todo ? " <span class='todo'>" + todo + "</span> " : "");
-        title = title.replace(/%TAGS%/, tags);
+        title = title.replace(/%TODO%/g, todo ? " <span class='todo'>" + todo + "</span> " : "");
+        title = title.replace(/%TAGS%/g, tags);
 
         html += title;
 
