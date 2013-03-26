@@ -691,7 +691,7 @@ Org.getRenderers = function(org){
         str = str.replace(/\s*(«)\s*/g, " $1&nbsp;");
         str = str.replace(/\s*(»)\s*/g, "&nbsp;$1 ");
         // Restore entities broken by the ';' typo rule...
-        str = str.replace(/(&[a-z]+)&nbsp;;/g, "$1;");
+        str = str.replace(/(&#?[a-z]+)&nbsp;;/g, "$1;");
         return str;
       },
 

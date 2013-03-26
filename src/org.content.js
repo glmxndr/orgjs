@@ -665,5 +665,3 @@ Org.getContent = function(org, params){
   };
   return Content;
 };
-/*orgdoc
-*/

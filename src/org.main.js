@@ -4,11 +4,6 @@
 This project aims to provide a parser and easily customizable renderer
 for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 
-
-# This is a comment!
-
-#+INCLUDE: "../test/include/doc_header.org"
-
 * =Org= : the Main object
 
   The global context is extended with only one object, named =Org=.

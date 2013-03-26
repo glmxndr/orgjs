@@ -34,15 +34,6 @@ Org.getConfig = function(org, params){
   */
   _C.tabWidth = params.tabWidth || 4;
 
-
   return _C;
 
 };
-
-/*orgdoc+/
-  #+END_SRC
-
-** Tab width
-** URL protocols
-
-/---orgdoc*/

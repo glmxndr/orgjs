@@ -31,7 +31,6 @@
    + =src<<p= :: any paragraph preceding a =BEGIN_SRC= item
    + =src/..= :: parent of a =BEGIN_SRC= item
 
-
 */
 Org.Path = (function(){
 
