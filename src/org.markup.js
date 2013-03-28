@@ -51,7 +51,9 @@ Org.getMarkup = function(org, params){
     _U.TreeNode.call(this, parent, {"nodeType": "Link", leaf: true});
     this.raw = raw;
     this.url = url;
-    this.desc = Markup.parse(this, desc);
+    if (url !== desc) {
+      this.desc = Markup.parse(this, desc);  
+    }
     this.token = token;
     this.type = getLinkType(this);
   };
@@ -490,17 +492,17 @@ Org.getMarkup = function(org, params){
     }
 
     // Whole links with URL and description : [[url:...][Desc of the link]]
-    var descLinkRegex = /\[\[((?:.|\s)*?)\]\[((?:.|\s)*?)\]\]/gm;
+    var descLinkRegex = /\[\[([^\]]+?)\]\[([^\]]+?)\]\]/gm;
     str = str.replace(descLinkRegex, linkReplacer(1, 2));
 
     // Single links with URL only : [[url:...]]
-    var singleLinkRegex = /\[\[((?:.|\s)*?)\]\]/gm;
-    str = str.replace(descLinkRegex, linkReplacer(1, 1));
+    var singleLinkRegex = /\[\[([^\]]+?)\]\]/gm;
+    str = str.replace(singleLinkRegex, linkReplacer(1, 1));
 
     // Treating bare URLs, or URLs without a description attached.
     var urlRegex = new RegExp("(?:" +
                       _C.urlProtocols.join("|") +
-                      '):[^\\s),;]+', "gi");
+                      "):[^\\s),;]+", "gi");
     str = str.replace(urlRegex, linkReplacer(0, 0));
 
     /*orgdoc

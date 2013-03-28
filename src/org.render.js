@@ -179,7 +179,11 @@ Org.getRenderers = function(org){
       *** =Link=
       */
       Link: function(n, r){
-        return "[[" + r.render(n.desc) + "][" + n.url + "]]";
+        if (n.desc) {
+          return "[[" + n.url + "][" + r.render(n.desc) + "]]";
+        } else {
+          return "[[" + n.url + "]]";
+        }
       },
 
       /*orgdoc
@@ -509,7 +513,7 @@ Org.getRenderers = function(org){
       Link: function(n, r){
         return {
           "type":"link",
-          "content": r.render(n.desc),
+          "desc": n.desc ? r.render(n.desc) : n.url,
           "url": n.url
         };
       },
@@ -763,7 +767,7 @@ Org.getRenderers = function(org){
       */
       Link: function(n, r){
         return "<a class='link' href='" + n.url + "'>" +
-                r.render(n.desc) + "</a>";
+                (n.desc ? r.render(n.desc) : n.url) + "</a>";
       },
 
       /*orgdoc
