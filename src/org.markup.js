@@ -51,7 +51,7 @@ Org.getMarkup = function(org, params){
     _U.TreeNode.call(this, parent, {"nodeType": "Link", leaf: true});
     this.raw = raw;
     this.url = url;
-    this.desc = desc;
+    this.desc = Markup.parse(this, desc);
     this.token = token;
     this.type = getLinkType(this);
   };
@@ -149,7 +149,7 @@ Org.getMarkup = function(org, params){
     return new constr(parent);
   };
   EmphMarkers.getRegexpAll = function(){
-    return (/(^(?:.|\n)*?)(([\/*+_])([^\s].*?[^\s\\]|[^\s\\])\3)/);
+    return (/(^[\s\S]*?)(([\/*+_])([^\s][\s\S]*?[^\s\\]|[^\s\\])\3)/);
   };
   Markup.EmphMarkers = EmphMarkers;
 
@@ -189,7 +189,6 @@ Org.getMarkup = function(org, params){
     }
     if(this.content && this.content.length){
       var content = this.content;
-      console.log(this, this.content, content);
       var pipedKeys =  _U.joinKeys(tokens, "|");
       if(_U.blank(pipedKeys)){return;}
       var rgx = new RegExp('^((?:.|\n)*?)(' + pipedKeys + ')((?:.|\n)*)$');
@@ -228,7 +227,7 @@ Org.getMarkup = function(org, params){
       length  = pre.length + inner.length + (hasEmph ? 2 : 0);
       if(length === 0){break;}
       rest    = rest.substr(length);
-      if(_U.notBlank(pre)){ this.append(makeInline(EmphRaw, this, pre)); }
+      this.append(makeInline(EmphRaw, this, pre)); 
       if(hasEmph !== void 0){
         this.append(makeInline(EmphMarkers[token].constr, this, inner));
       }
@@ -526,11 +525,6 @@ Org.getMarkup = function(org, params){
       tokens[t] = fn;
       return t;
     });
-
-    /*orgdoc
-    ***** Normalizing spaces
-    */
-    str = str.replace(/\s+/g, ' ');
 
     /*orgdoc
     ***** Processing emphasis markup (*bold*, /italic/, etc.)

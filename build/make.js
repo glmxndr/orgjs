@@ -66,7 +66,7 @@ function buildAll(){
 function buildSrc(){
   var out = "";
   var filenames = [
-    '/home/subtenante/code/blorg/site/js/org.js',
+    '/home/subtenante/code/blorg/public/js/org.js',
     'script/org.js'
   ]; // Destinations for the built js file
   var files = srcFiles.slice(0);

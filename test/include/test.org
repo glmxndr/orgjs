@@ -16,6 +16,13 @@
   :CUSTOM_ID: introduction
   :END:
 
+  #+BEGIN_VERSE
+  This verse
+  Is terse.
+  Your mom
+  Is *worse*.
+  #+END_VERSE
+
   Babel is about letting many different languages work together.
   Programming languages live in blocks inside natural language
   Org-mode documents.  A piece of data may pass from a table to a

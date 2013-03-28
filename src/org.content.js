@@ -360,6 +360,33 @@ Org.getContent = function(org, params){
     return this;
   };
 
+  /*orgdoc
+  *** Quote block
+  */
+  var QuoteBlock = function(parent, line){
+    ContentMarkupBlock.call(this, parent);
+    BeginEndBlock.call(this, parent, line, "QUOTE", "QuoteBlock");
+  };
+  LineDef.QUOTE = {
+    id:       "QUOTE",
+    beginEnd: 1,
+    rgx:      RLT.beginBlock("QUOTE"),
+    constr:   QuoteBlock
+  };
+  Content.QuoteBlock = QuoteBlock;
+  QuoteBlock.prototype = Object.create(BeginEndBlock.prototype);
+  QuoteBlock.prototype.finalize = function () {
+    var lastLine = this.lines.pop();
+    var m;
+    if(lastLine && (m = lastLine.match(/^\s*--\s+(.*)\s*$/))) {
+      this.signature = OM.parse(this, m[1]);
+    } else {
+      this.lines.push(lastLine);
+    }
+    var content = this.lines.join("\n");
+    var inline = OM.parse(this, content);
+    this.children.push(inline);
+  };
 
   /*orgdoc
   *** Verse block
@@ -376,26 +403,7 @@ Org.getContent = function(org, params){
   };
   Content.VerseBlock = VerseBlock;
   VerseBlock.prototype = Object.create(BeginEndBlock.prototype);
-  VerseBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
-
-
-  /*orgdoc
-  *** Quote block
-  */
-  var QuoteBlock = function(parent, line){
-    ContentMarkupBlock.call(this, parent);
-    BeginEndBlock.call(this, parent, line, "QUOTE", "QuoteBlock");
-  };
-  LineDef.QUOTE = {
-    id:       "QUOTE",
-    beginEnd: 1,
-    rgx:      RLT.beginBlock("QUOTE"),
-    constr:   QuoteBlock
-  };
-  Content.QuoteBlock = QuoteBlock;
-  QuoteBlock.prototype = Object.create(BeginEndBlock.prototype);
-  QuoteBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
-
+  VerseBlock.prototype.finalize = QuoteBlock.prototype.finalize;
 
   /*orgdoc
   *** Centered-text block

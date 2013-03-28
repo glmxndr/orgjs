@@ -3,11 +3,6 @@
 This project aims to provide a parser and easily customizable renderer
 for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 
-
-# This is a comment!
-
-#+INCLUDE: "../test/include/doc_header.org"
-
 * =Org= : the Main object
 
   The global context is extended with only one object, named =Org=.
@@ -66,18 +61,10 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
         #+BEGIN_SRC js
           _C.tabWidth = params.tabWidth || 4;
         
-        
           return _C;
         
         };
         
-        /*orgdoc+/
-          #+END_SRC
-        
-        ** Tab width
-        ** URL protocols
-        
-        /---orgdoc*/
         #+END_SRC
 
 
@@ -932,6 +919,33 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
         return this;
       };
     
+    #+END_SRC
+*** Quote block
+    #+BEGIN_SRC js
+      var QuoteBlock = function(parent, line){
+        ContentMarkupBlock.call(this, parent);
+        BeginEndBlock.call(this, parent, line, "QUOTE", "QuoteBlock");
+      };
+      LineDef.QUOTE = {
+        id:       "QUOTE",
+        beginEnd: 1,
+        rgx:      RLT.beginBlock("QUOTE"),
+        constr:   QuoteBlock
+      };
+      Content.QuoteBlock = QuoteBlock;
+      QuoteBlock.prototype = Object.create(BeginEndBlock.prototype);
+      QuoteBlock.prototype.finalize = function () {
+        var lastLine = this.lines.pop();
+        var m;
+        if(lastLine && (m = lastLine.match(/^\s*--\s+(.*)\s*$/))) {
+          this.signature = OM.parse(this, m[1]);
+        } else {
+          this.lines.push(lastLine);
+        }
+        var content = this.lines.join("\n");
+        var inline = OM.parse(this, content);
+        this.children.push(inline);
+      };
     
     #+END_SRC
 *** Verse block
@@ -948,26 +962,7 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
       };
       Content.VerseBlock = VerseBlock;
       VerseBlock.prototype = Object.create(BeginEndBlock.prototype);
-      VerseBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
-    
-    
-    #+END_SRC
-*** Quote block
-    #+BEGIN_SRC js
-      var QuoteBlock = function(parent, line){
-        ContentMarkupBlock.call(this, parent);
-        BeginEndBlock.call(this, parent, line, "QUOTE", "QuoteBlock");
-      };
-      LineDef.QUOTE = {
-        id:       "QUOTE",
-        beginEnd: 1,
-        rgx:      RLT.beginBlock("QUOTE"),
-        constr:   QuoteBlock
-      };
-      Content.QuoteBlock = QuoteBlock;
-      QuoteBlock.prototype = Object.create(BeginEndBlock.prototype);
-      QuoteBlock.prototype.finalize = ContentMarkupBlock.prototype.finalize;
-    
+      VerseBlock.prototype.finalize = QuoteBlock.prototype.finalize;
     
     #+END_SRC
 *** Centered-text block
@@ -1292,7 +1287,7 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
         _U.TreeNode.call(this, parent, {"nodeType": "Link", leaf: true});
         this.raw = raw;
         this.url = url;
-        this.desc = desc;
+        this.desc = Markup.parse(this, desc);
         this.token = token;
         this.type = getLinkType(this);
       };
@@ -1390,7 +1385,7 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
         return new constr(parent);
       };
       EmphMarkers.getRegexpAll = function(){
-        return (/(^(?:.|\n)*?)(([\/*+_])([^\s].*?[^\s\\]|[^\s\\])\3)/);
+        return (/(^[\s\S]*?)(([\/*+_])([^\s][\s\S]*?[^\s\\]|[^\s\\])\3)/);
       };
       Markup.EmphMarkers = EmphMarkers;
     
@@ -1430,7 +1425,6 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
         }
         if(this.content && this.content.length){
           var content = this.content;
-          console.log(this, this.content, content);
           var pipedKeys =  _U.joinKeys(tokens, "|");
           if(_U.blank(pipedKeys)){return;}
           var rgx = new RegExp('^((?:.|\n)*?)(' + pipedKeys + ')((?:.|\n)*)$');
@@ -1469,7 +1463,7 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
           length  = pre.length + inner.length + (hasEmph ? 2 : 0);
           if(length === 0){break;}
           rest    = rest.substr(length);
-          if(_U.notBlank(pre)){ this.append(makeInline(EmphRaw, this, pre)); }
+          this.append(makeInline(EmphRaw, this, pre)); 
           if(hasEmph !== void 0){
             this.append(makeInline(EmphMarkers[token].constr, this, inner));
           }
@@ -1769,11 +1763,6 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
           });
       
       #+END_SRC
-***** Normalizing spaces
-      #+BEGIN_SRC js
-          str = str.replace(/\s+/g, ' ');
-      
-      #+END_SRC
 ***** Processing emphasis markup (*bold*, /italic/, etc.)
       #+BEGIN_SRC js
           var iObj = new EmphInline(parent);
@@ -1992,6 +1981,13 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 ** =Utils= object to be returnedn aliased as =_U=.
     #+BEGIN_SRC js
       var _U = {
+    
+        // Last item of an aray
+        last: function(arr){
+          return (arr && arr.length) 
+            ? arr[arr.length - 1] 
+            : null;
+        },
     
         // Mimics the M-q function in Emacs (fill-paragraph)
         fillParagraph: function(str, length){
@@ -2315,10 +2311,15 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
              #+BEGIN_SRC js
                  get: function(location){
                    var result = null;
-                   if(jQuery){
+                   // Get the global object as globl.
+                   var globl = null;
+                   !function(){globl = this;}();
+                   // Detect jQuery or Zepto.
+                   var $lib = globl.jQuery || globl.Zepto;
+                   if($lib){
                      // If we're in the browser, org.js requires jQuery...
                      // Maybe to refactor to using XHR / ActiveX ourselves
-                     jQuery.ajax({
+                     $lib.ajax({
                        async: false,
                        url: location,
                        dataType: 'text',
@@ -2698,7 +2699,6 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
    + =src<<p= :: any paragraph preceding a =BEGIN_SRC= item
    + =src/..= :: parent of a =BEGIN_SRC= item
 
-
   #+BEGIN_SRC js
   Org.Path = (function(){
   
@@ -2904,7 +2904,7 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 *** =Link=
         #+BEGIN_SRC js
               Link: function(n, r){
-                return "[[" + n.desc + "][" + n.url + "]]";
+                return "[[" + r.render(n.desc) + "][" + n.url + "]]";
               },
         
         #+END_SRC
@@ -3234,7 +3234,7 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
                   Link: function(n, r){
                     return {
                       "type":"link",
-                      "content":n.content,
+                      "content": r.render(n.desc),
                       "url": n.url
                     };
                   },
@@ -3404,23 +3404,6 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
                                 },
                           
                           #+END_SRC
-*** =typo(str, renderer)=                                                :function:
-     + Purpose :: Applies light typographical preferences for French language
-     + Arguments :: str, renderer
-             #+BEGIN_SRC js
-                   typo: function(str, r){
-                     str = "" + r.htmlize(str, r);
-                     str = str.replace(/\s*(,|\.|\)|\])\s*/g, "$1 ");
-                     str = str.replace(/\s*(\(|\[)\s*/g, " $1");
-                     str = str.replace(/\s*(;|!|\?|:)\s+/g, "&nbsp;$1 ");
-                     str = str.replace(/\s*(«)\s*/g, " $1&nbsp;");
-                     str = str.replace(/\s*(»)\s*/g, "&nbsp;$1 ");
-                     // Restore entities broken by the ';' typo rule...
-                     str = str.replace(/(&[a-z]+)&nbsp;;/g, "$1;");
-                     return str;
-                   },
-             
-             #+END_SRC
 ** Rendering inline items
 *** =IgnoredLine=
         #+BEGIN_SRC js
@@ -3441,7 +3424,7 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
         #+BEGIN_SRC js
               EmphRaw: function(n, r){
                 return "<span>" +
-                        r.typo(n.content, r) + "</span>";
+                        r.htmlize(n.content, r) + "</span>";
               },
         
         #+END_SRC
@@ -3505,7 +3488,7 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
         #+BEGIN_SRC js
               Link: function(n, r){
                 return "<a class='link' href='" + n.url + "'>" +
-                        r.htmlize(n.desc, r) + "</a>";
+                        r.render(n.desc) + "</a>";
               },
         
         #+END_SRC
@@ -3670,7 +3653,11 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
      All new lines are replaced by a =br= tag.
              #+BEGIN_SRC js
                    VerseBlock: function(n, r){
-                     var out = "<pre class='verse'>\n" + r.renderChildren(n, r) + "</pre>\n";
+                     var s = "";
+                     if (n.signature) {
+                       var s = "<figcaption>" + r.render(n.signature) + "</figcaption>";
+                     }
+                     var out = "<figure class='verse'><pre class='verse'>\n" + r.renderChildren(n, r) + "</pre>" + s + "</figure>\n";
                      return out;
                    },
              
@@ -3682,7 +3669,11 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
      this declaration is put on a new line.
              #+BEGIN_SRC js
                    QuoteBlock: function(n, r){
-                     var out = "<blockquote>\n" + r.renderChildren(n, r) + "</blockquote>\n";
+                     var s = "";
+                     if (n.signature) {
+                       var s = "<figcaption>" + r.render(n.signature) + "</figcaption>";
+                     }
+                     var out = "<figure class='quote'><blockquote>\n" + r.renderChildren(n, r) + "</blockquote>" + s + "</figure>\n";
                      return out;
                    },
              

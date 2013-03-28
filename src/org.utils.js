@@ -73,6 +73,13 @@ Org.getUtils = function(org, params){
   */
   var _U = {
 
+    // Last item of an aray
+    last: function(arr){
+      return (arr && arr.length) 
+        ? arr[arr.length - 1] 
+        : null;
+    },
+
     // Mimics the M-q function in Emacs (fill-paragraph)
     fillParagraph: function(str, length){
       var words = str.split(/\s/g);
@@ -395,10 +402,15 @@ Org.getUtils = function(org, params){
     */
     get: function(location){
       var result = null;
-      if(jQuery){
+      // Get the global object as globl.
+      var globl = null;
+      !function(){globl = this;}();
+      // Detect jQuery or Zepto.
+      var $lib = globl.jQuery || globl.Zepto;
+      if($lib){
         // If we're in the browser, org.js requires jQuery...
         // Maybe to refactor to using XHR / ActiveX ourselves
-        jQuery.ajax({
+        $lib.ajax({
           async: false,
           url: location,
           dataType: 'text',

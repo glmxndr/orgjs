@@ -23,8 +23,8 @@ $(function(){
     var root = org.Parser.parse(data, location);
     var renderer = org.Renderers.html();
     $('#doc').html(renderer.render(root));
-    prettyPrint();
-    jsMath.Process(document);
+    // prettyPrint();
+    // jsMath.Process(document);
   });
   //*/
 

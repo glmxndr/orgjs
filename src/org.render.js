@@ -179,7 +179,7 @@ Org.getRenderers = function(org){
       *** =Link=
       */
       Link: function(n, r){
-        return "[[" + n.desc + "][" + n.url + "]]";
+        return "[[" + r.render(n.desc) + "][" + n.url + "]]";
       },
 
       /*orgdoc
@@ -509,7 +509,7 @@ Org.getRenderers = function(org){
       Link: function(n, r){
         return {
           "type":"link",
-          "content":n.content,
+          "content": r.render(n.desc),
           "url": n.url
         };
       },
@@ -679,23 +679,6 @@ Org.getRenderers = function(org){
       },
 
       /*orgdoc
-      *** =typo(str, renderer)=                                                :function:
-           + Purpose :: Applies light typographical preferences for French language
-           + Arguments :: str, renderer
-      */
-      typo: function(str, r){
-        str = "" + r.htmlize(str, r);
-        str = str.replace(/\s*(,|\.|\)|\])\s*/g, "$1 ");
-        str = str.replace(/\s*(\(|\[)\s*/g, " $1");
-        str = str.replace(/\s*(;|!|\?|:)\s+/g, "&nbsp;$1 ");
-        str = str.replace(/\s*(«)\s*/g, " $1&nbsp;");
-        str = str.replace(/\s*(»)\s*/g, "&nbsp;$1 ");
-        // Restore entities broken by the ';' typo rule...
-        str = str.replace(/(&#?[a-z]+)&nbsp;;/g, "$1;");
-        return str;
-      },
-
-      /*orgdoc
       ** Rendering inline items
       *** =IgnoredLine=
       */
@@ -716,7 +699,7 @@ Org.getRenderers = function(org){
       */
       EmphRaw: function(n, r){
         return "<span>" +
-                r.typo(n.content, r) + "</span>";
+                r.htmlize(n.content, r) + "</span>";
       },
 
       /*orgdoc
@@ -780,7 +763,7 @@ Org.getRenderers = function(org){
       */
       Link: function(n, r){
         return "<a class='link' href='" + n.url + "'>" +
-                r.htmlize(n.desc, r) + "</a>";
+                r.render(n.desc) + "</a>";
       },
 
       /*orgdoc
@@ -945,7 +928,11 @@ Org.getRenderers = function(org){
            All new lines are replaced by a =br= tag.
       */
       VerseBlock: function(n, r){
-        var out = "<pre class='verse'>\n" + r.renderChildren(n, r) + "</pre>\n";
+        var s = "";
+        if (n.signature) {
+          var s = "<figcaption>" + r.render(n.signature) + "</figcaption>";
+        }
+        var out = "<figure class='verse'><pre class='verse'>\n" + r.renderChildren(n, r) + "</pre>" + s + "</figure>\n";
         return out;
       },
 
@@ -957,7 +944,11 @@ Org.getRenderers = function(org){
            this declaration is put on a new line.
       */
       QuoteBlock: function(n, r){
-        var out = "<blockquote>\n" + r.renderChildren(n, r) + "</blockquote>\n";
+        var s = "";
+        if (n.signature) {
+          var s = "<figcaption>" + r.render(n.signature) + "</figcaption>";
+        }
+        var out = "<figure class='quote'><blockquote>\n" + r.renderChildren(n, r) + "</blockquote>" + s + "</figure>\n";
         return out;
       },
 

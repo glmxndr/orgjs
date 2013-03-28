@@ -3,11 +3,6 @@
 This project aims to provide a parser and easily customizable renderer
 for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 
-
-# This is a comment!
-
-#+INCLUDE: "../test/include/doc_header.org"
-
 * =Org= : the Main object
 
   The global context is extended with only one object, named =Org=.
@@ -21,13 +16,6 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 
 ** Tab width
     Specifies how much single spaces for each tabulation character. 4 by default.
-
-** Tab width
-        ** URL protocols
-        
-        /---orgdoc*/
-        #+END_SRC
-
 
 * =Org.Parser= : the general parser
 
@@ -159,9 +147,9 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 
 *** Generic Begin/End block
 
-*** Verse block
-
 *** Quote block
+
+*** Verse block
 
 *** Centered-text block
 
@@ -291,8 +279,6 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 ***** Replacing links
 
 ***** Replacing footnote definitions
-
-***** Normalizing spaces
 
 ***** Processing emphasis markup (*bold*, /italic/, etc.)
 
@@ -764,10 +750,6 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
      + Arguments ::
        + =str= :: any value, converted into a string at the beginning
                   of the function.
-
-*** =typo(str, renderer)=                                                :function:
-     + Purpose :: Applies light typographical preferences for French language
-     + Arguments :: str, renderer
 
 ** Rendering inline items
 *** =IgnoredLine=
