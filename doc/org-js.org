@@ -1287,7 +1287,9 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
         _U.TreeNode.call(this, parent, {"nodeType": "Link", leaf: true});
         this.raw = raw;
         this.url = url;
-        this.desc = Markup.parse(this, desc);
+        if (url !== desc) {
+          this.desc = Markup.parse(this, desc);  
+        }
         this.token = token;
         this.type = getLinkType(this);
       };
@@ -1726,17 +1728,17 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
           }
       
           // Whole links with URL and description : [[url:...][Desc of the link]]
-          var descLinkRegex = /\[\[((?:.|\s)*?)\]\[((?:.|\s)*?)\]\]/gm;
+          var descLinkRegex = /\[\[([^\]]+?)\]\[([^\]]+?)\]\]/gm;
           str = str.replace(descLinkRegex, linkReplacer(1, 2));
       
           // Single links with URL only : [[url:...]]
-          var singleLinkRegex = /\[\[((?:.|\s)*?)\]\]/gm;
-          str = str.replace(descLinkRegex, linkReplacer(1, 1));
+          var singleLinkRegex = /\[\[([^\]]+?)\]\]/gm;
+          str = str.replace(singleLinkRegex, linkReplacer(1, 1));
       
           // Treating bare URLs, or URLs without a description attached.
           var urlRegex = new RegExp("(?:" +
                             _C.urlProtocols.join("|") +
-                            '):[^\\s),;]+', "gi");
+                            "):[^\\s),;]+", "gi");
           str = str.replace(urlRegex, linkReplacer(0, 0));
       
       #+END_SRC
@@ -2904,7 +2906,11 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
 *** =Link=
         #+BEGIN_SRC js
               Link: function(n, r){
-                return "[[" + r.render(n.desc) + "][" + n.url + "]]";
+                if (n.desc) {
+                  return "[[" + n.url + "][" + r.render(n.desc) + "]]";
+                } else {
+                  return "[[" + n.url + "]]";
+                }
               },
         
         #+END_SRC
@@ -3234,7 +3240,7 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
                   Link: function(n, r){
                     return {
                       "type":"link",
-                      "content": r.render(n.desc),
+                      "desc": n.desc ? r.render(n.desc) : n.url,
                       "url": n.url
                     };
                   },
@@ -3488,7 +3494,7 @@ for [[http://orgmode.org/][Org-Mode]] files in JavaScript.
         #+BEGIN_SRC js
               Link: function(n, r){
                 return "<a class='link' href='" + n.url + "'>" +
-                        r.render(n.desc) + "</a>";
+                        (n.desc ? r.render(n.desc) : n.url) + "</a>";
               },
         
         #+END_SRC
